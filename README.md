@@ -65,15 +65,14 @@ The system allows **multiple admin accounts** and **multiple user accounts**. Ea
 - 📈 Due tracking (providers and customers)  
 - 🔔 Low stock alerts  
 - 📱 Responsive UI  
-- ✨ Framer Motion animations  
 - 🎨 Tailwind CSS  
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Frontend:** Next.js 16 (App Router), JavaScript/JSX, Tailwind CSS, Framer Motion, Axios, React Hot Toast, Heroicons  
-- **Backend:** Next.js API Routes, Prisma ORM, MongoDB, JWT (HTTPOnly cookies), bcryptjs  
+- **Frontend:** Next.js 14 (App Router), JavaScript/JSX, Tailwind CSS, Lucide-React, React Hot Toast  
+- **Backend:** Next.js API Routes, Prisma ORM, MongoDB, JWT (HTTPOnly cookies via `jose`), bcryptjs  
 
 ---
 
@@ -93,17 +92,16 @@ The system allows **multiple admin accounts** and **multiple user accounts**. Ea
    ```
 
 2. **Environment variables**  
-   Copy `.env.example` to `.env` and set:
+   Copy `.env.example` to `.env` (or create it) and set:
    ```env
    DATABASE_URL="<YOUR_MONGODB_URI>"
    JWT_SECRET="your-secret-change-in-production"
    JWT_EXPIRES_IN="7d"
 
-   # Resend (for forgot-password emails)
+   # Resend (for auth emails)
    RESEND_API_KEY="re_your_api_key"
    FROM_EMAIL="info@yourdomain.com"
    ```
-   Get your API key from [Resend](https://resend.com). Use a verified domain for `FROM_EMAIL` in production.
 
 3. **Prisma**
    ```bash
@@ -121,23 +119,14 @@ The system allows **multiple admin accounts** and **multiple user accounts**. Ea
 
 ## 📚 Usage Guide
 
-### For Admins (multiple admins)
+### For Admins & Users
 
-1. **New admin:** Go to **Get Started** or `/register` and create an admin account (name, email, password). Existing admins can register additional admins the same way.
-2. **Login:** Go to `/login` and sign in with your admin credentials.
-3. Use **Products**, **Providers**, **Customers** to add master data, then **Purchases** and **Sales** for transactions. Use **Reports** and **Settings** as needed.
-
-### For Users (multiple users)
-
-1. Go to `/login` and sign in with your user credentials.
-2. **Dashboard** – Check totals, low-stock items, and recent sales/purchases.
-3. **Products** – Add/edit products and units.
-4. **Providers** – Manage supplier/farmer contacts.
-5. **Customers** – Manage buyer contacts.
-6. **Purchases** – Record purchases; stock increases automatically.
-7. **Sales** – Record sales; stock is validated and reduced; profit is calculated.
-8. **Reports** – Pick date range or period (Daily/Monthly/Yearly) and view profit/loss.
-9. Forgot password: use **Forgot password?** on the login page and follow the reset flow.
+1. **Registration:** Go to **Get Started** or `/user/register` to create an account.
+2. **Login:** Accessible via `/user/login` (or `/login`).
+3. **Dashboard:** Overview of stock, sales, and analytics.
+4. **Modules:** Manage **Products**, **Providers**, **Customers**, **Purchases**, and **Sales** from the sidebar.
+5. **Reports:** Generate daily, monthly, or yearly financial insights.
+6. **Password Management:** Reset via email or change in settings.
 
 ### Quick Flows
 
@@ -176,31 +165,19 @@ The system allows **multiple admin accounts** and **multiple user accounts**. Ea
 ## 📁 Project Structure
 
 ```
-atms-app/
+atms/
 ├── src/
 │   ├── app/
-│   │   ├── api/           # API routes (auth, products, sales, etc.)
-│   │   ├── dashboard/     # Dashboard page
-│   │   ├── login/         # Login (Admin & User)
-│   │   ├── register/      # Register new admin (multiple admins)
-│   │   ├── forgot-password/
-│   │   ├── reset-password/
-│   │   ├── products/      # Products management
-│   │   ├── providers/     # Providers management
-│   │   ├── customers/     # Customers management
-│   │   ├── purchases/     # Purchases management
-│   │   ├── sales/         # Sales management
-│   │   ├── reports/       # Reports
-│   │   ├── settings/     # Settings
+│   │   ├── (admin)/       # Admin-specific routes
+│   │   ├── user/          # User/Team-specific routes
+│   │   ├── api/           # API routes (auth, user, admin)
 │   │   ├── layout.jsx
 │   │   └── globals.css
-│   ├── components/
-│   │   └── Sidebar.jsx
-│   ├── lib/
-│   │   ├── prisma.js
-│   │   ├── auth.js
-│   │   └── mail.js
-│   └── middleware.js      # Route protection
+│   ├── components/        # Shared components and UI primitives
+│   ├── services/          # Business logic layer
+│   ├── dal/               # Data Access Layer
+│   ├── lib/               # Utilities (Prisma, Auth, Resend)
+│   └── middleware.js      # Global route protection
 ├── prisma/
 │   └── schema.prisma
 └── package.json

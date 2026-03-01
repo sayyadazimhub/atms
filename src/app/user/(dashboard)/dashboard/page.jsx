@@ -444,17 +444,17 @@ export default function DashboardPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Activity Stream */}
         <Card className="lg:col-span-2 border-slate-100 dark:border-slate-800 shadow-sm rounded-3xl overflow-hidden bg-white dark:bg-slate-900/50">
-          <CardHeader className="flex flex-row items-center justify-between bg-slate-50/50 dark:bg-slate-800/20 backdrop-blur-sm border-b border-slate-100 dark:border-slate-800">
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-800/20 backdrop-blur-sm border-b border-slate-100 dark:border-slate-800 py-4 px-5">
             <div>
               <CardTitle className="text-lg font-black tracking-tight dark:text-slate-100">Recent Activity</CardTitle>
               <CardDescription className="text-[10px] font-bold uppercase tracking-wider dark:text-slate-500">Latest sales and acquisitions</CardDescription>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="h-8 rounded-xl text-[10px] font-black uppercase dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800" asChild>
-                <a href="/user/sales">Sales</a>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="h-8 rounded-xl text-xs sm:text-[10px] font-black uppercase dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 shrink-0" asChild>
+                <a href="/user/sales" className="flex items-center justify-center w-full h-full">Sales</a>
               </Button>
-              <Button variant="outline" size="sm" className="h-8 rounded-xl text-[10px] font-black uppercase dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800" asChild>
-                <a href="/user/purchases">Purchases</a>
+              <Button variant="outline" size="sm" className="h-8 rounded-xl text-xs sm:text-[10px] font-black uppercase dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 shrink-0" asChild>
+                <a href="/user/purchases" className="flex items-center justify-center w-full h-full">Purchases</a>
               </Button>
             </div>
           </CardHeader>
