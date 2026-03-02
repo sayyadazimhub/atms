@@ -95,29 +95,30 @@ export default function HomePage() {
         <div className="container mx-auto px-4 relative z-10 text-center">
           <div className="max-w-4xl mx-auto">
             {/* Social Proof Badge */}
-            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md px-4 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-400 mb-8 uppercase tracking-[0.2em] shadow-xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md px-4 py-1.5 text-[10px] sm:text-xs font-bold text-slate-600 dark:text-slate-400 mb-8 uppercase tracking-wider md:tracking-[0.2em] shadow-xl">
               <Users className="h-3.5 w-3.5 text-emerald-500" />
-              Trusted by 500+ Professional Traders
+              Trusted by 100+ Professional Traders
+              {/* Agricultural Trading Made Simple */}
             </div>
 
             <h2 className="text-4xl font-bold text-slate-900 dark:text-slate-50 sm:text-6xl leading-[1.1] tracking-tight">
-              Ready to Transform Your <br />
-              <span className="text-emerald-600 dark:text-emerald-400">Trading Business?</span>
+              Professional Tools for <br />
+              <span className="text-emerald-600 dark:text-emerald-400">Trading Business Success</span>
             </h2>
             <p className="mt-8 text-xl text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl mx-auto font-medium">
-              Join the elite club of traders who have scaled their operations with ATMS. Get started with professional tools in less than 2 minutes.
+              Join the elite club of traders who have scaled their operations with ATMS. Get started with professional tools in seconds...
             </p>
 
             <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-6">
               <Link href="/user/register" className="w-full sm:w-auto">
-                <Button size="lg" className="h-14 px-10 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white w-full font-bold uppercase tracking-widest transition-all group border-0 shadow-lg shadow-emerald-500/10">
+                <Button size="lg" className="h-12 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white w-full font-bold uppercase tracking-widest transition-all group border-0 shadow-lg shadow-emerald-500/10">
                   Start Your Journey
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
-              <Link href="#" className="w-full sm:w-auto">
-                <Button variant="outline" size="lg" className="h-14 px-10 rounded-2xl border-slate-200 dark:border-slate-800 bg-transparent hover:bg-slate-50 dark:hover:bg-slate-900 w-full font-bold uppercase tracking-widest transition-all">
-                  Book A Demo
+              <Link href="/user/login" className="w-full sm:w-auto">
+                <Button variant="outline" size="lg" className="h-12 px-6 rounded-xl border-slate-200 dark:border-slate-800 bg-transparent hover:bg-slate-50 dark:hover:bg-slate-900 w-full font-bold uppercase tracking-widest transition-all">
+                  Sign In
                 </Button>
               </Link>
             </div>
