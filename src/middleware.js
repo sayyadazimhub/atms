@@ -34,6 +34,30 @@ export async function middleware(request) {
 
   // ——— User routes (separate UI/API, jose token) ———
   if (isUserRoute(pathname)) {
+    // Check system settings
+    let settings = { maintenanceMode: false, traderSelfRegistration: true };
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+      const res = await fetch(`${baseUrl}/api/settings/public`, {
+          next: { revalidate: 60 }
+      });
+      if (res.ok) settings = await res.json();
+    } catch (e) {
+      console.error('Settings fetch error in middleware:', e);
+    }
+
+    if (settings.maintenanceMode) {
+      if (pathname !== '/user/logout') {
+        return NextResponse.redirect(new URL('/maintenance', request.url));
+      }
+    }
+
+    if (!settings.traderSelfRegistration && pathname.startsWith('/user/register')) {
+      const loginUrl = new URL('/user/login', request.url);
+      loginUrl.searchParams.set('error', 'registration_disabled');
+      return NextResponse.redirect(loginUrl);
+    }
+
     const userToken = request.cookies.get('user-token')?.value;
     if (isUserPublic(pathname)) {
       if (userToken) {

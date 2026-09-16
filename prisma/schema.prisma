@@ -170,3 +170,11 @@ model SaleItem {
   @@index([productId])
   @@index([userId])
 }
+
+model SystemSetting {
+  id                     String   @id @default(auto()) @map("_id") @db.ObjectId
+  maintenanceMode        Boolean  @default(false)
+  traderSelfRegistration Boolean  @default(true)
+  notifyOnNewTrader      Boolean  @default(true)
+  updatedAt              DateTime @updatedAt
+}

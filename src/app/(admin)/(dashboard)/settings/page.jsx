@@ -39,15 +39,14 @@ export default function AdminSettingsPage() {
     email: '',
     phone: '',
   });
+  const [passwordData, setPasswordData] = useState({
+    newPassword: '',
+    confirmPassword: ''
+  });
   const [settings, setSettings] = useState({
-    systemName: 'ATMS Network',
     maintenanceMode: false,
     traderSelfRegistration: true,
-    backupFrequency: 'daily',
-    retentionDays: '90',
     notifyOnNewTrader: true,
-    notifyOnLowStock: true,
-    twoFactorAuth: false,
   });
 
   useEffect(() => {
@@ -63,11 +62,38 @@ export default function AdminSettingsPage() {
         toast.error('Failed to load profile');
       }
     };
+    const fetchSettings = async () => {
+      try {
+        const res = await axios.get('/api/admin/settings');
+        if (res.data) {
+          setSettings({
+            maintenanceMode: res.data.maintenanceMode,
+            traderSelfRegistration: res.data.traderSelfRegistration,
+            notifyOnNewTrader: res.data.notifyOnNewTrader ?? true,
+          });
+        }
+      } catch (error) {
+        toast.error('Failed to load settings');
+      }
+    };
     fetchProfile();
+    fetchSettings();
   }, []);
 
-  const handleToggle = (key) => {
-    setSettings(s => ({ ...s, [key]: !s[key] }));
+  const handleToggle = async (key) => {
+    const newValue = !settings[key];
+    setSettings(s => ({ ...s, [key]: newValue }));
+    
+    try {
+      await axios.put('/api/admin/settings', {
+        ...settings,
+        [key]: newValue
+      });
+      toast.success('Setting updated automatically');
+    } catch (error) {
+      toast.error('Failed to update setting');
+      setSettings(s => ({ ...s, [key]: !newValue }));
+    }
   };
 
   const handleSelect = (key, value) => {
@@ -81,6 +107,23 @@ export default function AdminSettingsPage() {
       toast.success('Profile updated successfully');
     } catch (error) {
       toast.error('Failed to update profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    setLoading(true);
+    try {
+      await axios.put('/api/admin/auth/change-password', passwordData);
+      toast.success('Password updated successfully');
+      setPasswordData({ newPassword: '', confirmPassword: '' });
+    } catch (error) {
+      toast.error(error?.response?.data?.message || 'Failed to update password');
     } finally {
       setLoading(false);
     }
@@ -126,9 +169,9 @@ export default function AdminSettingsPage() {
         <aside className="lg:col-span-3 space-y-2">
           {[
             { id: 'profile', label: 'Personal Profile', icon: User },
-            { id: 'system', label: 'System Config', icon: Layout },
             { id: 'security', label: 'Security', icon: Shield },
             { id: 'notifications', label: 'Notifications', icon: Bell },
+            { id: 'system', label: 'System Config', icon: Layout },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -217,16 +260,6 @@ export default function AdminSettingsPage() {
               </CardHeader>
               <CardContent className="pt-6">
                 <div className="space-y-4 max-w-2xl">
-                  <div className="space-y-2">
-                    <Label htmlFor="systemName" className="text-sm font-medium">Platform Name</Label>
-                    <Input
-                      id="systemName"
-                      value={settings.systemName}
-                      onChange={(e) => setSettings(s => ({ ...s, systemName: e.target.value }))}
-                      className="h-10 rounded-lg"
-                    />
-                  </div>
-
                   <div className="flex items-center justify-between p-4 rounded-lg border border-slate-200 hover:bg-slate-50 transition-all">
                     <div className="space-y-1">
                       <Label className="text-sm font-medium text-slate-900">Maintenance Mode</Label>
@@ -249,37 +282,9 @@ export default function AdminSettingsPage() {
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Backup Frequency</Label>
-                    <Select value={settings.backupFrequency} onValueChange={(v) => handleSelect('backupFrequency', v)}>
-                      <SelectTrigger className="h-10 rounded-lg">
-                        <SelectValue placeholder="Select frequency" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="daily">Daily (Recommended)</SelectItem>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="retention" className="text-sm font-medium">Data Retention (Days)</Label>
-                    <Input
-                      id="retention"
-                      type="number"
-                      value={settings.retentionDays}
-                      onChange={(e) => setSettings(s => ({ ...s, retentionDays: e.target.value }))}
-                      className="h-10 rounded-lg"
-                    />
-                    <p className="text-[10px] text-slate-500 font-medium px-1 uppercase">Old logs and transactions will be archived after this period</p>
-                  </div>
 
-                  <div className="pt-4">
-                    <Button onClick={handleSaveSettings} disabled={loading} className="h-10 rounded-lg">
-                      {loading ? 'Saving...' : 'Save Settings'}
-                    </Button>
-                  </div>
+
                 </div>
               </CardContent>
             </Card>
@@ -296,21 +301,40 @@ export default function AdminSettingsPage() {
               </CardHeader>
               <CardContent className="pt-6">
                 <div className="space-y-4 max-w-2xl">
-                  <div className="flex items-center justify-between p-4 rounded-lg border border-slate-200 hover:bg-slate-50 transition-all">
-                    <div className="space-y-1">
-                      <Label className="text-sm font-medium text-slate-900">Two-Factor Authentication</Label>
-                      <p className="text-xs text-slate-500">Enforce 2FA for all administrative accounts</p>
-                    </div>
-                    <Switch
-                      checked={settings.twoFactorAuth}
-                      onCheckedChange={() => handleToggle('twoFactorAuth')}
-                    />
-                  </div>
+                    <div className="space-y-4">
 
-                  <Button variant="outline" className="w-full h-10 rounded-lg gap-2 border-slate-200 justify-start px-4">
-                    <Lock className="h-4 w-4" />
-                    Manage IP Whitelist
-                  </Button>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="newPassword" className="text-sm font-medium">New Password</Label>
+                          <Input
+                            id="newPassword"
+                            type="password"
+                            value={passwordData.newPassword}
+                            onChange={(e) => setPasswordData(p => ({ ...p, newPassword: e.target.value }))}
+                            className="h-10 rounded-lg"
+                            placeholder="Enter new password"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirm New Password</Label>
+                          <Input
+                            id="confirmPassword"
+                            type="password"
+                            value={passwordData.confirmPassword}
+                            onChange={(e) => setPasswordData(p => ({ ...p, confirmPassword: e.target.value }))}
+                            className="h-10 rounded-lg"
+                            placeholder="Confirm new password"
+                          />
+                        </div>
+                      </div>
+                      <div className="pt-2">
+                        <Button onClick={handleUpdatePassword} disabled={loading} className="h-10 rounded-lg">
+                          {loading ? 'Updating...' : 'Update Password'}
+                        </Button>
+                      </div>
+                    </div>
+
+
                 </div>
               </CardContent>
             </Card>
@@ -326,7 +350,6 @@ export default function AdminSettingsPage() {
                 <div className="grid gap-4 sm:grid-cols-2 max-w-4xl">
                   {[
                     { id: 'notifyOnNewTrader', label: 'New Trader Alert', sub: 'Notify admin when a new trader registers' },
-                    { id: 'notifyOnLowStock', label: 'Network Low Stock Alert', sub: 'Aggregate low stock alerts for all traders' },
                   ].map((p) => (
                     <div key={p.id} className="flex items-center justify-between p-4 rounded-lg border border-slate-200 hover:bg-slate-50 transition-all">
                       <div className="space-y-1">
@@ -340,11 +363,7 @@ export default function AdminSettingsPage() {
                     </div>
                   ))}
                 </div>
-                <div className="mt-6 pt-6 border-t border-slate-100">
-                  <Button onClick={handleSaveSettings} disabled={loading} className="h-10 rounded-lg">
-                    {loading ? 'Saving...' : 'Save Preferences'}
-                  </Button>
-                </div>
+
               </CardContent>
             </Card>
           )}

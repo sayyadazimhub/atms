@@ -1,13 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+
+function ErrorToast() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  useEffect(() => {
+    const error = searchParams.get('error');
+    if (error === 'registration_disabled') {
+      toast.error('Registration is currently disabled by the administrator', { id: 'reg-disabled', duration: 4000 });
+      router.replace('/user/login');
+    } else if (error === 'maintenance') {
+      toast.error('System is currently under maintenance', { id: 'maint', duration: 4000 });
+      router.replace('/user/login');
+    }
+  }, [searchParams, router]);
+
+  return null;
+}
 
 export default function UserLoginPage() {
   const [email, setEmail] = useState('');
@@ -31,6 +50,9 @@ export default function UserLoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background bg-gradient-to-br from-slate-50 via-background to-emerald-50/40 dark:from-slate-950 dark:via-background dark:to-emerald-950/20 p-4">
+      <Suspense fallback={null}>
+        <ErrorToast />
+      </Suspense>
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl">User sign in</CardTitle>

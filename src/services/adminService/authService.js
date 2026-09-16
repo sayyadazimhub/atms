@@ -72,4 +72,14 @@ export const authService = {
         const hashedPassword = await hashPassword(newPassword);
         return await authDal.update(adminId, { password: hashedPassword });
     },
+
+    async forceChangePassword(adminId, newPassword) {
+        const admin = await authDal.findById(adminId);
+        if (!admin) {
+            throw new Error('Admin not found');
+        }
+
+        const hashedPassword = await hashPassword(newPassword);
+        return await authDal.update(adminId, { password: hashedPassword });
+    },
 };

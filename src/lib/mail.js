@@ -42,3 +42,26 @@ export async function sendOtpEmail(to, otp, purpose = 'verification') {
   if (error) throw new Error(error.message);
   return data;
 }
+
+/** Send notification to admins about a new trader registration */
+export async function sendNewTraderNotification(adminEmails, newTraderData) {
+  if (!adminEmails || adminEmails.length === 0) return;
+  
+  const { data, error } = await resend.emails.send({
+    from: `ATMS <${fromEmail}>`,
+    to: adminEmails,
+    subject: 'ATMS Alert - New Trader Registration',
+    html: `
+      <h2>New Trader Registered</h2>
+      <p>A new trader has just registered on the ATMS Network.</p>
+      <ul>
+        <li><strong>Name:</strong> ${newTraderData.name}</li>
+        <li><strong>Email:</strong> ${newTraderData.email}</li>
+        <li><strong>Phone:</strong> ${newTraderData.phone || 'N/A'}</li>
+      </ul>
+      <p>Please log in to the admin dashboard to review their account.</p>
+    `,
+  });
+  if (error) throw new Error(error.message);
+  return data;
+}

@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
 import { authService } from '@/services/userService/authService';
+import prisma from '@/lib/prisma';
 
 export async function POST(request) {
   try {
+    const settings = await prisma.systemSetting.findFirst();
+    if (settings && settings.maintenanceMode) {
+      return NextResponse.json({ error: 'System is currently under maintenance' }, { status: 503 });
+    }
+
     const { email, password } = await request.json();
     if (!email || !password) {
       return NextResponse.json(
