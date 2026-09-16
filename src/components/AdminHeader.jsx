@@ -31,6 +31,7 @@ import axios from 'axios';
 const navLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/traders', label: 'Traders', icon: Users },
+  { href: '/admins', label: 'Administrators', icon: Shield },
   { href: '/reports', label: 'Reports', icon: BarChart3 },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
