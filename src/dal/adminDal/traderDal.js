@@ -13,6 +13,7 @@ export const traderDal = {
                 email: true,
                 phone: true,
                 is_active: true,
+                emailVerified: true,
                 createdAt: true,
             }
         });
@@ -20,6 +21,18 @@ export const traderDal = {
 
     async count(where) {
         return await prisma.user.count({ where });
+    },
+
+    async findByEmail(email) {
+        return await prisma.user.findUnique({
+            where: { email }
+        });
+    },
+
+    async create(data) {
+        return await prisma.user.create({
+            data
+        });
     },
 
     async getTradersSalesStats() {

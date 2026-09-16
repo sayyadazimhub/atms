@@ -25,16 +25,41 @@ export async function GET(request) {
     }
 }
 
+export async function POST(request) {
+    try {
+        const token = (await cookies()).get('auth-token')?.value;
+        if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+        const decoded = await verifyUserToken(token);
+        if (!decoded) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+        const data = await request.json();
+
+        const newTrader = await traderService.createTrader(data);
+        
+        // Remove password from response
+        const { password, ...traderData } = newTrader;
+        return NextResponse.json(traderData, { status: 201 });
+    } catch (error) {
+        console.error('Create trader error:', error);
+        return NextResponse.json({ error: error.message || 'Failed to create trader' }, { status: 400 });
+    }
+}
+
 export async function PUT(request) {
     try {
         const token = (await cookies()).get('auth-token')?.value;
         if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        const { id, status } = await request.json();
+        const { id, status, name, phone } = await request.json();
 
-        const trader = await traderService.updateStatus(id, status);
-
-        return NextResponse.json(trader);
+        if (status !== undefined) {
+            const trader = await traderService.updateStatus(id, status);
+            return NextResponse.json(trader);
+        } else {
+            const trader = await traderService.updateTrader(id, { name, phone });
+            return NextResponse.json(trader);
+        }
     } catch (error) {
         console.error('Update trader error:', error);
         return NextResponse.json({ error: 'Failed to update trader' }, { status: 500 });

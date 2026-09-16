@@ -1,4 +1,5 @@
 import { traderDal } from '@/dal/adminDal/traderDal';
+import { hashPassword } from '@/lib/auth';
 
 export const traderService = {
     async getTraders(search = '', page = 1, limit = 10) {
@@ -25,6 +26,7 @@ export const traderService = {
                 email: t.email,
                 phone: t.phone || 'N/A',
                 is_active: t.is_active,
+                emailVerified: t.emailVerified,
                 joined: t.createdAt,
                 revenue: stats?._sum?.totalAmount || 0,
                 profit: stats?._sum?.totalProfit || 0,
@@ -73,8 +75,42 @@ export const traderService = {
         };
     },
 
+    async createTrader(data) {
+        const { name, email, phone, password } = data;
+
+        if (!name || !email || !password) {
+            throw new Error('Name, email, and password are required');
+        }
+
+        const existing = await traderDal.findByEmail(email);
+        if (existing) {
+            throw new Error('Trader with this email already exists');
+        }
+
+        const hashedPassword = await hashPassword(password);
+
+        return await traderDal.create({
+            name,
+            email,
+            phone,
+            password: hashedPassword,
+            role: 'USER',
+            is_active: true,
+            emailVerified: true
+        });
+    },
+
     async updateStatus(id, status) {
         return await traderDal.update(id, { is_active: status === 'active' });
+    },
+
+    async updateTrader(id, data) {
+        if (!id) throw new Error('Trader ID is required');
+        const updateData = {};
+        if (data.name !== undefined) updateData.name = data.name;
+        if (data.phone !== undefined) updateData.phone = data.phone;
+        
+        return await traderDal.update(id, updateData);
     },
 
     async deleteTrader(id) {
