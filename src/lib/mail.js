@@ -65,3 +65,41 @@ export async function sendNewTraderNotification(adminEmails, newTraderData) {
   if (error) throw new Error(error.message);
   return data;
 }
+
+/** Send notification to trader upon verification approval */
+export async function sendVerificationApprovalEmail(to, name) {
+  const { data, error } = await resend.emails.send({
+    from: `ATMS <${fromEmail}>`,
+    to: [to],
+    subject: 'ATMS - Verification Approved',
+    html: `
+      <h2>Verification Approved!</h2>
+      <p>Hello ${name},</p>
+      <p>Great news! Your trader verification application has been reviewed and <strong>approved</strong>.</p>
+      <p>You now have full access to the ATMS platform and can start trading.</p>
+      <p>Welcome aboard!</p>
+    `,
+  });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+/** Send notification to trader upon verification rejection */
+export async function sendVerificationRejectionEmail(to, name, reason) {
+  const { data, error } = await resend.emails.send({
+    from: `ATMS <${fromEmail}>`,
+    to: [to],
+    subject: 'ATMS - Verification Needs Attention',
+    html: `
+      <h2>Verification Action Required</h2>
+      <p>Hello ${name},</p>
+      <p>Your trader verification application has been reviewed, but unfortunately it was <strong>rejected</strong> for the following reason:</p>
+      <blockquote style="background-color: #f8717120; padding: 10px; border-left: 4px solid #ef4444; margin: 20px 0;">
+        ${reason}
+      </blockquote>
+      <p>Please log back in to the ATMS platform to update your application and submit new proof documents.</p>
+    `,
+  });
+  if (error) throw new Error(error.message);
+  return data;
+}

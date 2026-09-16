@@ -21,12 +21,16 @@ export default async function UserDashboardLayout({ children }) {
   // CRITICAL: Verify user existence in DB (Server Side)
   const user = await prisma.user.findUnique({
     where: { id: decoded.id },
-    select: { id: true, is_active: true }
+    select: { id: true, is_active: true, verificationStatus: true }
   });
 
   if (!user || !user.is_active) {
     console.warn(`Access denied: User ${decoded.id} not found or inactive.`);
     redirect('/user/login');
+  }
+
+  if (user.verificationStatus !== 'APPROVED') {
+    redirect('/user/verify-trader');
   }
 
   return (

@@ -55,7 +55,7 @@ export const authService = {
             name,
             email,
             password: hashedPassword,
-            phone: phone || null,
+            phone,
             otp,
             otpExpiresAt,
             role: 'USER',

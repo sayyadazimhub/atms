@@ -12,11 +12,15 @@ import { Label } from '@/components/ui/label';
 
 export default function UserRegisterPage() {
   const router = useRouter();
-  const [form, setForm] = useState({ name: '', email: '', password: '', phone: '' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '', phone: '' });
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (form.password !== form.confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
     setLoading(true);
     try {
       await axios.post('/api/user/auth/register', form);
@@ -75,6 +79,7 @@ export default function UserRegisterPage() {
               />
               <p className="text-xs text-muted-foreground">Maximum 10 digits (e.g. 09012345678)</p>
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
@@ -87,6 +92,18 @@ export default function UserRegisterPage() {
                 minLength={6}
               />
               <p className="text-xs text-muted-foreground">Min 6 characters</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="••••••••"
+                value={form.confirmPassword}
+                onChange={(e) => setForm((f) => ({ ...f, confirmPassword: e.target.value }))}
+                required
+                minLength={6}
+              />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Creating…' : 'Register'}

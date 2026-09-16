@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyUserToken } from '@/lib/auth';
 import { traderService } from '@/services/adminService/traderService';
+import { uploadToCloudinary } from '@/lib/cloudinary';
 
 export async function GET(request) {
     try {
@@ -33,7 +34,30 @@ export async function POST(request) {
         const decoded = await verifyUserToken(token);
         if (!decoded) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        const data = await request.json();
+        const formData = await request.formData();
+        
+        const data = {
+            name: formData.get('name'),
+            email: formData.get('email'),
+            phone: formData.get('phone'),
+            password: formData.get('password'),
+            state: formData.get('state'),
+            district: formData.get('district'),
+        };
+        
+        const file = formData.get('proof');
+        if (!file) {
+            return NextResponse.json({ error: 'Proof document is required' }, { status: 400 });
+        }
+
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+
+        // Upload to Cloudinary
+        const uploadResult = await uploadToCloudinary(buffer, 'atms/proofs', file.name);
+        
+        // Add the uploaded URL to the data object
+        data.verificationProofUrl = uploadResult.secure_url;
 
         const newTrader = await traderService.createTrader(data);
         

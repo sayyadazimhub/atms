@@ -14,6 +14,10 @@ export const traderDal = {
                 phone: true,
                 is_active: true,
                 emailVerified: true,
+                verificationStatus: true,
+                verificationProofUrl: true,
+                state: true,
+                district: true,
                 createdAt: true,
             }
         });
@@ -59,6 +63,10 @@ export const traderDal = {
                 email: true,
                 phone: true,
                 is_active: true,
+                verificationStatus: true,
+                verificationProofUrl: true,
+                state: true,
+                district: true,
                 createdAt: true,
                 role: true,
             }

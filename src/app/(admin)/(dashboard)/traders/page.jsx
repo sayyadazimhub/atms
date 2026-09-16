@@ -19,7 +19,11 @@ import {
   X,
   Plus,
   BadgeCheck,
-  Pencil
+  Pencil,
+  FileText,
+  CheckCircle,
+  XCircle,
+  Clock
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -54,6 +58,9 @@ import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 import { ConfirmModal } from '@/components/ConfirmModal';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { UploadCloud } from 'lucide-react';
+import statesDistrictsData from '@/lib/states-districts.json';
 
 export default function TradersPage() {
   const router = useRouter();
@@ -62,12 +69,28 @@ export default function TradersPage() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [verificationFilter, setVerificationFilter] = useState('all');
   const [deleteId, setDeleteId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [reviewData, setReviewData] = useState(null);
+  const [rejectionReason, setRejectionReason] = useState('');
   const [editData, setEditData] = useState(null);
-  const [formData, setFormData] = useState({ name: '', email: '', phone: '', password: '' });
+  const [formData, setFormData] = useState({ 
+    name: '', 
+    email: '', 
+    phone: '', 
+    password: '',
+    state: '',
+    district: '',
+    proof: null
+  });
+
+  const availableDistricts = formData.state 
+    ? statesDistrictsData.states.find(s => s.state === formData.state)?.districts || []
+    : [];
 
   // Debounce search input
   useEffect(() => {
@@ -90,9 +113,16 @@ export default function TradersPage() {
   }, [debouncedSearch]);
 
   const filteredTraders = traders.filter(t => {
-    if (statusFilter === 'active') return t.is_active;
-    if (statusFilter === 'suspended') return !t.is_active;
-    return true;
+    let statusMatch = true;
+    if (statusFilter === 'active') statusMatch = t.is_active;
+    if (statusFilter === 'suspended') statusMatch = !t.is_active;
+
+    let verificationMatch = true;
+    if (verificationFilter !== 'all') {
+      verificationMatch = t.verificationStatus === verificationFilter;
+    }
+
+    return statusMatch && verificationMatch;
   });
 
   const toggleStatus = async (id, currentStatus) => {
@@ -123,12 +153,29 @@ export default function TradersPage() {
 
   const handleAddTrader = async (e) => {
     e.preventDefault();
+
+    if (!formData.name.trim()) return toast.error('Full Name is required');
+    if (!formData.email.trim()) return toast.error('Email Address is required');
+    if (!formData.password.trim()) return toast.error('Password is required');
+    if (!formData.state) return toast.error('State is required');
+    if (!formData.district) return toast.error('District is required');
+    if (!formData.proof) return toast.error('Please upload a trading proof document');
+
     setSubmitting(true);
     try {
-      await axios.post('/api/admin/traders', formData);
+      const data = new FormData();
+      data.append('name', formData.name);
+      data.append('email', formData.email);
+      data.append('phone', formData.phone);
+      data.append('password', formData.password);
+      data.append('state', formData.state);
+      data.append('district', formData.district);
+      data.append('proof', formData.proof);
+
+      await axios.post('/api/admin/traders', data);
       toast.success('Trader created successfully');
       setIsAddModalOpen(false);
-      setFormData({ name: '', email: '', phone: '', password: '' });
+      setFormData({ name: '', email: '', phone: '', password: '', state: '', district: '', proof: null });
       fetchTraders();
     } catch (error) {
       toast.error(error.response?.data?.error || 'Failed to create trader');
@@ -152,6 +199,31 @@ export default function TradersPage() {
       fetchTraders();
     } catch (error) {
       toast.error(error.response?.data?.error || 'Failed to update trader');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleReviewTrader = async (status) => {
+    if (status === 'REJECTED' && !rejectionReason.trim()) {
+      toast.error('Please provide a rejection reason');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await axios.put('/api/admin/traders/verify', { 
+        id: reviewData.id, 
+        status, 
+        reason: status === 'REJECTED' ? rejectionReason : null 
+      });
+      toast.success(`Trader ${status.toLowerCase()} successfully`);
+      setIsReviewModalOpen(false);
+      setReviewData(null);
+      setRejectionReason('');
+      fetchTraders();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Failed to verify trader');
     } finally {
       setSubmitting(false);
     }
@@ -209,7 +281,7 @@ export default function TradersPage() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="h-10 bg-white border-slate-200 text-slate-700 rounded-lg focus-visible:ring-emerald-500 w-full sm:w-auto">
                     <Filter className="h-4 w-4 mr-2" />
-                    Filter {statusFilter !== 'all' && <span className="ml-1.5 flex h-2 w-2 rounded-full bg-emerald-500"></span>}
+                    Filter {(statusFilter !== 'all' || verificationFilter !== 'all') && <span className="ml-1.5 flex h-2 w-2 rounded-full bg-emerald-500"></span>}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 bg-white border-slate-200 rounded-xl p-2 shadow-lg">
@@ -219,15 +291,25 @@ export default function TradersPage() {
                     <DropdownMenuRadioItem value="active" className="cursor-pointer rounded-lg text-emerald-700 focus:text-emerald-800 focus:bg-emerald-50 font-medium">Active Only</DropdownMenuRadioItem>
                     <DropdownMenuRadioItem value="suspended" className="cursor-pointer rounded-lg text-rose-700 focus:text-rose-800 focus:bg-rose-50 font-medium">Suspended Only</DropdownMenuRadioItem>
                   </DropdownMenuRadioGroup>
+                  <div className="h-px bg-slate-100 my-2" />
+                  <DropdownMenuLabel className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Filter by Verification</DropdownMenuLabel>
+                  <DropdownMenuRadioGroup value={verificationFilter} onValueChange={setVerificationFilter}>
+                    <DropdownMenuRadioItem value="all" className="cursor-pointer rounded-lg font-medium">All Verifications</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="APPROVED" className="cursor-pointer rounded-lg text-emerald-700 focus:text-emerald-800 focus:bg-emerald-50 font-medium">Approved</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="PENDING" className="cursor-pointer rounded-lg text-amber-700 focus:text-amber-800 focus:bg-amber-50 font-medium">Pending Review</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="REJECTED" className="cursor-pointer rounded-lg text-rose-700 focus:text-rose-800 focus:bg-rose-50 font-medium">Rejected</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="UNVERIFIED" className="cursor-pointer rounded-lg text-slate-700 focus:text-slate-800 focus:bg-slate-50 font-medium">Unverified</DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {(search !== '' || statusFilter !== 'all') && (
+              {(search !== '' || statusFilter !== 'all' || verificationFilter !== 'all') && (
                 <Button 
                   variant="ghost" 
                   onClick={() => {
                     setSearch('');
                     setStatusFilter('all');
+                    setVerificationFilter('all');
                   }}
                   className="h-10 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg px-3"
                 >
@@ -245,7 +327,8 @@ export default function TradersPage() {
                 <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
                   <TableHead className="font-semibold text-slate-900">Trader Name</TableHead>
                   <TableHead className="font-semibold text-slate-900">Contact Info</TableHead>
-                  <TableHead className="font-semibold text-slate-900">Joined</TableHead>
+                  <TableHead className="font-semibold text-slate-900">Address</TableHead>
+                  <TableHead className="font-semibold text-slate-900">Verification</TableHead>
                   <TableHead className="font-semibold text-slate-900">Status</TableHead>
                   <TableHead className="text-right font-semibold text-slate-900">Actions</TableHead>
                 </TableRow>
@@ -318,10 +401,27 @@ export default function TradersPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <Calendar className="h-4 w-4 text-slate-400" />
-                          {trader.joined ? new Date(trader.joined).toLocaleDateString() : 'N/A'}
+                        <div className="flex flex-col space-y-1">
+                          <span className="text-sm text-slate-700">{trader.state || 'N/A'}</span>
+                          <span className="text-xs text-slate-500">{trader.district || 'N/A'}</span>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "px-2.5 py-0.5 rounded-full text-xs font-medium shadow-sm border",
+                            trader.verificationStatus === 'APPROVED' ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" :
+                            trader.verificationStatus === 'PENDING' ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100" :
+                            trader.verificationStatus === 'REJECTED' ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100" :
+                            "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                          )}
+                        >
+                          {trader.verificationStatus === 'APPROVED' && <CheckCircle className="h-3 w-3 mr-1 inline" />}
+                          {trader.verificationStatus === 'PENDING' && <Clock className="h-3 w-3 mr-1 inline" />}
+                          {trader.verificationStatus === 'REJECTED' && <XCircle className="h-3 w-3 mr-1 inline" />}
+                          {trader.verificationStatus}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -336,7 +436,35 @@ export default function TradersPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-1">
+                          {trader.verificationStatus === 'PENDING' && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg"
+                              onClick={() => {
+                                setReviewData(trader);
+                                setIsReviewModalOpen(true);
+                              }}
+                              title="Review Verification"
+                            >
+                              <FileText className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {trader.verificationStatus === 'APPROVED' && trader.verificationProofUrl && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg"
+                              onClick={() => {
+                                setReviewData(trader);
+                                setIsReviewModalOpen(true);
+                              }}
+                              title="View Verification Document"
+                            >
+                              <FileText className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button 
                             variant="ghost" 
                             size="icon" 
@@ -394,53 +522,113 @@ export default function TradersPage() {
 
       {/* Add Trader Dialog */}
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-white">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl bg-white max-h-[90vh] flex flex-col">
+          <DialogHeader className="shrink-0">
             <DialogTitle className="text-slate-900">Add New Trader</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleAddTrader} className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-slate-700">Full Name</Label>
-              <Input 
-                id="name" 
-                required 
-                value={formData.name}
-                onChange={e => setFormData(f => ({...f, name: e.target.value}))}
-                className="bg-white text-slate-900 border-slate-300 focus-visible:ring-emerald-500"
-              />
+          <form onSubmit={handleAddTrader} className="flex-1 overflow-y-auto pr-2 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-slate-700">Full Name <span className='text-red-500'>*</span></Label>
+                <Input 
+                  id="name" 
+                  placeholder="Enter full name"
+                  value={formData.name}
+                  onChange={e => setFormData(f => ({...f, name: e.target.value}))}
+                  className="bg-white text-slate-900 border-slate-300 focus-visible:ring-emerald-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-slate-700">Email Address <span className='text-red-500'>*</span></Label>
+                <Input 
+                  id="email" 
+                  type="email" 
+                  placeholder="Enter email address"
+                  value={formData.email}
+                  onChange={e => setFormData(f => ({...f, email: e.target.value}))}
+                  className="bg-white text-slate-900 border-slate-300 focus-visible:ring-emerald-500"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-700">Email Address</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                required 
-                value={formData.email}
-                onChange={e => setFormData(f => ({...f, email: e.target.value}))}
-                className="bg-white text-slate-900 border-slate-300 focus-visible:ring-emerald-500"
-              />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="phone" className="text-slate-700">Phone Number (Optional)</Label>
+                <Input 
+                  id="phone" 
+                  placeholder="Enter phone number"
+                  value={formData.phone}
+                  onChange={e => setFormData(f => ({...f, phone: e.target.value}))}
+                  className="bg-white text-slate-900 border-slate-300 focus-visible:ring-emerald-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-slate-700">Password <span className='text-red-500'>*</span></Label>
+                <Input 
+                  id="password" 
+                  type="password" 
+                  placeholder="Enter password"
+                  value={formData.password}
+                  onChange={e => setFormData(f => ({...f, password: e.target.value}))}
+                  className="bg-white text-slate-900 border-slate-300 focus-visible:ring-emerald-500"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone" className="text-slate-700">Phone Number (Optional)</Label>
-              <Input 
-                id="phone" 
-                value={formData.phone}
-                onChange={e => setFormData(f => ({...f, phone: e.target.value}))}
-                className="bg-white text-slate-900 border-slate-300 focus-visible:ring-emerald-500"
-              />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="state" className="text-slate-700">State <span className='text-red-500'>*</span></Label>
+                <Select value={formData.state} onValueChange={(val) => setFormData(f => ({ ...f, state: val, district: '' }))}>
+                  <SelectTrigger id="state" className="bg-white text-slate-900 border-slate-300">
+                    <SelectValue placeholder="Select State" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statesDistrictsData.states.map((stateObj) => (
+                      <SelectItem key={stateObj.state} value={stateObj.state}>
+                        {stateObj.state}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="district" className="text-slate-700">District <span className='text-red-500'>*</span></Label>
+                <Select value={formData.district} onValueChange={(val) => setFormData(f => ({ ...f, district: val }))} disabled={!formData.state}>
+                  <SelectTrigger id="district" className="bg-white text-slate-900 border-slate-300">
+                    <SelectValue placeholder={formData.state ? "Select District" : "Select State First"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableDistricts.map((district) => (
+                      <SelectItem key={district} value={district}>
+                        {district}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+            
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-700">Temporary Password</Label>
-              <Input 
-                id="password" 
-                type="password" 
-                required 
-                value={formData.password}
-                onChange={e => setFormData(f => ({...f, password: e.target.value}))}
-                className="bg-white text-slate-900 border-slate-300 focus-visible:ring-emerald-500"
-              />
+              <Label htmlFor="proof">Upload Trading Proof (PDF, JPG, PNG) <span className='text-red-500'>*</span></Label>
+              <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 flex flex-col items-center justify-center text-center hover:bg-slate-50 transition-colors">
+                <UploadCloud className="h-10 w-10 text-slate-400 mb-2" />
+                <Input
+                  id="proof"
+                  type="file"
+                  accept=".pdf,image/jpeg,image/png,image/jpg"
+                  className="hidden"
+                  onChange={e => setFormData(f => ({ ...f, proof: e.target.files?.[0] || null }))}
+                />
+                <Button type="button" variant="outline" className="border-slate-300 text-slate-700 font-medium" onClick={() => document.getElementById('proof').click()}>
+                  Select File
+                </Button>
+                {formData.proof && (
+                  <p className="mt-2 text-sm text-emerald-600 font-medium">Selected: {formData.proof.name}</p>
+                )}
+              </div>
             </div>
-            <DialogFooter className="pt-4">
+
+            <DialogFooter className="pt-2 shrink-0">
               <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)} className="border-slate-300 text-slate-700">
                 Cancel
               </Button>
@@ -487,6 +675,118 @@ export default function TradersPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Review Trader Dialog */}
+      <Dialog open={isReviewModalOpen} onOpenChange={setIsReviewModalOpen}>
+        <DialogContent className="max-w-4xl bg-white h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-slate-900">Review Trader Verification</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 flex flex-col gap-4 overflow-hidden pt-2">
+            {reviewData && (() => {
+              const url = reviewData.verificationProofUrl;
+              let viewerUrl = url;
+              let isImage = false;
+              let isPdf = false;
+              
+              if (url) {
+                isImage = url.match(/\.(jpeg|jpg|gif|png|webp)$/i) || url.includes('/image/upload/');
+                isPdf = url.match(/\.pdf$/i);
+                
+                if (!isImage || isPdf) {
+                  viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}`;
+                }
+              }
+
+              return (
+              <>
+                <div className="flex items-center justify-between shrink-0">
+                  <div>
+                    <p className="text-sm font-semibold">Trader: {reviewData.name}</p>
+                    <p className="text-sm text-slate-600">Email: {reviewData.email}</p>
+                  </div>
+                  {url && (
+                    <a 
+                      href={viewerUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-emerald-600 hover:text-emerald-700 hover:underline text-sm font-medium flex items-center"
+                    >
+                      <FileText className="h-4 w-4 mr-1" />
+                      Open in new tab
+                    </a>
+                  )}
+                </div>
+                
+                {url ? (
+                  <div className="flex-1 rounded-lg border border-slate-200 overflow-hidden bg-slate-50 min-h-0 flex items-center justify-center">
+                    {isImage && !isPdf ? (
+                      <img 
+                        src={url} 
+                        alt="Verification Proof" 
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <iframe 
+                        src={`${viewerUrl}&embedded=true`} 
+                        title="Verification Document"
+                        className="w-full h-full border-0"
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center bg-slate-50 rounded-lg border border-slate-200">
+                    <p className="text-slate-500">No document provided.</p>
+                  </div>
+                )}
+
+                {reviewData.verificationStatus === 'PENDING' ? (
+                  <>
+                    <div className="space-y-2 shrink-0">
+                      <Label htmlFor="rejection" className="text-slate-700">Rejection Reason (if rejecting)</Label>
+                      <Input 
+                        id="rejection" 
+                        placeholder="e.g. Document is blurry, Name does not match"
+                        value={rejectionReason}
+                        onChange={e => setRejectionReason(e.target.value)}
+                        className="bg-white text-slate-900 border-slate-300 focus-visible:ring-emerald-500"
+                      />
+                    </div>
+                    <DialogFooter className="pt-2 shrink-0">
+                      <Button type="button" variant="outline" onClick={() => setIsReviewModalOpen(false)} className="border-slate-300 text-slate-700">
+                        Cancel
+                      </Button>
+                      <Button 
+                        type="button" 
+                        disabled={submitting} 
+                        onClick={() => handleReviewTrader('REJECTED')}
+                        className="bg-rose-600 hover:bg-rose-700 text-white"
+                      >
+                        {submitting ? 'Processing...' : 'Reject Application'}
+                      </Button>
+                      <Button 
+                        type="button" 
+                        disabled={submitting} 
+                        onClick={() => handleReviewTrader('APPROVED')}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                      >
+                        {submitting ? 'Processing...' : 'Approve Application'}
+                      </Button>
+                    </DialogFooter>
+                  </>
+                ) : (
+                  <DialogFooter className="pt-2 shrink-0">
+                    <Button type="button" variant="outline" onClick={() => setIsReviewModalOpen(false)} className="border-slate-300 text-slate-700">
+                      Close
+                    </Button>
+                  </DialogFooter>
+                )}
+              </>
+              );
+            })()}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

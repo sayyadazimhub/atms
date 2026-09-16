@@ -1,5 +1,6 @@
 import { traderDal } from '@/dal/adminDal/traderDal';
 import { hashPassword } from '@/lib/auth';
+import { deleteFromCloudinary } from '@/lib/cloudinary';
 
 export const traderService = {
     async getTraders(search = '', page = 1, limit = 10) {
@@ -27,6 +28,10 @@ export const traderService = {
                 phone: t.phone || 'N/A',
                 is_active: t.is_active,
                 emailVerified: t.emailVerified,
+                verificationStatus: t.verificationStatus,
+                verificationProofUrl: t.verificationProofUrl,
+                state: t.state,
+                district: t.district,
                 joined: t.createdAt,
                 revenue: stats?._sum?.totalAmount || 0,
                 profit: stats?._sum?.totalProfit || 0,
@@ -76,27 +81,30 @@ export const traderService = {
     },
 
     async createTrader(data) {
-        const { name, email, phone, password } = data;
-
-        if (!name || !email || !password) {
-            throw new Error('Name, email, and password are required');
+        if (!data.name || !data.email || !data.password || !data.state || !data.district || !data.verificationProofUrl) {
+            throw new Error('All required fields must be provided');
         }
 
-        const existing = await traderDal.findByEmail(email);
-        if (existing) {
+        const existingTrader = await traderDal.findByEmail(data.email);
+        if (existingTrader) {
             throw new Error('Trader with this email already exists');
         }
 
-        const hashedPassword = await hashPassword(password);
-
+        const hashedPassword = await hashPassword(data.password);
+        
         return await traderDal.create({
-            name,
-            email,
-            phone,
+            name: data.name,
+            email: data.email,
+            phone: data.phone || null,
             password: hashedPassword,
             role: 'USER',
             is_active: true,
-            emailVerified: true
+            emailVerified: true, // Automatically verify email for admin-created traders
+            verificationStatus: 'APPROVED', // Automatically approve them
+            state: data.state,
+            district: data.district,
+            verificationProofUrl: data.verificationProofUrl,
+            verifiedAt: new Date()
         });
     },
 
@@ -115,6 +123,13 @@ export const traderService = {
 
     async deleteTrader(id) {
         if (!id) throw new Error('Trader ID is required');
+        
+        // Fetch trader to check for Cloudinary documents
+        const trader = await traderDal.findByIdWithDetails(id);
+        if (trader && trader.verificationProofUrl) {
+            await deleteFromCloudinary(trader.verificationProofUrl);
+        }
+        
         return await traderDal.deleteTraderCascading(id);
     }
 };
