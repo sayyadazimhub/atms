@@ -15,6 +15,9 @@ export const dashboardDal = {
             }),
             prisma.sale.count({ where: { userId: { not: null } } }),
             prisma.purchase.count({ where: { userId: { not: null } } }),
+            prisma.admin.count(),
+            prisma.admin.count({ where: { is_active: true } }),
+            prisma.systemSetting.findFirst()
         ]);
     },
 
@@ -36,7 +39,7 @@ export const dashboardDal = {
         const startDate = new Date();
         startDate.setMonth(startDate.getMonth() - months);
 
-        const [sales, purchases] = await Promise.all([
+        const [sales, purchases, traders] = await Promise.all([
             prisma.sale.findMany({
                 where: {
                     userId: { not: null },
@@ -50,9 +53,16 @@ export const dashboardDal = {
                     createdAt: { gte: startDate }
                 },
                 select: { createdAt: true, totalAmount: true }
+            }),
+            prisma.user.findMany({
+                where: {
+                    role: 'USER',
+                    createdAt: { gte: startDate }
+                },
+                select: { createdAt: true, is_active: true }
             })
         ]);
 
-        return { sales, purchases };
+        return { sales, purchases, traders };
     }
 };
