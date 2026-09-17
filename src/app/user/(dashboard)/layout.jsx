@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { verifyUserToken } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { redirect } from 'next/navigation';
+import { ThemeProvider } from '@/components/theme-provider';
 
 export default async function UserDashboardLayout({ children }) {
   const cookieStore = cookies();
@@ -34,14 +35,21 @@ export default async function UserDashboardLayout({ children }) {
   }
 
   return (
-    <div className="flex min-h-screen flex-col lg:flex-row">
-      <Sidebar />
-      <div className="flex flex-col flex-1">
-        <Header />
-        <main className="flex-1 overflow-auto p-4 lg:p-6">
-          {children}
-        </main>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="light"
+      enableSystem
+      disableTransitionOnChange
+    >
+      <div className="flex min-h-screen flex-col lg:flex-row">
+        <Sidebar />
+        <div className="flex flex-col flex-1">
+          <Header />
+          <main className="flex-1 overflow-auto p-4 lg:p-6">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </ThemeProvider>
   );
 }

@@ -12,9 +12,15 @@ export async function POST(request) {
     const body = await request.json();
     const { name, email, password, phone } = body;
 
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !phone) {
+      let fieldErrors = {};
+      if (!name) fieldErrors.name = 'Full Name is required';
+      if (!phone) fieldErrors.phone = 'Phone Number is required';
+      if (!email) fieldErrors.email = 'Email Address is required';
+      if (!password) fieldErrors.password = 'Password is required';
+      
       return NextResponse.json(
-        { error: 'Name, email and password are required' },
+        { errors: fieldErrors },
         { status: 400 }
       );
     }

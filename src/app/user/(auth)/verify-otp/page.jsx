@@ -7,7 +7,6 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 
 function VerifyOtpForm() {
@@ -42,12 +41,12 @@ function VerifyOtpForm() {
   if (!email) return null;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <p className="text-sm text-muted-foreground">
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <p className="text-sm text-slate-500">
         We sent a 6-digit OTP to <strong>{email}</strong>. Enter it below.
       </p>
       <div className="space-y-2">
-        <Label htmlFor="otp">OTP</Label>
+        <Label htmlFor="otp" className="text-slate-700 font-semibold">OTP</Label>
         <Input
           id="otp"
           type="text"
@@ -58,10 +57,10 @@ function VerifyOtpForm() {
           value={otp}
           onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
           required
-          className="text-center text-lg tracking-[0.5em]"
+          className="h-11 rounded-xl border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-4 focus-visible:ring-emerald-500/10 focus-visible:border-emerald-500 transition-colors text-center text-lg tracking-[0.5em] shadow-sm"
         />
       </div>
-      <Button type="submit" className="w-full" disabled={loading}>
+      <Button type="submit" className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-colors shadow-sm group mt-4" disabled={loading}>
         {loading ? 'Verifying…' : 'Verify email'}
       </Button>
     </form>
@@ -70,25 +69,26 @@ function VerifyOtpForm() {
 
 export default function UserVerifyOtpPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background bg-gradient-to-br from-slate-50 via-background to-emerald-50/40 dark:from-slate-950 dark:via-background dark:to-emerald-950/20 p-4">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl">Verify your email</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Enter the OTP sent to your email (valid 10 minutes).
-          </p>
-        </CardHeader>
-        <CardContent>
+    <>
+      <div className="flex-1 flex flex-col justify-center items-center p-4 sm:p-8 lg:p-12 bg-slate-50 relative py-12">
+        <div className="w-full max-w-md bg-white rounded-[2rem] shadow-xl border border-slate-200/50 p-8 sm:p-12 animate-in fade-in zoom-in-95 duration-1000 mt-16 lg:mt-0">
+          <div className="mb-2">
+            <h2 className="text-3xl font-bold text-slate-900 tracking-tight">
+              Verify your email
+            </h2>
+          </div>
           <Suspense fallback={<p className="text-center text-muted-foreground">Loading…</p>}>
             <VerifyOtpForm />
           </Suspense>
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            <Link href="/user/register" className="font-medium text-primary hover:underline">
-              Use a different email
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+          <div className="mt-8 text-center space-y-4">
+            <p className="text-sm text-slate-500">
+              <Link href="/user/register" className="font-bold text-emerald-600 hover:text-emerald-500 transition-colors">
+                Use a different email
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

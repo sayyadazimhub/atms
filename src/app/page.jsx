@@ -1,10 +1,11 @@
-'use client';
-
 import Link from 'next/link';
 import { Package, TrendingUp, BarChart3, Users, Truck, ShoppingCart, ArrowRight, CheckCircle2, Sprout, Facebook, Twitter, Linkedin, Github } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import prisma from '@/lib/prisma';
 
-export default function HomePage() {
+export default async function HomePage() {
+  const traderCount = await prisma.user.count({ where: { role: 'USER', is_active: true } });
+  const displayCount = traderCount;
   const features = [
     {
       icon: Package,
@@ -97,7 +98,7 @@ export default function HomePage() {
             {/* Social Proof Badge */}
             <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md px-4 py-1.5 text-[10px] sm:text-xs font-bold text-slate-600 dark:text-slate-400 mb-8 uppercase tracking-wider md:tracking-[0.2em] shadow-xl">
               <Users className="h-3.5 w-3.5 text-emerald-500" />
-              Trusted by 100+ Professional Traders
+              Trusted by {displayCount}+ Professional Traders
               {/* Agricultural Trading Made Simple */}
             </div>
 
@@ -126,9 +127,9 @@ export default function HomePage() {
             {/* Trust Badges */}
             <div className="mt-12 flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
               {[
-                "No Credit Card Required",
+                "Enterprise-Grade Security",
                 "Instant Dashboard Setup",
-                "Enterprise-Grade Security"
+                "24/7 Dedicated Support"
               ].map((badge) => (
                 <div key={badge} className="flex items-center gap-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
                   <CheckCircle2 className="h-4 w-4 text-emerald-500" />

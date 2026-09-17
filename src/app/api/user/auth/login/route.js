@@ -10,9 +10,14 @@ export async function POST(request) {
     }
 
     const { email, password } = await request.json();
-    if (!email || !password) {
+    
+    let fieldErrors = {};
+    if (!email) fieldErrors.email = 'Email is required';
+    if (!password) fieldErrors.password = 'Password is required';
+    
+    if (Object.keys(fieldErrors).length > 0) {
       return NextResponse.json(
-        { error: 'Email and password are required' },
+        { errors: fieldErrors },
         { status: 400 }
       );
     }

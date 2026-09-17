@@ -7,7 +7,6 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 
 function ResetPasswordForm() {
@@ -52,12 +51,12 @@ function ResetPasswordForm() {
   if (!email) return null;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <p className="text-sm text-muted-foreground">
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <p className="text-sm text-slate-500">
         Enter the OTP sent to <strong>{email}</strong> and your new password.
       </p>
       <div className="space-y-2">
-        <Label htmlFor="otp">OTP</Label>
+        <Label htmlFor="otp" className="text-slate-700 font-semibold">OTP</Label>
         <Input
           id="otp"
           type="text"
@@ -68,11 +67,11 @@ function ResetPasswordForm() {
           value={otp}
           onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
           required
-          className="text-center tracking-[0.5em]"
+          className="h-11 rounded-xl border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-colors text-center tracking-[0.5em] shadow-sm"
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password">New password</Label>
+        <Label htmlFor="password" className="text-slate-700 font-semibold">New password</Label>
         <Input
           id="password"
           type="password"
@@ -80,19 +79,21 @@ function ResetPasswordForm() {
           onChange={(e) => setPassword(e.target.value)}
           required
           minLength={6}
+          className="h-11 rounded-xl border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-colors text-sm shadow-sm"
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="confirm">Confirm password</Label>
+        <Label htmlFor="confirm" className="text-slate-700 font-semibold">Confirm password</Label>
         <Input
           id="confirm"
           type="password"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
           required
+          className="h-11 rounded-xl border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-colors text-sm shadow-sm"
         />
       </div>
-      <Button type="submit" className="w-full" disabled={loading}>
+      <Button type="submit" className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-colors shadow-sm group mt-4" disabled={loading}>
         {loading ? 'Updating…' : 'Reset password'}
       </Button>
     </form>
@@ -101,25 +102,27 @@ function ResetPasswordForm() {
 
 export default function UserResetPasswordPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background bg-gradient-to-br from-slate-50 via-background to-emerald-50/40 dark:from-slate-950 dark:via-background dark:to-emerald-950/20 p-4">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl">Reset password</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Enter the OTP from your email and choose a new password.
-          </p>
-        </CardHeader>
-        <CardContent>
+    <>
+      <div className="flex-1 flex flex-col justify-center items-center p-4 sm:p-8 lg:p-12 bg-slate-50 relative py-12">
+        <div className="w-full max-w-md bg-white rounded-[2rem] shadow-xl border border-slate-200/50 p-8 sm:p-12 animate-in fade-in zoom-in-95 duration-1000 mt-16 lg:mt-0">
+          <div className="mb-2">
+            <h2 className="text-3xl font-bold text-slate-900 tracking-tight">
+              Reset Password
+            </h2>
+          </div>
           <Suspense fallback={<p className="text-center text-muted-foreground">Loading…</p>}>
             <ResetPasswordForm />
           </Suspense>
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            <Link href="/user/login" className="font-medium text-primary hover:underline">
-              Back to sign in
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+          <div className="mt-8 text-center space-y-4">
+            <p className="text-sm text-slate-500">
+              Remember your password?{' '}
+              <Link href="/user/login" className="font-bold text-emerald-600 hover:text-emerald-500 transition-colors">
+                Back to sign in
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

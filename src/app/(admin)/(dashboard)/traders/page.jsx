@@ -23,7 +23,9 @@ import {
   FileText,
   CheckCircle,
   XCircle,
-  Clock
+  Clock,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -686,18 +688,23 @@ export default function TradersPage() {
           </DialogHeader>
           <div className="flex-1 flex flex-col gap-4 overflow-hidden pt-2">
             {reviewData && (() => {
-              const url = reviewData.verificationProofUrl;
+              let url = reviewData.verificationProofUrl;
+              let originalUrl = url;
+              
+              if (url) {
+                if (url.includes('cloudinary.com') && url.includes('/image/upload/') && url.match(/\.pdf$/i)) {
+                  url = url.replace(/\.pdf$/i, '.jpg');
+                }
+              }
+
               let viewerUrl = url;
               let isImage = false;
               let isPdf = false;
               
               if (url) {
                 isImage = url.match(/\.(jpeg|jpg|gif|png|webp)$/i) || url.includes('/image/upload/');
-                isPdf = url.match(/\.pdf$/i);
-                
-                if (!isImage || isPdf) {
-                  viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}`;
-                }
+                isPdf = url.match(/\.pdf$/i) || url.includes('pdf');
+                viewerUrl = url;
               }
 
               return (
@@ -709,7 +716,7 @@ export default function TradersPage() {
                   </div>
                   {url && (
                     <a 
-                      href={viewerUrl} 
+                      href={originalUrl} 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="text-emerald-600 hover:text-emerald-700 hover:underline text-sm font-medium flex items-center"
@@ -729,11 +736,12 @@ export default function TradersPage() {
                         className="w-full h-full object-contain"
                       />
                     ) : (
-                      <iframe 
-                        src={`${viewerUrl}&embedded=true`} 
-                        title="Verification Document"
-                        className="w-full h-full border-0"
-                      />
+                      <div className="flex flex-col items-center justify-center h-full p-4 text-center">
+                        <p className="text-slate-500 mb-2">Could not display document directly.</p>
+                        <a href={originalUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-600 font-medium hover:underline">
+                          Click here to download or open it in a new tab
+                        </a>
+                      </div>
                     )}
                   </div>
                 ) : (

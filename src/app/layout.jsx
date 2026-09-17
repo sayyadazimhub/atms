@@ -1,5 +1,4 @@
 import { Toaster } from 'react-hot-toast';
-import { ThemeProvider } from '@/components/theme-provider';
 import './globals.css';
 
 export const metadata = {
@@ -14,15 +13,8 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen antialiased bg-background text-foreground">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          forcedTheme="light"
-          disableTransitionOnChange
-        >
-          {children}
-          <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
-        </ThemeProvider>
+        {children}
+        <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
       </body>
     </html>
   );
