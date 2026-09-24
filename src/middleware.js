@@ -7,6 +7,7 @@ function isAdminRoute(pathname) {
 
 function isAdminPublic(pathname) {
   if (pathname === '/') return true;
+  if (pathname.startsWith('/contact')) return true;
   if (pathname === '/login' || pathname.startsWith('/login/')) return true;
   if (pathname === '/register' || pathname.startsWith('/register/')) return true;
   if (pathname.startsWith('/forgot-password')) return true;

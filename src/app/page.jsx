@@ -11,6 +11,7 @@ import Pricing from '@/components/landing/Pricing';
 import FAQ from '@/components/landing/FAQ';
 import CtaBanner from '@/components/landing/CtaBanner';
 import prisma from '@/lib/prisma';
+import Navbar from '@/components/landing/Navbar';
 
 export default async function HomePage() {
   const traderCount = await prisma.user.count({ where: { role: 'USER', is_active: true } });
@@ -18,32 +19,7 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-emerald-100 selection:text-emerald-900">
-      <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-3 group cursor-pointer">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 dark:bg-slate-950 text-white shadow-lg group-hover:scale-105 transition-all duration-300 relative overflow-hidden shrink-0">
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-transparent" />
-              <Sprout className="h-6 w-6 text-emerald-400 relative z-10" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight leading-none uppercase">ATMS</span>
-              <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.2em] mt-1">Premium</p>
-            </div>
-          </div>
-          <nav className="flex items-center gap-4">
-            <Link href="/user/login">
-              <Button variant="ghost" className="h-10 rounded-xl font-bold uppercase tracking-widest text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">
-                Sign In
-              </Button>
-            </Link>
-            <Link href="/user/register">
-              <Button className="h-10 rounded-xl bg-slate-900 dark:bg-emerald-600 hover:bg-slate-800 dark:hover:bg-emerald-500 text-white px-6 font-bold uppercase tracking-widest text-xs shadow-md">
-                Get Started
-              </Button>
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <Navbar />
 
       {/* Hero Section */}
       <section className="relative min-h-[calc(100vh-64px)] flex items-center border-b border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900">

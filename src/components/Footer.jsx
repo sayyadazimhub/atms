@@ -40,7 +40,7 @@ export default function Footer() {
           <div>
             <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-widest mb-6">Product</h3>
             <ul className="space-y-4">
-              {['Features', 'Pricing Plans', 'Case Studies', 'Reviews'].map((link) => (
+              {['Features', 'Pricing Plans', 'Case Studies'].map((link) => (
                 <li key={link}>
                   <Link href="#" className="text-sm text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors font-medium">
                     {link}
@@ -54,10 +54,14 @@ export default function Footer() {
           <div>
             <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-widest mb-6">Company</h3>
             <ul className="space-y-4">
-              {['About Us', 'Careers', 'Blog', 'Contact'].map((link) => (
-                <li key={link}>
-                  <Link href="#" className="text-sm text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors font-medium">
-                    {link}
+              {[
+                { label: 'About Us', href: '#' },
+                { label: 'Blog', href: '#' },
+                { label: 'Contact', href: '/contact' }
+              ].map((link) => (
+                <li key={link.label}>
+                  <Link href={link.href} className="text-sm text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors font-medium">
+                    {link.label}
                   </Link>
                 </li>
               ))}
