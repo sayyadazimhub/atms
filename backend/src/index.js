@@ -12,8 +12,18 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+const allowedOrigins = new Set([
+  process.env.FRONTEND_URL,
+  process.env.ADMIN_URL,
+  'https://atms1.vercel.app',
+  'https://admin-atms.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3002',
+  'http://localhost:3003',
+].filter(Boolean));
 app.use(cors({
-  origin: [process.env.FRONTEND_URL, process.env.ADMIN_URL, "http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003"],
+  origin: (origin, callback) => callback(null, !origin || allowedOrigins.has(origin)),
   credentials: true
 }));
 app.use(express.json());
