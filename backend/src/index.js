@@ -23,6 +23,10 @@ app.use((req, res, next) => {
   next();
 });
 
+app.get('/', (_req, res) => {
+  res.json({ status: 'ok', service: 'ATMS API is running ...' });
+});
+
 // Dynamic route loader
 async function loadRoutes() {
   const apiDir = path.join(__dirname, 'routes');
