@@ -121,7 +121,7 @@ export default function Testimonials() {
                   <DialogHeader>
                     <DialogTitle className="dark:text-white">Submit a Testimonial</DialogTitle>
                     <DialogDescription className="dark:text-slate-400">
-                      We'd love to hear about your experience with ATMS. Share your story below!
+                      We&apos;d love to hear about your experience with ATMS. Share your story below!
                     </DialogDescription>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
@@ -175,7 +175,7 @@ export default function Testimonials() {
                     ))}
                   </div>
                   <p className="text-slate-700 dark:text-slate-300 mb-8 text-lg sm:text-xl italic leading-relaxed max-w-2xl mx-auto font-medium">
-                    "{t.text}"
+                    &quot;{t.text}&quot;
                   </p>
                   <div className="flex items-center justify-center gap-4 mt-auto text-left">
                     <div className="h-12 w-12 rounded-full bg-slate-50 dark:bg-slate-900 flex shrink-0 items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold text-lg border border-slate-200 dark:border-slate-800 shadow-inner">

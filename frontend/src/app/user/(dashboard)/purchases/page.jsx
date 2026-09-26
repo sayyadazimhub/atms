@@ -511,7 +511,7 @@ export default function PurchasesPage() {
 
         <Card className="border-none shadow-md bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm overflow-hidden relative group transition-all">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Today's Volume</CardTitle>
+              <CardTitle className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Today&apos;s Volume</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-black text-slate-900 dark:text-slate-100">{totalPurchasesToday} Records</div>

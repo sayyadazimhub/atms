@@ -324,7 +324,7 @@ export default function ReportsPage() {
                 <SelectValue placeholder="Select window" />
               </SelectTrigger>
               <SelectContent className="rounded-xl border-slate-100 dark:border-slate-800 shadow-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
-                <SelectItem value="today">Today's Activity</SelectItem>
+                <SelectItem value="today">Today&apos;s Activity</SelectItem>
                 <SelectItem value="weekly">Last 7 Days</SelectItem>
                 <SelectItem value="daily">Trailing 30 Days</SelectItem>
                 <SelectItem value="monthly">Current Month Cycle</SelectItem>

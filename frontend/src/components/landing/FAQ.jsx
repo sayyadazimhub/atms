@@ -37,7 +37,7 @@ export default function FAQ() {
             Frequently Asked <span className="text-emerald-600 dark:text-emerald-400">Questions</span>
           </h2>
           <p className="text-slate-600 dark:text-slate-400 text-lg">
-            Everything you need to know about the platform. Can't find the answer you're looking for? Feel free to contact our support team.
+            Everything you need to know about the platform. Can&apos;t find the answer you&apos;re looking for? Feel free to contact our support team.
           </p>
         </div>
 
