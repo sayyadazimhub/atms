@@ -1,8 +1,9 @@
 import { Sprout, ShoppingCart, BarChart3, Users, LineChart, Package, TrendingUp, Activity, Headset } from 'lucide-react';
+import serverApiUrl from '@/lib/server-api-url';
 export default async function AuthLayout({ children }) {
   let traderCount = 0;
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/settings/public`, { cache: 'no-store' });
+    const res = await fetch(`${serverApiUrl}/api/settings/public`, { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
       traderCount = data.traderCount || 0;

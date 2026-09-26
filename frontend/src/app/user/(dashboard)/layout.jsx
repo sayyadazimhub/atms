@@ -2,6 +2,7 @@ import Sidebar from '@/components/sidebar';
 import Header from '@/components/header';
 import { cookies } from 'next/headers';
 import { verifyUserToken } from '@/lib/auth';
+import serverApiUrl from '@/lib/server-api-url';
 import { redirect } from 'next/navigation';
 import { ThemeProvider } from '@/components/theme-provider';
 
@@ -19,7 +20,7 @@ export default async function UserDashboardLayout({ children }) {
   }
 
   // CRITICAL: Verify user existence in DB via API
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/profile`, {
+  const res = await fetch(`${serverApiUrl}/api/user/profile`, {
     headers: {
       Cookie: `user-token=${token}`
     }

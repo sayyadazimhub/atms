@@ -10,14 +10,14 @@ import Testimonials from '@/components/landing/Testimonials';
 import Pricing from '@/components/landing/Pricing';
 import FAQ from '@/components/landing/FAQ';
 import CtaBanner from '@/components/landing/CtaBanner';
+import serverApiUrl from '@/lib/server-api-url';
 // import prisma from '@/lib/prisma'; // Removed direct DB access
 import Navbar from '@/components/landing/Navbar';
 
 export default async function HomePage() {
   let displayCount = 200;
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-    const res = await fetch(`${apiUrl}/api/settings/public`, { next: { revalidate: 60 } });
+    const res = await fetch(`${serverApiUrl}/api/settings/public`, { next: { revalidate: 60 } });
     if (res.ok) {
       const data = await res.json();
       if (data.activeTraders) displayCount = data.activeTraders;

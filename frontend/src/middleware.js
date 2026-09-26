@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyUserToken } from '@/lib/auth';
+import serverApiUrl from '@/lib/server-api-url';
 
 function isAdminRoute(pathname) {
   return pathname.startsWith('/');
@@ -38,8 +39,7 @@ export async function middleware(request) {
     // Check system settings
     let settings = { maintenanceMode: false, traderSelfRegistration: true };
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const res = await fetch(`${baseUrl}/api/settings/public`, {
+      const res = await fetch(`${serverApiUrl}/api/settings/public`, {
           next: { revalidate: 60 }
       });
       if (res.ok) settings = await res.json();

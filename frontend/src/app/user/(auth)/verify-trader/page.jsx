@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifyUserToken } from '@/lib/auth';
+import serverApiUrl from '@/lib/server-api-url';
 import VerifyTraderClient from './VerifyTraderClient';
 
 export default async function VerifyTraderPage() {
@@ -16,7 +17,7 @@ export default async function VerifyTraderPage() {
     redirect('/user/login');
   }
 
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/profile`, {
+  const res = await fetch(`${serverApiUrl}/api/user/profile`, {
     headers: {
       Cookie: `user-token=${token}`
     }
