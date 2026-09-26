@@ -39,7 +39,7 @@ export default function ProfilePage() {
   const fetchProfile = () => {
     setLoading(true);
     axios
-      .get('/api/user/profile')
+      .get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/profile`, { withCredentials: true })
       .then((res) => {
         setProfile(res.data);
         setFormData({ name: res.data.name, phone: res.data.phone || '' });
@@ -56,7 +56,7 @@ export default function ProfilePage() {
     }
     setSaving(true);
     try {
-      const res = await axios.put('/api/user/profile', formData);
+      const res = await axios.put(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/profile`, formData, { withCredentials: true });
       setProfile(res.data);
       setEditing(false);
       toast.success('Profile updated successfully');

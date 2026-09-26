@@ -2,7 +2,6 @@ import Sidebar from '@/components/sidebar';
 import Header from '@/components/header';
 import { cookies } from 'next/headers';
 import { verifyUserToken } from '@/lib/auth';
-import prisma from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import { ThemeProvider } from '@/components/theme-provider';
 
@@ -19,11 +18,13 @@ export default async function UserDashboardLayout({ children }) {
     redirect('/user/login');
   }
 
-  // CRITICAL: Verify user existence in DB (Server Side)
-  const user = await prisma.user.findUnique({
-    where: { id: decoded.id },
-    select: { id: true, is_active: true, verificationStatus: true }
+  // CRITICAL: Verify user existence in DB via API
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/profile`, {
+    headers: {
+      Cookie: `user-token=${token}`
+    }
   });
+  const user = res.ok ? await res.json() : null;
 
   if (!user || !user.is_active) {
     console.warn(`Access denied: User ${decoded.id} not found or inactive.`);

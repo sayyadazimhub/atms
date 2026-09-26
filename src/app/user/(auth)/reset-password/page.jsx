@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import axios from 'axios';
+import { authAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,7 +37,7 @@ function ResetPasswordForm() {
     }
     setLoading(true);
     try {
-      await axios.post('/api/user/auth/reset-password', { email, otp, newPassword: password });
+      await authAPI.resetPassword(email, otp, password);
       toast.success('Password updated');
       window.location.href = '/user/login';
       return;

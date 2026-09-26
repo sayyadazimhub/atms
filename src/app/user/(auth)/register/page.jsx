@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import axios from 'axios';
+import { authAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -31,7 +31,7 @@ export default function UserRegisterPage() {
     
     setLoading(true);
     try {
-      await axios.post('/api/user/auth/register', form);
+      await authAPI.register(form);
       toast.success('Check your email for the OTP');
       router.push(`/user/verify-otp?email=${encodeURIComponent(form.email)}`);
       return;

@@ -47,7 +47,7 @@ export default function DashboardPage() {
       endDate: end.toISOString(),
     });
 
-    fetch(`/api/user/dashboard?${query.toString()}`)
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/dashboard?${query.toString()}`, { credentials: 'include' })
       .then((res) => {
         if (!res.ok) throw new Error('Failed to fetch');
         return res.json();

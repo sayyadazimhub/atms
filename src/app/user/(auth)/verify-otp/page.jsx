@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import axios from 'axios';
+import { authAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,7 +27,7 @@ function VerifyOtpForm() {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post('/api/user/auth/verify-otp', { email, otp });
+      await authAPI.verifyOtp(email, otp);
       toast.success('Email verified');
       window.location.href = '/user/dashboard';
       return;

@@ -1,8 +1,13 @@
 import { Sprout, ShoppingCart, BarChart3, Users, LineChart, Package, TrendingUp, Activity, Headset } from 'lucide-react';
-import prisma from '@/lib/prisma';
-
 export default async function AuthLayout({ children }) {
-  const traderCount = await prisma.user.count({ where: { role: 'USER', is_active: true } });
+  let traderCount = 0;
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/settings/public`, { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      traderCount = data.traderCount || 0;
+    }
+  } catch (e) { console.error('Failed to fetch traderCount'); }
   return (
     <div className="flex min-h-screen bg-slate-50 font-sans selection:bg-emerald-100 selection:text-emerald-900">
       

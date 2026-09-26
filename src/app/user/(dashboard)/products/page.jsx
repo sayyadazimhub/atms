@@ -28,7 +28,7 @@ export default function ProductsPage() {
   const fetchProducts = () => {
     setLoading(true);
     axios
-      .get(`/api/user/products?page=${pagination.page}&search=${search}`)
+      .get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/products?page=${pagination.page}&search=${search}`)
       .then((res) => {
         setProducts(res.data.products);
         setPagination(res.data.pagination);
@@ -57,10 +57,10 @@ export default function ProductsPage() {
     setSubmitting(true);
     try {
       if (editing) {
-        await axios.put(`/api/user/products/${editing.id}`, form);
+        await axios.put(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/products/${editing.id}`, form, { withCredentials: true });
         toast.success('Product updated');
       } else {
-        await axios.post('/api/user/products', form);
+        await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/products`, form, { withCredentials: true });
         toast.success('Product added');
       }
       setOpen(false);
@@ -76,7 +76,7 @@ export default function ProductsPage() {
     if (!deleteId) return;
     setSubmitting(true);
     try {
-      await axios.delete(`/api/user/products/${deleteId}`);
+      await axios.delete(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/products/${deleteId}`, { withCredentials: true });
       toast.success('Deleted');
       setDeleteId(null);
       fetchProducts();

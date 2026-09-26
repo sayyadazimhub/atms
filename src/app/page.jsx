@@ -10,12 +10,21 @@ import Testimonials from '@/components/landing/Testimonials';
 import Pricing from '@/components/landing/Pricing';
 import FAQ from '@/components/landing/FAQ';
 import CtaBanner from '@/components/landing/CtaBanner';
-import prisma from '@/lib/prisma';
+// import prisma from '@/lib/prisma'; // Removed direct DB access
 import Navbar from '@/components/landing/Navbar';
 
 export default async function HomePage() {
-  const traderCount = await prisma.user.count({ where: { role: 'USER', is_active: true } });
-  const displayCount = traderCount;
+  let displayCount = 200;
+  try {
+    const res = await fetch('http://localhost:5000/api/settings/public', { next: { revalidate: 60 } });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.activeTraders) displayCount = data.activeTraders;
+    }
+  } catch (err) {
+    console.error('Failed to fetch settings', err);
+  }
+
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-emerald-100 selection:text-emerald-900">

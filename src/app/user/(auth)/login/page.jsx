@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import axios from 'axios';
+import { authAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,7 +40,7 @@ export default function UserLoginPage() {
     setErrors({});
     setLoading(true);
     try {
-      await axios.post('/api/user/auth/login', { email, password });
+      await authAPI.login(email, password);
       toast.success('Login successful');
       window.location.href = '/user/dashboard';
       return;

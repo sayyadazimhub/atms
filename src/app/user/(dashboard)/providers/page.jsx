@@ -29,7 +29,7 @@ export default function ProvidersPage() {
   const fetchProviders = () => {
     setLoading(true);
     axios
-      .get(`/api/user/providers?page=${pagination.page}&search=${search}`)
+      .get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/providers?page=${pagination.page}&search=${search}`)
       .then((res) => {
         setProviders(res.data.providers || []);
         setPagination(res.data.pagination || { page: 1, pages: 1 });
@@ -57,10 +57,10 @@ export default function ProvidersPage() {
     setSubmitting(true);
     try {
       if (editing) {
-        await axios.put(`/api/user/providers/${editing.id}`, form);
+        await axios.put(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/providers/${editing.id}`, form, { withCredentials: true });
         toast.success('Provider updated');
       } else {
-        await axios.post('/api/user/providers', form);
+        await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/providers`, form, { withCredentials: true });
         toast.success('Provider added');
       }
       setOpen(false);
@@ -76,7 +76,7 @@ export default function ProvidersPage() {
     if (!deleteId) return;
     setSubmitting(true);
     try {
-      await axios.delete(`/api/user/providers/${deleteId}`);
+      await axios.delete(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/providers/${deleteId}`, { withCredentials: true });
       toast.success('Deleted');
       setDeleteId(null);
       fetchProviders();
@@ -91,7 +91,7 @@ export default function ProvidersPage() {
     setViewing(provider);
     setLoadingDetails(true);
     try {
-      const res = await axios.get(`/api/user/providers/${provider.id}`);
+      const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/providers/${provider.id}`, { withCredentials: true });
       setViewData(res.data);
     } catch (err) {
       toast.error('Failed to load details');

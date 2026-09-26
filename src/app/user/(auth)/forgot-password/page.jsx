@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import axios from 'axios';
+import { authAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ export default function UserForgotPasswordPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post('/api/user/auth/forgot-password', { email });
+      await authAPI.forgotPassword(email);
       toast.success('OTP sent to your email');
       router.push(`/user/reset-password?email=${encodeURIComponent(email)}`);
       return;

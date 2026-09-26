@@ -48,8 +48,8 @@ export default function SettingsPage() {
     setLoadingInitial(true);
     try {
       const [profileRes, settingsRes] = await Promise.all([
-        axios.get('/api/user/profile'),
-        axios.get('/api/user/settings')
+        axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/profile`, { withCredentials: true }),
+        axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/settings`, { withCredentials: true })
       ]);
       setProfile(profileRes.data);
       setPreferences(settingsRes.data);
@@ -65,10 +65,10 @@ export default function SettingsPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.put('/api/user/profile', {
+      const res = await axios.put(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/profile`, {
         name: profile.name,
         phone: profile.phone
-      });
+      }, { withCredentials: true });
       setProfile(res.data);
       toast.success('Identity updated');
     } catch (err) {
@@ -86,7 +86,7 @@ export default function SettingsPage() {
     }
     setLoading(true);
     try {
-      await axios.post('/api/user/auth/change-password', {
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/auth/change-password`, {
         currentPassword: passwords.current,
         newPassword: passwords.next
       });
@@ -102,7 +102,7 @@ export default function SettingsPage() {
   const handleUpdatePrefs = async () => {
     setLoading(true);
     try {
-      const res = await axios.put('/api/user/settings', preferences);
+      const res = await axios.put(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/settings`, preferences, { withCredentials: true });
       setPreferences(res.data);
       toast.success('Preferences saved');
     } catch (err) {
@@ -114,10 +114,12 @@ export default function SettingsPage() {
 
   const handleLogout = async () => {
     try {
-      await axios.post('/api/user/auth/logout');
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/auth/logout`, {}, {
+        withCredentials: true,
+      });
       window.location.href = '/user/login';
     } catch (err) {
-      window.location.href = '/user/login';
+      toast.error('Logout failed');
     }
   };
 

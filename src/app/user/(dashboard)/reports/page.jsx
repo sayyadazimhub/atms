@@ -41,7 +41,7 @@ export default function ReportsPage() {
 
   const fetchReport = () => {
     setLoading(true);
-    fetch(`/api/user/reports?type=${type}`)
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/reports?type=${type}`, { credentials: 'include' })
       .then((res) => res.json())
       .then((data) => setData(data))
       .catch((err) => console.error('Failed to load report:', err))

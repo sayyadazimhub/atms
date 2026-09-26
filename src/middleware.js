@@ -38,7 +38,7 @@ export async function middleware(request) {
     // Check system settings
     let settings = { maintenanceMode: false, traderSelfRegistration: true };
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
       const res = await fetch(`${baseUrl}/api/settings/public`, {
           next: { revalidate: 60 }
       });

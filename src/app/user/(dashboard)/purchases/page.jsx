@@ -63,7 +63,7 @@ export default function PurchasesPage() {
 
   const fetchPurchases = () => {
     setLoading(true);
-    fetch(`/api/user/purchases?page=${pagination.page}`)
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/purchases?page=${pagination.page}`, { credentials: 'include' })
       .then((res) => res.json())
       .then((data) => {
         setPurchases(data.purchases || []);
@@ -76,8 +76,8 @@ export default function PurchasesPage() {
   const fetchProvidersAndProducts = async () => {
     try {
       const [providersRes, productsRes] = await Promise.all([
-        fetch('/api/user/providers?limit=100'),
-        fetch('/api/user/products?limit=100'),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/providers?limit=100`, { credentials: 'include' }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/products?limit=100`, { credentials: 'include' }),
       ]);
       const providersData = await providersRes.json();
       const productsData = await productsRes.json();
@@ -90,7 +90,7 @@ export default function PurchasesPage() {
 
   const handleViewBill = async (purchaseId) => {
     try {
-      const res = await fetch(`/api/user/purchases/${purchaseId}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/purchases/${purchaseId}`, { credentials: 'include' });
       const data = await res.json();
       setSelectedPurchase(data);
       setShowViewModal(true);
@@ -113,7 +113,7 @@ export default function PurchasesPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/user/purchases/${editFormData.id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/purchases/${editFormData.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -142,8 +142,9 @@ export default function PurchasesPage() {
 
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/user/purchases/${deleteId}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/purchases/${deleteId}`, {
         method: 'DELETE',
+        credentials: 'include'
       });
 
       if (res.ok) {
@@ -425,7 +426,7 @@ export default function PurchasesPage() {
 
     setSubmitting(true);
     try {
-      const res = await fetch('/api/user/purchases', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/purchases`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

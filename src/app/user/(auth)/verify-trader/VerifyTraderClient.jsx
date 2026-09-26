@@ -57,8 +57,8 @@ export default function VerifyTraderClient({ status, rejectionReason, initialSta
       formData.append('district', form.district);
       formData.append('proof', form.proof);
 
-      await axios.post('/api/user/verify-trader', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/verify-trader`, formData, {
+        withCredentials: true,
       });
 
       toast.success('Verification submitted successfully');
@@ -87,10 +87,12 @@ export default function VerifyTraderClient({ status, rejectionReason, initialSta
               className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-colors shadow-sm group mt-8"
               onClick={async () => {
                 try {
-                  await axios.post('/api/user/auth/logout');
+                  await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/auth/logout`, {}, {
+                    withCredentials: true,
+                  });
                   router.push('/user/login');
-                } catch (e) {
-                  console.error(e);
+                } catch (err) {
+                  toast.error(err.response?.data?.error || 'Failed to log out');
                 }
               }}
             >

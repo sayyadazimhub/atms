@@ -1,7 +1,6 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifyUserToken } from '@/lib/auth';
-import prisma from '@/lib/prisma';
 import VerifyTraderClient from './VerifyTraderClient';
 
 export default async function VerifyTraderPage() {
@@ -17,16 +16,13 @@ export default async function VerifyTraderPage() {
     redirect('/user/login');
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: decoded.id },
-    select: { 
-      name: true, 
-      verificationStatus: true, 
-      rejectionReason: true,
-      state: true,
-      district: true
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/profile`, {
+    headers: {
+      Cookie: `user-token=${token}`
     }
   });
+
+  const user = res.ok ? await res.json() : null;
 
   if (!user) {
     redirect('/user/login');

@@ -29,7 +29,7 @@ export default function CustomersPage() {
   const fetchCustomers = () => {
     setLoading(true);
     axios
-      .get(`/api/user/customers?page=${pagination.page}&search=${search}`)
+      .get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/customers?page=${pagination.page}&search=${search}`)
       .then((res) => {
         setCustomers(res.data.customers || []);
         setPagination(res.data.pagination || { page: 1, pages: 1 });
@@ -57,10 +57,10 @@ export default function CustomersPage() {
     setSubmitting(true);
     try {
       if (editing) {
-        await axios.put(`/api/user/customers/${editing.id}`, form);
+        await axios.put(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/customers/${editing.id}`, form, { withCredentials: true });
         toast.success('Customer updated');
       } else {
-        await axios.post('/api/user/customers', form);
+        await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/customers`, form, { withCredentials: true });
         toast.success('Customer added');
       }
       setOpen(false);
@@ -76,7 +76,7 @@ export default function CustomersPage() {
     if (!deleteId) return;
     setSubmitting(true);
     try {
-      await axios.delete(`/api/user/customers/${deleteId}`);
+      await axios.delete(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/customers/${deleteId}`, { withCredentials: true });
       toast.success('Deleted');
       setDeleteId(null);
       fetchCustomers();
@@ -91,7 +91,7 @@ export default function CustomersPage() {
     setViewing(customer);
     setLoadingDetails(true);
     try {
-      const res = await axios.get(`/api/user/customers/${customer.id}`);
+      const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/customers/${customer.id}`, { withCredentials: true });
       setViewData(res.data);
     } catch (err) {
       toast.error('Failed to load details');

@@ -62,7 +62,7 @@ export default function SalesPage() {
 
     const fetchSales = () => {
         setLoading(true);
-        fetch(`/api/user/sales?page=${pagination.page}`)
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/sales?page=${pagination.page}`, { credentials: 'include' })
             .then((res) => res.json())
             .then((data) => {
                 setSales(data.sales || []);
@@ -75,8 +75,8 @@ export default function SalesPage() {
     const fetchCustomersAndProducts = async () => {
         try {
             const [customersRes, productsRes] = await Promise.all([
-                fetch('/api/user/customers?limit=100'),
-                fetch('/api/user/products?limit=100'),
+                fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/customers?limit=100`, { credentials: 'include' }),
+                fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/products?limit=100`, { credentials: 'include' }),
             ]);
             const customersData = await customersRes.json();
             const productsData = await productsRes.json();
@@ -89,7 +89,7 @@ export default function SalesPage() {
 
     const handleViewBill = async (saleId) => {
         try {
-            const res = await fetch(`/api/user/sales/${saleId}`);
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/sales/${saleId}`, { credentials: 'include' });
             const data = await res.json();
             setSelectedSale(data);
             setShowViewModal(true);
@@ -112,7 +112,7 @@ export default function SalesPage() {
         e.preventDefault();
         setSubmitting(true);
         try {
-            const res = await fetch(`/api/user/sales/${editFormData.id}`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/sales/${editFormData.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -141,8 +141,9 @@ export default function SalesPage() {
 
         setSubmitting(true);
         try {
-            const res = await fetch(`/api/user/sales/${deleteId}`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/sales/${deleteId}`, {
                 method: 'DELETE',
+                credentials: 'include'
             });
 
             if (res.ok) {
@@ -479,7 +480,7 @@ export default function SalesPage() {
 
         setSubmitting(true);
         try {
-            const res = await fetch('/api/user/sales', {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/sales`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

@@ -35,14 +35,14 @@ export default function AdminSidebar() {
 
   useEffect(() => {
     // Fetch admin profile
-    axios.get('/api/admin/profile')
+    axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/profile`, { withCredentials: true })
       .then((res) => setAdmin(res.data))
       .catch(() => { });
   }, []);
 
   const handleLogout = async () => {
     try {
-      await axios.post('/api/admin/auth/logout');
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/auth/logout`);
       toast.success('Logged out successfully');
       router.push('/login');
     } catch (err) {
@@ -72,9 +72,7 @@ export default function AdminSidebar() {
 
       {/* Sidebar Container */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 shrink-0 bg-white border-r transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static flex flex-col",
-        mobileMenuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
-      )}>
+        "fixed inset-y-0 left-0 z-50 w-64 shrink-0 bg-white border-r transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static flex flex-col", mobileMenuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full", { withCredentials: true })}>
         {/* Logo / Brand */}
         <div className="flex items-center gap-3 p-6 border-b">
           <div className="h-10 w-10 flex items-center justify-center">
