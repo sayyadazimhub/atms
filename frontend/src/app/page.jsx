@@ -16,7 +16,8 @@ import Navbar from '@/components/landing/Navbar';
 export default async function HomePage() {
   let displayCount = 200;
   try {
-    const res = await fetch('http://localhost:5000/api/settings/public', { next: { revalidate: 60 } });
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const res = await fetch(`${apiUrl}/api/settings/public`, { next: { revalidate: 60 } });
     if (res.ok) {
       const data = await res.json();
       if (data.activeTraders) displayCount = data.activeTraders;
