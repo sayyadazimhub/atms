@@ -20,7 +20,7 @@ export default async function HomePage() {
     const res = await fetch(`${serverApiUrl}/api/settings/public`, { next: { revalidate: 60 } });
     if (res.ok) {
       const data = await res.json();
-      if (data.activeTraders) displayCount = data.activeTraders;
+      if (Number.isFinite(data.traderCount)) displayCount = data.traderCount;
     }
   } catch (err) {
     console.error('Failed to fetch settings', err);
