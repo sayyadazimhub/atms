@@ -1,23 +1,33 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
-let resendClient;
+let transporter;
 
-function getResendClient() {
-  if (!process.env.RESEND_API_KEY) {
-    throw new Error('RESEND_API_KEY environment variable is required to send email');
+function getTransporter() {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    throw new Error('EMAIL_USER and EMAIL_PASS environment variables are required to send email');
   }
-  resendClient ??= new Resend(process.env.RESEND_API_KEY);
-  return resendClient;
+
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
+      service: 'gmail', // Standard Gmail configuration
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+  }
+
+  return transporter;
 }
 
 function getFromEmail() {
-  return process.env.FROM_EMAIL || 'noreply@example.com';
+  return process.env.EMAIL_USER;
 }
 
 export async function sendResetEmail(to, resetLink) {
-  const { data, error } = await getResendClient().emails.send({
-    from: `ATMS <${getFromEmail()}>`,
-    to: [to],
+  const info = await getTransporter().sendMail({
+    from: `"ATMS" <${getFromEmail()}>`,
+    to,
     subject: 'ATMS - Reset your password',
     html: `
       <p>You requested a password reset for your ATMS account.</p>
@@ -27,11 +37,10 @@ export async function sendResetEmail(to, resetLink) {
       <p>If you didn't request this, you can ignore this email.</p>
     `,
   });
-  if (error) throw new Error(error.message);
-  return data;
+  return info;
 }
 
-/** Send OTP email for User (verification or password reset) via Resend */
+/** Send OTP email for User (verification or password reset) via Nodemailer */
 export async function sendOtpEmail(to, otp, purpose = 'verification') {
   const subject =
     purpose === 'reset' ? 'ATMS - Your password reset OTP' : 'ATMS - Verify your email';
@@ -39,25 +48,25 @@ export async function sendOtpEmail(to, otp, purpose = 'verification') {
     purpose === 'reset'
       ? `Use this OTP to reset your password: <strong>${otp}</strong>. It expires in 10 minutes.`
       : `Your email verification OTP is: <strong>${otp}</strong>. It expires in 10 minutes.`;
-  const { data, error } = await getResendClient().emails.send({
-    from: `ATMS <${getFromEmail()}>`,
-    to: [to],
+      
+  const info = await getTransporter().sendMail({
+    from: `"ATMS" <${getFromEmail()}>`,
+    to,
     subject,
     html: `
       <p>${message}</p>
       <p>If you didn't request this, you can ignore this email.</p>
     `,
   });
-  if (error) throw new Error(error.message);
-  return data;
+  return info;
 }
 
 /** Send notification to admins about a new trader registration */
 export async function sendNewTraderNotification(adminEmails, newTraderData) {
   if (!adminEmails || adminEmails.length === 0) return;
 
-  const { data, error } = await getResendClient().emails.send({
-    from: `ATMS <${getFromEmail()}>`,
+  const info = await getTransporter().sendMail({
+    from: `"ATMS" <${getFromEmail()}>`,
     to: adminEmails,
     subject: 'ATMS Alert - New Trader Registration',
     html: `
@@ -71,15 +80,14 @@ export async function sendNewTraderNotification(adminEmails, newTraderData) {
       <p>Please log in to the admin dashboard to review their account.</p>
     `,
   });
-  if (error) throw new Error(error.message);
-  return data;
+  return info;
 }
 
 /** Send notification to trader upon verification approval */
 export async function sendVerificationApprovalEmail(to, name) {
-  const { data, error } = await getResendClient().emails.send({
-    from: `ATMS <${getFromEmail()}>`,
-    to: [to],
+  const info = await getTransporter().sendMail({
+    from: `"ATMS" <${getFromEmail()}>`,
+    to,
     subject: 'ATMS - Verification Approved',
     html: `
       <h2>Verification Approved!</h2>
@@ -89,15 +97,14 @@ export async function sendVerificationApprovalEmail(to, name) {
       <p>Welcome aboard!</p>
     `,
   });
-  if (error) throw new Error(error.message);
-  return data;
+  return info;
 }
 
 /** Send notification to trader upon verification rejection */
 export async function sendVerificationRejectionEmail(to, name, reason) {
-  const { data, error } = await getResendClient().emails.send({
-    from: `ATMS <${getFromEmail()}>`,
-    to: [to],
+  const info = await getTransporter().sendMail({
+    from: `"ATMS" <${getFromEmail()}>`,
+    to,
     subject: 'ATMS - Verification Needs Attention',
     html: `
       <h2>Verification Action Required</h2>
@@ -109,6 +116,5 @@ export async function sendVerificationRejectionEmail(to, name, reason) {
       <p>Please log back in to the ATMS platform to update your application and submit new proof documents.</p>
     `,
   });
-  if (error) throw new Error(error.message);
-  return data;
+  return info;
 }
