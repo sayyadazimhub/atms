@@ -1,22 +1,11 @@
 import { Router } from 'express';
 
-import { verifyAdminToken } from '../../../lib/auth.js';
 import { dashboardService } from '../../../services/adminService/dashboardService.js';
 
 const router = Router({ mergeParams: true });
 
 async function handleGet(req, res) {
   try {
-    const token = req.cookies['auth-token'];
-    if (!token) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    const decoded = await verifyAdminToken(token);
-    if (!decoded) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
     // Service handles stats, chart data, and recent traders
     const data = await dashboardService.getDashboardData();
 

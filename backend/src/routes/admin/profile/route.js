@@ -1,6 +1,5 @@
 import { Router } from 'express';
 
-import { verifyAdminToken } from '../../../lib/auth.js';
 import { profileService } from '../../../services/adminService/profileService.js';
 import { validateRequest } from '../../../middleware/validateRequest.js';
 import { adminProfileSchema } from '../../../validations/resources.js';
@@ -9,13 +8,7 @@ const router = Router({ mergeParams: true });
 
 async function handleGet(req, res) {
   try {
-    const token = req.cookies['auth-token'];
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
-    const decoded = await verifyAdminToken(token);
-    if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
-
-    const admin = await profileService.getProfile(decoded.id);
+    const admin = await profileService.getProfile(req.auth.id);
     return res.status(200).json(admin);
   } catch (error) {
     console.error('Admin Profile GET:', error);
@@ -27,14 +20,8 @@ async function handleGet(req, res) {
 
 async function handlePut(req, res) {
   try {
-    const token = req.cookies['auth-token'];
-    if (!token) return res.json({ error: 'Unauthorized' });
-
-    const decoded = await verifyAdminToken(token);
-    if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
-
     const body = req.body;
-    const admin = await profileService.updateProfile(decoded.id, body);
+    const admin = await profileService.updateProfile(req.auth.id, body);
 
     return res.status(200).json(admin);
   } catch (error) {

@@ -1,6 +1,5 @@
 import { Router } from 'express';
 
-import { verifyUserToken } from '../../../lib/auth.js';
 import { reportService } from '../../../services/userService/reportService.js';
 import { validateRequest } from '../../../middleware/validateRequest.js';
 import { userReportQuerySchema } from '../../../validations/queries.js';
@@ -9,19 +8,13 @@ const router = Router({ mergeParams: true });
 
 async function handleGet(req, res) {
   try {
-    const token = req.cookies['user-token'];
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
-    const decoded = await verifyUserToken(token);
-    if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
-
     const options = {
       type: req.query.type || 'today',
       start: req.query.start,
       end: req.query.end,
     };
 
-    const data = await reportService.getUserReports(decoded.id, options);
+    const data = await reportService.getUserReports(req.auth.id, options);
 
     return res.status(200).json(data);
   } catch (err) {

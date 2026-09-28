@@ -1,6 +1,5 @@
 import { Router } from 'express';
 
-import { verifyUserToken } from '../../../lib/auth.js';
 import { saleService } from '../../../services/userService/saleService.js';
 import { validateRequest } from '../../../middleware/validateRequest.js';
 import { pageQuerySchema } from '../../../validations/common.js';
@@ -10,15 +9,9 @@ const router = Router({ mergeParams: true });
 
 async function handleGet(req, res) {
   try {
-    const token = req.cookies['user-token'];
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
-    const decoded = await verifyUserToken(token);
-    if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
-
     const page = Math.max(1, parseInt(req.query.page || '1', 10));
 
-    const data = await saleService.getSales(decoded.id, page);
+    const data = await saleService.getSales(req.auth.id, page);
 
     return res.status(200).json(data);
   } catch (err) {
@@ -29,14 +22,8 @@ async function handleGet(req, res) {
 
 async function handlePost(req, res) {
   try {
-    const token = req.cookies['user-token'];
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
-    const decoded = await verifyUserToken(token);
-    if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
-
     const body = req.body;
-    const sale = await saleService.createSale(decoded.id, body);
+    const sale = await saleService.createSale(req.auth.id, body);
 
     return res.status(201).json(sale);
   } catch (err) {

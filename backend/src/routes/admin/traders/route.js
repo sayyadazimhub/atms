@@ -1,6 +1,5 @@
 import { Router } from 'express';
 
-import { verifyAdminToken } from '../../../lib/auth.js';
 import { traderService } from '../../../services/adminService/traderService.js';
 import { uploadToCloudinary } from '../../../lib/cloudinary.js';
 import Busboy from 'busboy';
@@ -33,12 +32,6 @@ function serializeTrader(trader) {
 
 async function handleGet(req, res) {
   try {
-    const token = req.cookies['auth-token'];
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
-    const decoded = await verifyAdminToken(token);
-    if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
-
     const { search = '', page: pageParam, limit: limitParam } = req.query;
     const page = parseInt(pageParam, 10) || 1;
     const limit = parseInt(limitParam, 10) || 10;
@@ -54,12 +47,6 @@ async function handleGet(req, res) {
 
 async function handlePost(req, res) {
   try {
-    const token = req.cookies['auth-token'];
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
-    const decoded = await verifyAdminToken(token);
-    if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
-
     return new Promise((resolve, reject) => {
       const busboy = Busboy({
         headers: req.headers,
@@ -164,11 +151,6 @@ async function handlePost(req, res) {
 
 async function handlePut(req, res) {
   try {
-    const token = req.cookies['auth-token'];
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
-    const decoded = await verifyAdminToken(token);
-    if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
-
     const { id, status, name, phone } = req.body;
 
     if (status !== undefined) {
@@ -186,12 +168,6 @@ async function handlePut(req, res) {
 
 async function handleDelete(req, res) {
   try {
-    const token = req.cookies['auth-token'];
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
-    const decoded = await verifyAdminToken(token);
-    if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
-
     const { id } = req.query;
 
     await traderService.deleteTrader(id);

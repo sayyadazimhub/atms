@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import { verifyAdminToken } from '../../../../lib/auth.js';
 import { authDal } from '../../../../dal/userDal/authDal.js';
 import {
   sendVerificationApprovalEmail,
@@ -13,14 +12,6 @@ const router = Router({ mergeParams: true });
 
 async function handlePut(req, res) {
   try {
-    const token = req.cookies['auth-token'];
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
-    const decoded = await verifyAdminToken(token);
-    if (!decoded) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
     const { id, status, reason } = req.body;
 
     if (!['APPROVED', 'REJECTED'].includes(status)) {
@@ -45,7 +36,7 @@ async function handlePut(req, res) {
       verificationStatus: status,
       rejectionReason: status === 'REJECTED' ? reason : null,
       verificationProofUrl: status === 'REJECTED' ? null : trader.verificationProofUrl,
-      reviewedByAdminId: decoded.id,
+      reviewedByAdminId: req.auth.id,
       verifiedAt: status === 'APPROVED' ? new Date() : null,
     });
 

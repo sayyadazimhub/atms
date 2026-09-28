@@ -1,6 +1,5 @@
 import { Router } from 'express';
 
-import { verifyAdminToken } from '../../../../lib/auth.js';
 import { traderService } from '../../../../services/adminService/traderService.js';
 import { validateRequest } from '../../../../middleware/validateRequest.js';
 import { idParamsSchema } from '../../../../validations/common.js';
@@ -10,12 +9,6 @@ router.use(validateRequest(idParamsSchema, 'params'));
 
 async function handleGet(req, res) {
   try {
-    const token = req.cookies['auth-token'];
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
-    const decoded = await verifyAdminToken(token);
-    if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
-
     const { id } = req.params;
 
     const data = await traderService.getTraderDetail(id);

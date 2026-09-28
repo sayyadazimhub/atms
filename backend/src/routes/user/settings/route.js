@@ -1,6 +1,5 @@
 import { Router } from 'express';
 
-import { verifyUserToken } from '../../../lib/auth.js';
 import { settingsService } from '../../../services/userService/settingsService.js';
 import { validateRequest } from '../../../middleware/validateRequest.js';
 import { userSettingsSchema } from '../../../validations/resources.js';
@@ -9,13 +8,7 @@ const router = Router({ mergeParams: true });
 
 async function handleGet(req, res) {
   try {
-    const token = req.cookies['user-token'];
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
-    const decoded = await verifyUserToken(token);
-    if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
-
-    const settings = await settingsService.getSettings(decoded.id);
+    const settings = await settingsService.getSettings(req.auth.id);
 
     return res.status(200).json(settings);
   } catch (err) {
@@ -26,14 +19,8 @@ async function handleGet(req, res) {
 
 async function handlePut(req, res) {
   try {
-    const token = req.cookies['user-token'];
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
-    const decoded = await verifyUserToken(token);
-    if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
-
     const body = req.body;
-    const settings = await settingsService.updateSettings(decoded.id, body);
+    const settings = await settingsService.updateSettings(req.auth.id, body);
 
     return res.status(200).json(settings);
   } catch (err) {

@@ -1,6 +1,5 @@
 import { Router } from 'express';
 
-import { verifyUserToken } from '../../../lib/auth.js';
 import { dashboardService } from '../../../services/userService/dashboardService.js';
 import { validateRequest } from '../../../middleware/validateRequest.js';
 import { dashboardQuerySchema } from '../../../validations/queries.js';
@@ -9,16 +8,10 @@ const router = Router({ mergeParams: true });
 
 async function handleGet(req, res) {
   try {
-    const token = req.cookies['user-token'];
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
-    const decoded = await verifyUserToken(token);
-    if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
-
     const startDateParam = req.query.startDate;
     const endDateParam = req.query.endDate;
 
-    const data = await dashboardService.getDashboardData(decoded.id, startDateParam, endDateParam);
+    const data = await dashboardService.getDashboardData(req.auth.id, startDateParam, endDateParam);
 
     return res.status(200).json(data);
   } catch (err) {

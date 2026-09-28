@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import { verifyAdminToken } from '../../../lib/auth.js';
 import { settingsDal } from '../../../dal/settingsDal.js';
 import { validateRequest } from '../../../middleware/validateRequest.js';
 import { systemSettingsSchema } from '../../../validations/resources.js';
@@ -8,12 +7,6 @@ const router = Router({ mergeParams: true });
 
 async function handleGet(req, res) {
   try {
-    const token = req.cookies['auth-token'];
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
-    const decoded = await verifyAdminToken(token);
-    if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
-
     let settings = await settingsDal.find();
     if (!settings) {
       settings = await settingsDal.create({
@@ -30,12 +23,6 @@ async function handleGet(req, res) {
 
 async function handlePut(req, res) {
   try {
-    const token = req.cookies['auth-token'];
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
-    const decoded = await verifyAdminToken(token);
-    if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
-
     const body = req.body;
     const { maintenanceMode, traderSelfRegistration, notifyOnNewTrader } = body;
 

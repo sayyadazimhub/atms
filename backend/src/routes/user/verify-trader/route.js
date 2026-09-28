@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import { verifyUserToken } from '../../../lib/auth.js';
 import { authDal } from '../../../dal/userDal/authDal.js';
 import { uploadToCloudinary } from '../../../lib/cloudinary.js';
 import Busboy from 'busboy';
@@ -10,12 +9,6 @@ const router = Router({ mergeParams: true });
 
 async function handlePost(req, res) {
   try {
-    const token = req.cookies['user-token'];
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
-    const decoded = await verifyUserToken(token);
-    if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
-
     return new Promise((resolve) => {
       const busboy = Busboy({
         headers: req.headers,
@@ -81,7 +74,7 @@ async function handlePost(req, res) {
           const { state, district } = parsedFields.data;
 
           const uploadResult = await uploadToCloudinary(fileBuffer, 'atms/proofs', fileName);
-          await authDal.update(decoded.id, {
+          await authDal.update(req.auth.id, {
             state,
             district,
             verificationProofUrl: uploadResult.secure_url,
