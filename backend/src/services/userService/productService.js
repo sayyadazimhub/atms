@@ -26,8 +26,8 @@ export const productService = {
     };
   },
 
-  async getProductById(id) {
-    const product = await productDal.findById(id);
+  async getProductById(id, userId) {
+    const product = await productDal.findById(id, userId);
     if (!product) throw new Error('Product not found');
     return product;
   },
@@ -50,7 +50,7 @@ export const productService = {
     });
   },
 
-  async updateProduct(id, data) {
+  async updateProduct(id, userId, data) {
     const { name, unit, baseCostPrice } = data;
     let updateData = {};
     if (name != null) updateData.name = name;
@@ -62,10 +62,10 @@ export const productService = {
       updateData.baseCostPrice = cost;
     }
 
-    return await productDal.update(id, updateData);
+    return await productDal.update(id, userId, updateData);
   },
 
-  async deleteProduct(id) {
-    return await productDal.delete(id);
+  async deleteProduct(id, userId) {
+    return await productDal.delete(id, userId);
   },
 };

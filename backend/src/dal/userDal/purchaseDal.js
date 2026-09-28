@@ -1,5 +1,5 @@
 import { connectDB } from '../../config/db.js';
-import { Product, Purchase, PurchaseItem, StockBatch } from '../../models/index.js';
+import { Product, Provider, Purchase, PurchaseItem, StockBatch } from '../../models/index.js';
 import { withTransaction } from '../transaction.js';
 
 export const purchaseDal = {
@@ -17,6 +17,16 @@ export const purchaseDal = {
   async count(userId) {
     await connectDB();
     return Purchase.countDocuments({ userId });
+  },
+
+  async findProviderForUser(providerId, userId) {
+    await connectDB();
+    return Provider.findOne({ _id: providerId, userId });
+  },
+
+  async findProductsForUser(productIds, userId) {
+    await connectDB();
+    return Product.find({ _id: { $in: productIds }, userId }).select('_id');
   },
 
   async findById(id, userId) {

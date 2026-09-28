@@ -17,13 +17,21 @@ async function handlePost(req, res) {
     if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
 
     return new Promise((resolve) => {
-      const busboy = Busboy({ headers: req.headers });
+      const busboy = Busboy({
+        headers: req.headers,
+        limits: { fileSize: 5 * 1024 * 1024, files: 1, fields: 5, fieldSize: 10 * 1024 },
+      });
       const fields = {};
       let fileBuffer = null;
       let fileName = '';
+      let fileTooLarge = false;
+      let tooManyFields = false;
 
       busboy.on('field', (fieldname, value) => {
         fields[fieldname] = value;
+      });
+      busboy.on('fieldsLimit', () => {
+        tooManyFields = true;
       });
 
       busboy.on('file', (fieldname, file, info) => {
@@ -34,14 +42,27 @@ async function handlePost(req, res) {
 
         fileName = info.filename;
         const chunks = [];
-        file.on('data', (chunk) => chunks.push(chunk));
+        file.on('data', (chunk) => {
+          if (!fileTooLarge) chunks.push(chunk);
+        });
+        file.on('limit', () => {
+          fileTooLarge = true;
+        });
         file.on('end', () => {
-          fileBuffer = Buffer.concat(chunks);
+          if (!fileTooLarge) fileBuffer = Buffer.concat(chunks);
         });
       });
 
       busboy.on('finish', async () => {
         try {
+          if (fileTooLarge) {
+            return resolve(
+              res.status(413).json({ error: 'Proof document must be 5 MB or smaller' }),
+            );
+          }
+          if (tooManyFields) {
+            return resolve(res.status(400).json({ error: 'Too many form fields' }));
+          }
           if (!fileBuffer) {
             return resolve(res.status(400).json({ error: 'Proof document is required' }));
           }

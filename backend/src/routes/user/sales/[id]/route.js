@@ -45,7 +45,12 @@ async function handlePut(req, res) {
   } catch (err) {
     console.error('Sale PUT error:', err);
     const status =
-      err.message === 'paidAmount is required' ? 400 : err.message === 'Sale not found' ? 404 : 500;
+      err.message === 'paidAmount is required' ||
+      err.message === 'Paid amount cannot exceed total amount'
+        ? 400
+        : err.message === 'Sale not found'
+          ? 404
+          : 500;
     return res.respondError(err.message || 'Failed to update sale', status);
   }
 }

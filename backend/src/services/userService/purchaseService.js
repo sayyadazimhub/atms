@@ -31,6 +31,19 @@ export const purchaseService = {
       throw new Error('Provider and at least one item are required');
     }
 
+    const [provider, products] = await Promise.all([
+      purchaseDal.findProviderForUser(providerId, userId),
+      purchaseDal.findProductsForUser(
+        items.map((item) => item.productId),
+        userId,
+      ),
+    ]);
+    if (!provider) throw new Error('Provider not found');
+    const foundProductIds = new Set(products.map((product) => product.id));
+    if (items.some((item) => !foundProductIds.has(item.productId))) {
+      throw new Error('One or more products were not found');
+    }
+
     let totalAmount = 0;
     const lineItems = items.map((it) => {
       const qty = parseFloat(it.quantity) || 0;
@@ -47,6 +60,7 @@ export const purchaseService = {
     });
 
     const paid = parseFloat(paidAmount) || 0;
+    if (paid > totalAmount) throw new Error('Paid amount cannot exceed total amount');
     const dueAmount = totalAmount - paid;
 
     return await purchaseDal.createPurchaseWithStock(
@@ -66,6 +80,9 @@ export const purchaseService = {
     if (!purchase) throw new Error('Purchase not found');
 
     const paid = parseFloat(paidAmount) || 0;
+    if (paid > purchase.totalAmount) {
+      throw new Error('Paid amount cannot exceed total amount');
+    }
     const dueAmount = purchase.totalAmount - paid;
 
     return await purchaseDal.update(id, userId, {

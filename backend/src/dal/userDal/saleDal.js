@@ -1,5 +1,5 @@
 import { connectDB } from '../../config/db.js';
-import { Product, Sale, SaleItem, StockBatch } from '../../models/index.js';
+import { Customer, Product, Sale, SaleItem, StockBatch } from '../../models/index.js';
 import { withTransaction } from '../transaction.js';
 
 export const saleDal = {
@@ -24,9 +24,14 @@ export const saleDal = {
     return Product.findOne({ _id: productId, userId });
   },
 
-  async findStockBatchForUser(batchId, userId) {
+  async findCustomerForUser(customerId, userId) {
     await connectDB();
-    return StockBatch.findOne({ _id: batchId, userId });
+    return Customer.findOne({ _id: customerId, userId });
+  },
+
+  async findStockBatchForUser(batchId, productId, userId) {
+    await connectDB();
+    return StockBatch.findOne({ _id: batchId, productId, userId });
   },
 
   async findById(id, userId) {

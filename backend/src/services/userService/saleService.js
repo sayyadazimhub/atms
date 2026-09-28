@@ -30,6 +30,8 @@ export const saleService = {
     if (!customerId || !Array.isArray(items) || items.length === 0) {
       throw new Error('Customer and at least one item are required');
     }
+    const customer = await saleDal.findCustomerForUser(customerId, userId);
+    if (!customer) throw new Error('Customer not found');
 
     let totalAmount = 0;
     let totalProfit = 0;
@@ -43,7 +45,7 @@ export const saleService = {
       let costPrice = parseFloat(it.costPrice) || 0;
 
       if (it.batchId) {
-        const batch = await saleDal.findStockBatchForUser(it.batchId, userId);
+        const batch = await saleDal.findStockBatchForUser(it.batchId, it.productId, userId);
         if (!batch) throw new Error(`Batch ${it.batchId} not found`);
         if (batch.quantity < qty) {
           throw new Error(`Insufficient stock in selected batch. Available: ${batch.quantity}`);
@@ -73,6 +75,7 @@ export const saleService = {
     }
 
     const paid = parseFloat(paidAmount) || 0;
+    if (paid > totalAmount) throw new Error('Paid amount cannot exceed total amount');
     const dueAmount = totalAmount - paid;
 
     return await saleDal.createSaleWithStock(
@@ -93,6 +96,7 @@ export const saleService = {
     if (!sale) throw new Error('Sale not found');
 
     const paid = parseFloat(paidAmount) || 0;
+    if (paid > sale.totalAmount) throw new Error('Paid amount cannot exceed total amount');
     const dueAmount = sale.totalAmount - paid;
 
     return await saleDal.update(id, userId, {

@@ -27,9 +27,9 @@ export const productDal = {
     return Product.countDocuments(where);
   },
 
-  async findById(id) {
+  async findById(id, userId) {
     await connectDB();
-    return Product.findById(id);
+    return Product.findOne({ _id: id, userId });
   },
 
   async create(data) {
@@ -37,13 +37,16 @@ export const productDal = {
     return Product.create(data);
   },
 
-  async update(id, data) {
+  async update(id, userId, data) {
     await connectDB();
-    return Product.findByIdAndUpdate(id, data, { new: true, runValidators: true });
+    return Product.findOneAndUpdate({ _id: id, userId }, data, {
+      new: true,
+      runValidators: true,
+    });
   },
 
-  async delete(id) {
+  async delete(id, userId) {
     await connectDB();
-    return Product.findByIdAndDelete(id);
+    return Product.findOneAndDelete({ _id: id, userId });
   },
 };

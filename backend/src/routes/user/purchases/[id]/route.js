@@ -47,7 +47,8 @@ async function handlePut(req, res) {
   } catch (err) {
     console.error('Purchase PUT error:', err);
     const status =
-      err.message === 'paidAmount is required'
+      err.message === 'paidAmount is required' ||
+      err.message === 'Paid amount cannot exceed total amount'
         ? 400
         : err.message === 'Purchase not found'
           ? 404

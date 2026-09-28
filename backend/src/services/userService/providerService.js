@@ -31,8 +31,8 @@ export const providerService = {
     };
   },
 
-  async getProviderById(id) {
-    const provider = await providerDal.findByIdWithPurchases(id);
+  async getProviderById(id, userId) {
+    const provider = await providerDal.findByIdWithPurchases(id, userId);
     if (!provider) throw new Error('Provider not found');
     return provider;
   },
@@ -48,16 +48,16 @@ export const providerService = {
     });
   },
 
-  async updateProvider(id, data) {
+  async updateProvider(id, userId, data) {
     const { name, phone, address } = data;
-    return await providerDal.update(id, {
+    return await providerDal.update(id, userId, {
       ...(name != null && { name }),
       ...(phone != null && { phone }),
       ...(address != null && { address }),
     });
   },
 
-  async deleteProvider(id) {
-    return await providerDal.delete(id);
+  async deleteProvider(id, userId) {
+    return await providerDal.delete(id, userId);
   },
 };

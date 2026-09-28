@@ -15,9 +15,9 @@ export const providerDal = {
     return Provider.countDocuments(where);
   },
 
-  async findByIdWithPurchases(id) {
+  async findByIdWithPurchases(id, userId) {
     await connectDB();
-    return Provider.findById(id).populate({
+    return Provider.findOne({ _id: id, userId }).populate({
       path: 'purchases',
       options: { sort: { createdAt: -1 } },
       populate: { path: 'items', populate: { path: 'product' } },
@@ -29,13 +29,16 @@ export const providerDal = {
     return Provider.create(data);
   },
 
-  async update(id, data) {
+  async update(id, userId, data) {
     await connectDB();
-    return Provider.findByIdAndUpdate(id, data, { new: true, runValidators: true });
+    return Provider.findOneAndUpdate({ _id: id, userId }, data, {
+      new: true,
+      runValidators: true,
+    });
   },
 
-  async delete(id) {
+  async delete(id, userId) {
     await connectDB();
-    return Provider.findByIdAndDelete(id);
+    return Provider.findOneAndDelete({ _id: id, userId });
   },
 };

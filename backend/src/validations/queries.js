@@ -4,7 +4,11 @@ import { objectIdSchema, paginationQuerySchema } from './common.js';
 export const adminSearchQuerySchema = z.object({ search: z.string().max(100).optional() });
 
 export const adminTraderQuerySchema = paginationQuerySchema.extend({
-  limit: z.string().regex(/^\d+$/).optional(),
+  limit: z
+    .string()
+    .regex(/^\d+$/)
+    .optional()
+    .refine((value) => value === undefined || Number(value) <= 100, 'Must be at most 100'),
 });
 
 export const idQuerySchema = z.object({ id: objectIdSchema });

@@ -41,7 +41,12 @@ async function handlePost(req, res) {
     return res.status(201).json(purchase);
   } catch (err) {
     console.error('Purchases POST error:', err);
-    const status = err.message.includes('required') ? 400 : 500;
+    const status =
+      err.message.includes('required') ||
+      err.message === 'Paid amount cannot exceed total amount' ||
+      err.message.endsWith('not found')
+        ? 400
+        : 500;
     return res.respond({ error: err.message || 'Failed to create purchase' }, status);
   }
 }

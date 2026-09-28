@@ -3,9 +3,9 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import { errorHandler, notFoundHandler, responseMiddleware } from './middleware/response.js';
-import apiRouter from './routes/index.js';
 
 dotenv.config();
+const { default: apiRouter } = await import('./routes/index.js');
 
 const app = express();
 const allowedOrigins = new Set(

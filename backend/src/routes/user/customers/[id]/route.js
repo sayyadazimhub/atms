@@ -1,18 +1,19 @@
 import { Router } from 'express';
 
 import { customerService } from '../../../../services/userService/customerService.js';
+import { requireUserSession } from '../../../../middleware/requireUserSession.js';
 import { validateRequest } from '../../../../middleware/validateRequest.js';
 import { idParamsSchema } from '../../../../validations/common.js';
 import { customerUpdateSchema } from '../../../../validations/resources.js';
 
 const router = Router({ mergeParams: true });
-router.use(validateRequest(idParamsSchema, 'params'));
+router.use(requireUserSession, validateRequest(idParamsSchema, 'params'));
 
 async function handleGet(req, res) {
   try {
     const { id } = req.params;
-    const customer = await customerService.getCustomerById(id);
-    return res.status(404).json(customer);
+    const customer = await customerService.getCustomerById(id, req.auth.id);
+    return res.status(200).json(customer);
   } catch (err) {
     console.error('Error fetching customer:', err);
     if (err.message === 'Customer not found') {
@@ -26,7 +27,7 @@ async function handlePut(req, res) {
   try {
     const { id } = req.params;
     const body = req.body;
-    const customer = await customerService.updateCustomer(id, body);
+    const customer = await customerService.updateCustomer(id, req.auth.id, body);
     return res.status(200).json(customer);
   } catch (err) {
     console.error('Update customer error:', err);
@@ -37,7 +38,7 @@ async function handlePut(req, res) {
 async function handleDelete(req, res) {
   try {
     const { id } = req.params;
-    await customerService.deleteCustomer(id);
+    await customerService.deleteCustomer(id, req.auth.id);
     return res.status(200).json({ message: 'Deleted' });
   } catch (err) {
     console.error('Delete customer error:', err);

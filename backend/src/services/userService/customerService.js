@@ -31,8 +31,8 @@ export const customerService = {
     };
   },
 
-  async getCustomerById(id) {
-    const customer = await customerDal.findByIdWithSales(id);
+  async getCustomerById(id, userId) {
+    const customer = await customerDal.findByIdWithSales(id, userId);
     if (!customer) {
       throw new Error('Customer not found');
     }
@@ -52,16 +52,16 @@ export const customerService = {
     });
   },
 
-  async updateCustomer(id, data) {
+  async updateCustomer(id, userId, data) {
     const { name, phone, address } = data;
-    return await customerDal.update(id, {
+    return await customerDal.update(id, userId, {
       ...(name != null && { name }),
       ...(phone != null && { phone }),
       ...(address != null && { address }),
     });
   },
 
-  async deleteCustomer(id) {
-    return await customerDal.delete(id);
+  async deleteCustomer(id, userId) {
+    return await customerDal.delete(id, userId);
   },
 };

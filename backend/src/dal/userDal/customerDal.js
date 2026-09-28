@@ -15,9 +15,9 @@ export const customerDal = {
     return Customer.countDocuments(where);
   },
 
-  async findByIdWithSales(id) {
+  async findByIdWithSales(id, userId) {
     await connectDB();
-    return Customer.findById(id).populate({
+    return Customer.findOne({ _id: id, userId }).populate({
       path: 'sales',
       options: { sort: { createdAt: -1 } },
       populate: { path: 'items', populate: { path: 'product' } },
@@ -29,13 +29,16 @@ export const customerDal = {
     return Customer.create(data);
   },
 
-  async update(id, data) {
+  async update(id, userId, data) {
     await connectDB();
-    return Customer.findByIdAndUpdate(id, data, { new: true, runValidators: true });
+    return Customer.findOneAndUpdate({ _id: id, userId }, data, {
+      new: true,
+      runValidators: true,
+    });
   },
 
-  async delete(id) {
+  async delete(id, userId) {
     await connectDB();
-    return Customer.findByIdAndDelete(id);
+    return Customer.findOneAndDelete({ _id: id, userId });
   },
 };

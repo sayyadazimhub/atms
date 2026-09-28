@@ -1,11 +1,22 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-const fromEmail = process.env.FROM_EMAIL || 'noreply@example.com';
+let resendClient;
+
+function getResendClient() {
+  if (!process.env.RESEND_API_KEY) {
+    throw new Error('RESEND_API_KEY environment variable is required to send email');
+  }
+  resendClient ??= new Resend(process.env.RESEND_API_KEY);
+  return resendClient;
+}
+
+function getFromEmail() {
+  return process.env.FROM_EMAIL || 'noreply@example.com';
+}
 
 export async function sendResetEmail(to, resetLink) {
-  const { data, error } = await resend.emails.send({
-    from: `ATMS <${fromEmail}>`,
+  const { data, error } = await getResendClient().emails.send({
+    from: `ATMS <${getFromEmail()}>`,
     to: [to],
     subject: 'ATMS - Reset your password',
     html: `
@@ -28,8 +39,8 @@ export async function sendOtpEmail(to, otp, purpose = 'verification') {
     purpose === 'reset'
       ? `Use this OTP to reset your password: <strong>${otp}</strong>. It expires in 10 minutes.`
       : `Your email verification OTP is: <strong>${otp}</strong>. It expires in 10 minutes.`;
-  const { data, error } = await resend.emails.send({
-    from: `ATMS <${fromEmail}>`,
+  const { data, error } = await getResendClient().emails.send({
+    from: `ATMS <${getFromEmail()}>`,
     to: [to],
     subject,
     html: `
@@ -45,8 +56,8 @@ export async function sendOtpEmail(to, otp, purpose = 'verification') {
 export async function sendNewTraderNotification(adminEmails, newTraderData) {
   if (!adminEmails || adminEmails.length === 0) return;
 
-  const { data, error } = await resend.emails.send({
-    from: `ATMS <${fromEmail}>`,
+  const { data, error } = await getResendClient().emails.send({
+    from: `ATMS <${getFromEmail()}>`,
     to: adminEmails,
     subject: 'ATMS Alert - New Trader Registration',
     html: `
@@ -66,8 +77,8 @@ export async function sendNewTraderNotification(adminEmails, newTraderData) {
 
 /** Send notification to trader upon verification approval */
 export async function sendVerificationApprovalEmail(to, name) {
-  const { data, error } = await resend.emails.send({
-    from: `ATMS <${fromEmail}>`,
+  const { data, error } = await getResendClient().emails.send({
+    from: `ATMS <${getFromEmail()}>`,
     to: [to],
     subject: 'ATMS - Verification Approved',
     html: `
@@ -84,8 +95,8 @@ export async function sendVerificationApprovalEmail(to, name) {
 
 /** Send notification to trader upon verification rejection */
 export async function sendVerificationRejectionEmail(to, name, reason) {
-  const { data, error } = await resend.emails.send({
-    from: `ATMS <${fromEmail}>`,
+  const { data, error } = await getResendClient().emails.send({
+    from: `ATMS <${getFromEmail()}>`,
     to: [to],
     subject: 'ATMS - Verification Needs Attention',
     html: `

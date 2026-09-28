@@ -44,6 +44,7 @@ async function handlePost(req, res) {
     const status =
       err.message.includes('required') ||
       err.message.includes('not found') ||
+      err.message === 'Paid amount cannot exceed total amount' ||
       err.message.includes('Insufficient')
         ? 400
         : 500;
