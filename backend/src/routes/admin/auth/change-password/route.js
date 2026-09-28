@@ -1,17 +1,18 @@
+import { Router } from 'express';
 
-
-import { verifyToken } from '../../../../lib/auth.js';
+import { verifyAdminToken } from '../../../../lib/auth.js';
 import { authService } from '../../../../services/adminService/authService.js';
 
-export async function PUT(req, res) {
-  const params = req.params || {};
+const router = Router({ mergeParams: true });
+
+async function handlePut(req, res) {
   try {
     const token = req.cookies['auth-token'];
     if (!token) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const decoded = await verifyToken(token);
+    const decoded = await verifyAdminToken(token);
     if (!decoded) {
       return res.status(401).json({ error: 'Invalid session' });
     }
@@ -30,3 +31,6 @@ export async function PUT(req, res) {
   }
 }
 
+router.put('/', handlePut);
+
+export default router;

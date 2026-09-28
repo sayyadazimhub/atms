@@ -1,13 +1,18 @@
+import { Router } from 'express';
 
 import { authService } from '../../../../services/userService/authService.js';
-import db from '../../../../config/db.js';
+import { settingsDal } from '../../../../dal/settingsDal.js';
+import { sendNewTraderNotification } from '../../../../lib/mail.js';
 
-export async function POST(req, res) {
-  const params = req.params || {};
+const router = Router({ mergeParams: true });
+
+async function handlePost(req, res) {
   try {
-    const settings = await db.systemSetting.findFirst();
+    const settings = await settingsDal.find();
     if (settings && !settings.traderSelfRegistration) {
-      return res.status(403).json({ error: 'Registration is currently disabled by the administrator' });
+      return res
+        .status(403)
+        .json({ error: 'Registration is currently disabled by the administrator' });
     }
 
     const body = req.body;
@@ -19,7 +24,7 @@ export async function POST(req, res) {
       if (!phone) fieldErrors.phone = 'Phone Number is required';
       if (!email) fieldErrors.email = 'Email Address is required';
       if (!password) fieldErrors.password = 'Password is required';
-      
+
       return res.status(400).json({ errors: fieldErrors });
     }
 
@@ -28,14 +33,9 @@ export async function POST(req, res) {
     // Send admin notification if enabled
     if (settings && settings.notifyOnNewTrader) {
       try {
-        const { sendNewTraderNotification } = await import('@/lib/mail');
-        // Fetch active admin emails
-        const activeAdmins = await db.admin.findMany({
-          where: { is_active: true },
-          select: { email: true }
-        });
-        const adminEmails = activeAdmins.map(a => a.email);
-        
+        const activeAdmins = await settingsDal.findActiveAdminEmails();
+        const adminEmails = activeAdmins.map((a) => a.email);
+
         if (adminEmails.length > 0) {
           await sendNewTraderNotification(adminEmails, { name, email, phone });
         }
@@ -45,9 +45,16 @@ export async function POST(req, res) {
       }
     }
 
-    return res.status(201).json({ message: 'Registration successful. Check your email for the OTP to verify your account.', email: registeredEmail });
+    return res.status(201).json({
+      message: 'Registration successful. Check your email for the OTP to verify your account.',
+      email: registeredEmail,
+    });
   } catch (err) {
     console.error('User register error:', err);
     return res.status(500).json({ error: err.message || 'Registration failed' });
   }
 }
+
+router.post('/', handlePost);
+
+export default router;

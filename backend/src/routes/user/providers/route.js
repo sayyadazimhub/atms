@@ -1,10 +1,11 @@
-
+import { Router } from 'express';
 
 import { verifyUserToken } from '../../../lib/auth.js';
 import { providerService } from '../../../services/userService/providerService.js';
 
-export async function GET(req, res) {
-  const params = req.params || {};
+const router = Router({ mergeParams: true });
+
+async function handleGet(req, res) {
   try {
     const token = req.cookies['user-token'];
     if (!token) return res.status(401).json({ error: 'Unauthorized' });
@@ -25,8 +26,7 @@ export async function GET(req, res) {
   }
 }
 
-export async function POST(req, res) {
-  const params = req.params || {};
+async function handlePost(req, res) {
   try {
     const token = req.cookies['user-token'];
     if (!token) return res.status(401).json({ error: 'Unauthorized' });
@@ -41,6 +41,11 @@ export async function POST(req, res) {
   } catch (err) {
     console.error('Providers POST error:', err);
     const status = err.message === 'Name is required' ? 400 : 500;
-    return res.json({ error: err.message || 'Failed to create provider' }, { status });
+    return res.respond({ error: err.message || 'Failed to create provider' }, status);
   }
 }
+
+router.get('/', handleGet);
+router.post('/', handlePost);
+
+export default router;

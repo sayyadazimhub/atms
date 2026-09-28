@@ -1,10 +1,11 @@
-
+import { Router } from 'express';
 
 import { verifyUserToken } from '../../../lib/auth.js';
 import { dashboardService } from '../../../services/userService/dashboardService.js';
 
-export async function GET(req, res) {
-  const params = req.params || {};
+const router = Router({ mergeParams: true });
+
+async function handleGet(req, res) {
   try {
     const token = req.cookies['user-token'];
     if (!token) return res.status(401).json({ error: 'Unauthorized' });
@@ -23,3 +24,7 @@ export async function GET(req, res) {
     return res.json({ error: 'Failed to load dashboard' });
   }
 }
+
+router.get('/', handleGet);
+
+export default router;

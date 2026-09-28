@@ -1,21 +1,23 @@
+import { Router } from 'express';
 
 import { authService } from '../../../../services/userService/authService.js';
-import db from '../../../../config/db.js';
+import { settingsDal } from '../../../../dal/settingsDal.js';
 
-export async function POST(req, res) {
-  const params = req.params || {};
+const router = Router({ mergeParams: true });
+
+async function handlePost(req, res) {
   try {
-    const settings = await db.systemSetting.findFirst();
+    const settings = await settingsDal.find();
     if (settings && settings.maintenanceMode) {
       return res.status(503).json({ error: 'System is currently under maintenance' });
     }
 
     const { email, password } = req.body;
-    
+
     let fieldErrors = {};
     if (!email) fieldErrors.email = 'Email is required';
     if (!password) fieldErrors.password = 'Password is required';
-    
+
     if (Object.keys(fieldErrors).length > 0) {
       return res.status(400).json({ errors: fieldErrors });
     }
@@ -32,6 +34,16 @@ export async function POST(req, res) {
     return res.status(200).json({ message: 'Login successful', user });
   } catch (err) {
     console.error('User login error:', err);
-    return res.status((err.message === 'Invalid credentials' || err.message.includes('verify your email')) ? 401 : 500).json({ error: err.message || 'Login failed' });
+    return res
+      .status(
+        err.message === 'Invalid credentials' || err.message.includes('verify your email')
+          ? 401
+          : 500,
+      )
+      .json({ error: err.message || 'Login failed' });
   }
 }
+
+router.post('/', handlePost);
+
+export default router;

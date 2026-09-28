@@ -1,48 +1,34 @@
-import { verifyUserToken, hashPassword } from '../../../lib/auth.js';
-import db from '../../../config/db.js';
+import { Router } from 'express';
+import { verifyAdminToken, hashPassword } from '../../../lib/auth.js';
+import { authDal } from '../../../dal/adminDal/authDal.js';
 
 async function requireAdmin(req) {
   const token = req.cookies['auth-token'];
   if (!token) throw new Error('Unauthorized');
-  const decoded = await verifyUserToken(token);
+  const decoded = await verifyAdminToken(token);
   if (!decoded) throw new Error('Unauthorized');
   return decoded;
 }
 
-export async function GET(req, res) {
-  const params = req.params || {};
+const router = Router({ mergeParams: true });
+
+async function handleGet(req, res) {
   try {
     await requireAdmin(req);
     const { search = '' } = req.query;
 
-    const admins = await db.admin.findMany({
-      where: {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { email: { contains: search, mode: 'insensitive' } }
-        ]
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        role: true,
-        is_active: true,
-        createdAt: true
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+    const admins = await authDal.findMany(String(search));
 
     return res.status(200).json({ admins });
   } catch (error) {
     const status = error.message === 'Unauthorized' ? 401 : 500;
-    return res.status(status).json({ error: status === 401 ? 'Unauthorized' : 'Failed to fetch admins' });
+    return res
+      .status(status)
+      .json({ error: status === 401 ? 'Unauthorized' : 'Failed to fetch admins' });
   }
 }
 
-export async function POST(req, res) {
-  const params = req.params || {};
+async function handlePost(req, res) {
   try {
     await requireAdmin(req);
     const body = req.body;
@@ -52,33 +38,37 @@ export async function POST(req, res) {
       return res.status(400).json({ error: 'Name, email, and password are required' });
     }
 
-    const existingAdmin = await db.admin.findUnique({ where: { email } });
+    const existingAdmin = await authDal.findByEmail(email);
     if (existingAdmin) {
       return res.status(400).json({ error: 'Admin with this email already exists' });
     }
 
     const hashedPassword = await hashPassword(password);
-    
-    const newAdmin = await db.admin.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        phone,
-        role: 'ADMIN'
-      },
-      select: { id: true, name: true, email: true, is_active: true }
+
+    const newAdmin = await authDal.create({
+      name,
+      email,
+      password: hashedPassword,
+      phone,
+      role: 'ADMIN',
     });
 
-    return res.status(201).json(newAdmin);
+    return res.status(201).json({
+      id: newAdmin.id,
+      name: newAdmin.name,
+      email: newAdmin.email,
+      is_active: newAdmin.is_active,
+    });
   } catch (error) {
     console.error('Error creating admin:', error);
-    return res.status(500).json({ error: 'Failed to create admin' });
+    const status = error.message === 'Unauthorized' ? 401 : 500;
+    return res
+      .status(status)
+      .json({ error: status === 401 ? 'Unauthorized' : 'Failed to create admin' });
   }
 }
 
-export async function PUT(req, res) {
-  const params = req.params || {};
+async function handlePut(req, res) {
   try {
     const adminReq = await requireAdmin(req);
     const body = req.body;
@@ -97,22 +87,24 @@ export async function PUT(req, res) {
     if (phone !== undefined) updateData.phone = phone;
     if (is_active !== undefined) updateData.is_active = is_active;
 
-    const updatedAdmin = await db.admin.update({
-      where: { id },
-      data: updateData,
-      select: { id: true, name: true, email: true, is_active: true }
-    });
+    const updatedAdmin = await authDal.update(id, updateData);
 
-    return res.status(200).json(updatedAdmin);
+    return res.status(200).json({
+      id: updatedAdmin.id,
+      name: updatedAdmin.name,
+      email: updatedAdmin.email,
+      is_active: updatedAdmin.is_active,
+    });
   } catch (error) {
     console.error('Error updating admin:', error);
     const status = error.message === 'Unauthorized' ? 401 : 500;
-    return res.status(status).json({ error: status === 401 ? 'Unauthorized' : 'Failed to update admin' });
+    return res
+      .status(status)
+      .json({ error: status === 401 ? 'Unauthorized' : 'Failed to update admin' });
   }
 }
 
-export async function DELETE(req, res) {
-  const params = req.params || {};
+async function handleDelete(req, res) {
   try {
     const adminReq = await requireAdmin(req);
     const { id } = req.query;
@@ -125,12 +117,21 @@ export async function DELETE(req, res) {
       return res.status(400).json({ error: 'You cannot delete your own account' });
     }
 
-    await db.admin.delete({ where: { id } });
+    await authDal.delete(id);
 
     return res.status(200).json({ message: 'Admin deleted successfully' });
   } catch (error) {
     console.error('Error deleting admin:', error);
     const status = error.message === 'Unauthorized' ? 401 : 500;
-    return res.status(status).json({ error: status === 401 ? 'Unauthorized' : 'Failed to delete admin' });
+    return res
+      .status(status)
+      .json({ error: status === 401 ? 'Unauthorized' : 'Failed to delete admin' });
   }
 }
+
+router.get('/', handleGet);
+router.post('/', handlePost);
+router.put('/', handlePut);
+router.delete('/', handleDelete);
+
+export default router;

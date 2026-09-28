@@ -1,40 +1,21 @@
-import db from '../../config/db.js';
+import { connectDB } from '../../config/db.js';
+import { User } from '../../models/index.js';
+
+const profileFields =
+  'name email phone emailVerified is_active verificationStatus role createdAt updatedAt';
 
 export const profileDal = {
-    async findById(id) {
-        return await db.user.findUnique({
-            where: { id },
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                phone: true,
-                emailVerified: true,
-                is_active: true,
-                verificationStatus: true,
-                role: true,
-                createdAt: true,
-                updatedAt: true,
-            },
-        });
-    },
+  async findById(id) {
+    await connectDB();
+    return User.findById(id).select(profileFields);
+  },
 
-    async update(id, data) {
-        return await db.user.update({
-            where: { id },
-            data,
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                phone: true,
-                emailVerified: true,
-                is_active: true,
-                verificationStatus: true,
-                role: true,
-                createdAt: true,
-                updatedAt: true,
-            },
-        });
-    },
+  async update(id, data) {
+    await connectDB();
+    return User.findByIdAndUpdate(id, data, {
+      new: true,
+      runValidators: true,
+      select: profileFields,
+    });
+  },
 };

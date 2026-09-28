@@ -1,51 +1,41 @@
-import db from '../../config/db.js';
+import { connectDB } from '../../config/db.js';
+import { Customer } from '../../models/index.js';
 
 export const customerDal = {
-    async findMany(where, skip, take) {
-        return await db.customer.findMany({
-            where,
-            orderBy: { name: 'asc' },
-            skip,
-            take,
-        });
-    },
+  async findMany(where, skip, take) {
+    await connectDB();
+    const query = Customer.find(where).sort({ name: 1 });
+    if (skip) query.skip(skip);
+    if (take) query.limit(take);
+    return query.exec();
+  },
 
-    async count(where) {
-        return await db.customer.count({ where });
-    },
+  async count(where) {
+    await connectDB();
+    return Customer.countDocuments(where);
+  },
 
-    async findByIdWithSales(id) {
-        return await db.customer.findUnique({
-            where: { id },
-            include: {
-                sales: {
-                    include: {
-                        items: {
-                            include: {
-                                product: true,
-                            },
-                        },
-                    },
-                    orderBy: {
-                        createdAt: 'desc',
-                    },
-                },
-            },
-        });
-    },
+  async findByIdWithSales(id) {
+    await connectDB();
+    return Customer.findById(id).populate({
+      path: 'sales',
+      options: { sort: { createdAt: -1 } },
+      populate: { path: 'items', populate: { path: 'product' } },
+    });
+  },
 
-    async create(data) {
-        return await db.customer.create({ data });
-    },
+  async create(data) {
+    await connectDB();
+    return Customer.create(data);
+  },
 
-    async update(id, data) {
-        return await db.customer.update({
-            where: { id },
-            data,
-        });
-    },
+  async update(id, data) {
+    await connectDB();
+    return Customer.findByIdAndUpdate(id, data, { new: true, runValidators: true });
+  },
 
-    async delete(id) {
-        return await db.customer.delete({ where: { id } });
-    }
+  async delete(id) {
+    await connectDB();
+    return Customer.findByIdAndDelete(id);
+  },
 };

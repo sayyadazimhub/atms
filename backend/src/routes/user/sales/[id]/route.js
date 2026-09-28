@@ -1,57 +1,71 @@
-
+import { Router } from 'express';
 
 import { verifyUserToken } from '../../../../lib/auth.js';
 import { saleService } from '../../../../services/userService/saleService.js';
 
-export async function GET(req, res) {
-  const params = req.params || {};
-    try {
-        const { id } = await params;
-        const sale = await saleService.getSaleById(id);
-        return res.status(404).json(sale);
-    } catch (err) {
-        console.error('Sale GET error:', err);
-        if (err.message === 'Sale not found') {
-            return res.json({ error: 'Sale not found' });
-        }
-        return res.status(500).json({ error: 'Failed to fetch sale' });
+const router = Router({ mergeParams: true });
+
+async function handleGet(req, res) {
+  try {
+    const token = req.cookies['user-token'];
+    if (!token) return res.respondError('Unauthorized', 401);
+
+    const decoded = await verifyUserToken(token);
+    if (!decoded) return res.respondError('Unauthorized', 401);
+
+    const sale = await saleService.getSaleById(req.params.id, decoded.id);
+    return res.respond(sale);
+  } catch (err) {
+    console.error('Sale GET error:', err);
+    if (err.message === 'Sale not found') {
+      return res.respondError('Sale not found', 404);
     }
+    return res.respondError('Failed to fetch sale', 500);
+  }
 }
 
-export async function PUT(req, res) {
-  const params = req.params || {};
-    try {
-        const { id } = await params;
-        const body = req.body;
-        const { paidAmount } = body;
+async function handlePut(req, res) {
+  try {
+    const token = req.cookies['user-token'];
+    if (!token) return res.respondError('Unauthorized', 401);
 
-        const updated = await saleService.updatePayment(id, paidAmount);
+    const decoded = await verifyUserToken(token);
+    if (!decoded) return res.respondError('Unauthorized', 401);
 
-        return res.status(401).json(updated);
-    } catch (err) {
-        console.error('Sale PUT error:', err);
-        const status = err.message === 'paidAmount is required' ? 400 : (err.message === 'Sale not found' ? 404 : 500);
-        return res.json({ error: err.message || 'Failed to update sale' }, { status });
-    }
+    const body = req.body;
+    const { paidAmount } = body;
+
+    const updated = await saleService.updatePayment(req.params.id, decoded.id, paidAmount);
+
+    return res.respond(updated);
+  } catch (err) {
+    console.error('Sale PUT error:', err);
+    const status =
+      err.message === 'paidAmount is required' ? 400 : err.message === 'Sale not found' ? 404 : 500;
+    return res.respondError(err.message || 'Failed to update sale', status);
+  }
 }
 
-export async function DELETE(req, res) {
-  const params = req.params || {};
-    try {
-        const token = req.cookies['user-token'];
-        if (!token) return res.json({ error: 'Unauthorized' });
+async function handleDelete(req, res) {
+  try {
+    const token = req.cookies['user-token'];
+    if (!token) return res.respondError('Unauthorized', 401);
 
-        const decoded = await verifyUserToken(token);
-        if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
+    const decoded = await verifyUserToken(token);
+    if (!decoded) return res.respondError('Unauthorized', 401);
 
-        const { id } = await params;
+    await saleService.deleteSale(req.params.id, decoded.id);
 
-        await saleService.deleteSale(id, decoded.id);
-
-        return res.json({ message: 'Sale deleted successfully' });
-    } catch (err) {
-        console.error('Sale DELETE error:', err);
-        const status = err.message === 'Sale not found' ? 404 : 500;
-        return res.json({ error: err.message || 'Failed to delete sale' }, { status });
-    }
+    return res.respond({ message: 'Sale deleted successfully' });
+  } catch (err) {
+    console.error('Sale DELETE error:', err);
+    const status = err.message === 'Sale not found' ? 404 : 500;
+    return res.respondError(err.message || 'Failed to delete sale', status);
+  }
 }
+
+router.get('/', handleGet);
+router.put('/', handlePut);
+router.delete('/', handleDelete);
+
+export default router;

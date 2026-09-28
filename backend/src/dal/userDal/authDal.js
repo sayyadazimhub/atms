@@ -1,32 +1,29 @@
-import db from '../../config/db.js';
+import { connectDB } from '../../config/db.js';
+import { User } from '../../models/index.js';
 
 export const authDal = {
-    async findByEmail(email) {
-        return await db.user.findUnique({ where: { email } });
-    },
+  async findByEmail(email) {
+    await connectDB();
+    return User.findOne({ email });
+  },
 
-    async findById(id) {
-        return await db.user.findUnique({ where: { id } });
-    },
+  async findById(id) {
+    await connectDB();
+    return User.findById(id);
+  },
 
-    async create(data) {
-        return await db.user.create({ data });
-    },
+  async create(data) {
+    await connectDB();
+    return User.create(data);
+  },
 
-    async update(id, data) {
-        return await db.user.update({
-            where: { id },
-            data,
-        });
-    },
+  async update(id, data) {
+    await connectDB();
+    return User.findByIdAndUpdate(id, data, { new: true, runValidators: true });
+  },
 
-    async findByEmailAndOtp(email, otp) {
-        return await db.user.findFirst({
-            where: {
-                email,
-                otp,
-                otpExpiresAt: { gt: new Date() },
-            },
-        });
-    },
+  async findByEmailAndOtp(email, otp) {
+    await connectDB();
+    return User.findOne({ email, otp, otpExpiresAt: { $gt: new Date() } });
+  },
 };

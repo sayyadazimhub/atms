@@ -1,11 +1,12 @@
+import { Router } from 'express';
 
 import { authService } from '../../../../services/adminService/authService.js';
 
-export async function POST(req, res) {
-  const params = req.params || {};
+const router = Router({ mergeParams: true });
+
+async function handlePost(req, res) {
   try {
     const { email, password } = req.body;
-    console.log('Login attempt via API:', req.body);
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
@@ -22,6 +23,12 @@ export async function POST(req, res) {
     return res.status(200).json({ message: 'Login successful', admin });
   } catch (err) {
     console.error('Login error:', err);
-    return res.status(err.message === 'Invalid credentials' ? 401 : 500).json({ error: err.message || 'Login failed' });
+    return res
+      .status(err.message === 'Invalid credentials' ? 401 : 500)
+      .json({ error: err.message || 'Login failed' });
   }
 }
+
+router.post('/', handlePost);
+
+export default router;

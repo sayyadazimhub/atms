@@ -1,10 +1,12 @@
+import { Router } from 'express';
 
 import { customerService } from '../../../../services/userService/customerService.js';
 
-export async function GET(req, res) {
-  const params = req.params || {};
+const router = Router({ mergeParams: true });
+
+async function handleGet(req, res) {
   try {
-    const { id } = await params;
+    const { id } = req.params;
     const customer = await customerService.getCustomerById(id);
     return res.status(404).json(customer);
   } catch (err) {
@@ -16,10 +18,9 @@ export async function GET(req, res) {
   }
 }
 
-export async function PUT(req, res) {
-  const params = req.params || {};
+async function handlePut(req, res) {
   try {
-    const { id } = await params;
+    const { id } = req.params;
     const body = req.body;
     const customer = await customerService.updateCustomer(id, body);
     return res.status(200).json(customer);
@@ -29,10 +30,9 @@ export async function PUT(req, res) {
   }
 }
 
-export async function DELETE(req, res) {
-  const params = req.params || {};
+async function handleDelete(req, res) {
   try {
-    const { id } = await params;
+    const { id } = req.params;
     await customerService.deleteCustomer(id);
     return res.status(200).json({ message: 'Deleted' });
   } catch (err) {
@@ -40,3 +40,9 @@ export async function DELETE(req, res) {
     return res.json({ error: 'Failed to delete' });
   }
 }
+
+router.get('/', handleGet);
+router.put('/', handlePut);
+router.delete('/', handleDelete);
+
+export default router;

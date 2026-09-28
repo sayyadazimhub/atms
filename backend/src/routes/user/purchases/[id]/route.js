@@ -1,57 +1,79 @@
-
+import { Router } from 'express';
 
 import { verifyUserToken } from '../../../../lib/auth.js';
 import { purchaseService } from '../../../../services/userService/purchaseService.js';
 
-export async function GET(req, res) {
-  const params = req.params || {};
+const router = Router({ mergeParams: true });
+
+async function handleGet(req, res) {
   try {
-    const { id } = await params;
-    const purchase = await purchaseService.getPurchaseById(id);
-    return res.status(404).json(purchase);
+    const token = req.cookies['user-token'];
+    if (!token) return res.respondError('Unauthorized', 401);
+
+    const decoded = await verifyUserToken(token);
+    if (!decoded) return res.respondError('Unauthorized', 401);
+
+    const { id } = req.params;
+    const purchase = await purchaseService.getPurchaseById(id, decoded.id);
+    return res.respond(purchase);
   } catch (err) {
     console.error('Purchase GET error:', err);
     if (err.message === 'Purchase not found') {
-      return res.json({ error: 'Purchase not found' });
+      return res.respondError('Purchase not found', 404);
     }
-    return res.status(500).json({ error: 'Failed to fetch purchase' });
+    return res.respondError('Failed to fetch purchase', 500);
   }
 }
 
-export async function PUT(req, res) {
-  const params = req.params || {};
+async function handlePut(req, res) {
   try {
-    const { id } = await params;
+    const token = req.cookies['user-token'];
+    if (!token) return res.respondError('Unauthorized', 401);
+
+    const decoded = await verifyUserToken(token);
+    if (!decoded) return res.respondError('Unauthorized', 401);
+
+    const { id } = req.params;
     const body = req.body;
     const { paidAmount } = body;
 
-    const updated = await purchaseService.updatePayment(id, paidAmount);
+    const updated = await purchaseService.updatePayment(id, decoded.id, paidAmount);
 
-    return res.status(401).json(updated);
+    return res.respond(updated);
   } catch (err) {
     console.error('Purchase PUT error:', err);
-    const status = err.message === 'paidAmount is required' ? 400 : (err.message === 'Purchase not found' ? 404 : 500);
-    return res.json({ error: err.message || 'Failed to update purchase' }, { status });
+    const status =
+      err.message === 'paidAmount is required'
+        ? 400
+        : err.message === 'Purchase not found'
+          ? 404
+          : 500;
+    return res.respond({ error: err.message || 'Failed to update purchase' }, status);
   }
 }
 
-export async function DELETE(req, res) {
-  const params = req.params || {};
+async function handleDelete(req, res) {
   try {
     const token = req.cookies['user-token'];
-    if (!token) return res.json({ error: 'Unauthorized' });
+    if (!token) return res.respondError('Unauthorized', 401);
 
     const decoded = await verifyUserToken(token);
-    if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
+    if (!decoded) return res.respondError('Unauthorized', 401);
 
-    const { id } = await params;
+    const { id } = req.params;
 
     await purchaseService.deletePurchase(id, decoded.id);
 
-    return res.json({ message: 'Purchase deleted successfully' });
+    return res.respond({ message: 'Purchase deleted successfully' });
   } catch (err) {
     console.error('Purchase DELETE error:', err);
     const status = err.message === 'Purchase not found' ? 404 : 500;
-    return res.json({ error: err.message || 'Failed to delete purchase' }, { status });
+    return res.respondError(err.message || 'Failed to delete purchase', status);
   }
 }
+
+router.get('/', handleGet);
+router.put('/', handlePut);
+router.delete('/', handleDelete);
+
+export default router;

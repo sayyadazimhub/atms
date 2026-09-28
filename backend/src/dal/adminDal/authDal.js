@@ -1,32 +1,51 @@
-import db from '../../config/db.js';
+import { connectDB } from '../../config/db.js';
+import { Admin } from '../../models/index.js';
+import { escapeRegex } from '../../lib/search.js';
 
 export const authDal = {
-    async findByEmail(email) {
-        return await db.admin.findUnique({ where: { email } });
-    },
+  async findMany(search = '') {
+    await connectDB();
+    const escapedSearch = escapeRegex(search.trim());
+    const filter = escapedSearch
+      ? {
+          $or: [
+            { name: { $regex: escapedSearch, $options: 'i' } },
+            { email: { $regex: escapedSearch, $options: 'i' } },
+          ],
+        }
+      : {};
+    return Admin.find(filter)
+      .select('name email phone role is_active createdAt')
+      .sort({ createdAt: -1 });
+  },
 
-    async findById(id) {
-        return await db.admin.findUnique({ where: { id } });
-    },
+  async findByEmail(email) {
+    await connectDB();
+    return Admin.findOne({ email });
+  },
 
-    async create(data) {
-        return await db.admin.create({ data });
-    },
+  async findById(id) {
+    await connectDB();
+    return Admin.findById(id);
+  },
 
-    async update(id, data) {
-        return await db.admin.update({
-            where: { id },
-            data,
-        });
-    },
+  async findByResetToken(token) {
+    await connectDB();
+    return Admin.findOne({ resetToken: token, resetTokenExp: { $gte: new Date() } });
+  },
 
-    async findFirstActiveWithResetToken(token) {
-        return await db.admin.findFirst({
-            where: {
-                resetToken: token,
-                resetTokenExpiry: { gt: new Date() },
-                is_active: true,
-            },
-        });
-    },
+  async create(data) {
+    await connectDB();
+    return Admin.create(data);
+  },
+
+  async update(id, data) {
+    await connectDB();
+    return Admin.findByIdAndUpdate(id, data, { new: true, runValidators: true });
+  },
+
+  async delete(id) {
+    await connectDB();
+    return Admin.findByIdAndDelete(id);
+  },
 };

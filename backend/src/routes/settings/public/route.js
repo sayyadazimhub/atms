@@ -1,33 +1,26 @@
-import db from '../../../config/db.js';
+import { Router } from 'express';
+import { settingsDal } from '../../../dal/settingsDal.js';
 
-export const revalidate = 60; // Cache the settings for 60 seconds
+const router = Router();
 
-export async function GET(req, res) {
-    try {
-        let settings = await db.systemSetting.findFirst();
-        
-        if (!settings) {
-            settings = {
-                maintenanceMode: false,
-                traderSelfRegistration: true
-            };
-        }
+router.get('/', async (_req, res) => {
+  let settings = await settingsDal.find();
 
-        const traderCount = await db.user.count({ where: { role: 'USER', is_active: true } });
+  if (!settings) {
+    settings = {
+      maintenanceMode: false,
+      traderSelfRegistration: true,
+    };
+  }
 
-        return res.json({
-            maintenanceMode: settings.maintenanceMode,
-            traderSelfRegistration: settings.traderSelfRegistration,
-            notifyOnNewTrader: settings.notifyOnNewTrader,
-            traderCount
-        });
-    } catch (error) {
-        console.error('Public Settings GET error:', error);
-        // Fallback to safe defaults if DB is down or unreachable
-        return res.json({
-            maintenanceMode: false,
-            traderSelfRegistration: false, // Secure fallback
-            notifyOnNewTrader: false
-        });
-    }
-}
+  const traderCount = await settingsDal.countActiveTraders();
+
+  return res.respond({
+    maintenanceMode: settings.maintenanceMode,
+    traderSelfRegistration: settings.traderSelfRegistration,
+    notifyOnNewTrader: settings.notifyOnNewTrader,
+    traderCount,
+  });
+});
+
+export default router;

@@ -1,19 +1,20 @@
-import db from '../../config/db.js';
+import { connectDB } from '../../config/db.js';
+import { Purchase, Sale } from '../../models/index.js';
 
 export const reportDal = {
-    async getSales(where) {
-        return await db.sale.findMany({
-            where,
-            include: { customer: true, items: { include: { product: true } } },
-            orderBy: { createdAt: 'desc' },
-        });
-    },
+  async getSales(where) {
+    await connectDB();
+    return Sale.find(where)
+      .populate('customer')
+      .populate({ path: 'items', populate: { path: 'product' } })
+      .sort({ createdAt: -1 });
+  },
 
-    async getPurchases(where) {
-        return await db.purchase.findMany({
-            where,
-            include: { provider: true, items: { include: { product: true } } },
-            orderBy: { createdAt: 'desc' },
-        });
-    }
+  async getPurchases(where) {
+    await connectDB();
+    return Purchase.find(where)
+      .populate('provider')
+      .populate({ path: 'items', populate: { path: 'product' } })
+      .sort({ createdAt: -1 });
+  },
 };

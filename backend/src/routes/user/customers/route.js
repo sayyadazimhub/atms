@@ -1,10 +1,11 @@
-
+import { Router } from 'express';
 
 import { verifyUserToken } from '../../../lib/auth.js';
 import { customerService } from '../../../services/userService/customerService.js';
 
-export async function GET(req, res) {
-  const params = req.params || {};
+const router = Router({ mergeParams: true });
+
+async function handleGet(req, res) {
   try {
     const token = req.cookies['user-token'];
     if (!token) return res.status(401).json({ error: 'Unauthorized' });
@@ -21,12 +22,13 @@ export async function GET(req, res) {
     return res.status(200).json(data);
   } catch (err) {
     console.error('Customers GET error:', err);
-    return res.status(err.message === 'Name is required' ? 400 : 500).json({ error: 'Failed to fetch customers' });
+    return res
+      .status(err.message === 'Name is required' ? 400 : 500)
+      .json({ error: 'Failed to fetch customers' });
   }
 }
 
-export async function POST(req, res) {
-  const params = req.params || {};
+async function handlePost(req, res) {
   try {
     const token = req.cookies['user-token'];
     if (!token) return res.status(401).json({ error: 'Unauthorized' });
@@ -43,3 +45,8 @@ export async function POST(req, res) {
     return res.json({ error: err.message || 'Failed to create customer' });
   }
 }
+
+router.get('/', handleGet);
+router.post('/', handlePost);
+
+export default router;

@@ -1,10 +1,11 @@
-
+import { Router } from 'express';
 
 import { verifyUserToken } from '../../../lib/auth.js';
 import { reportService } from '../../../services/userService/reportService.js';
 
-export async function GET(req, res) {
-  const params = req.params || {};
+const router = Router({ mergeParams: true });
+
+async function handleGet(req, res) {
   try {
     const token = req.cookies['user-token'];
     if (!token) return res.status(401).json({ error: 'Unauthorized' });
@@ -15,7 +16,7 @@ export async function GET(req, res) {
     const options = {
       type: req.query.type || 'today',
       start: req.query.start,
-      end: req.query.end
+      end: req.query.end,
     };
 
     const data = await reportService.getUserReports(decoded.id, options);
@@ -26,3 +27,7 @@ export async function GET(req, res) {
     return res.json({ error: 'Failed to load reports' });
   }
 }
+
+router.get('/', handleGet);
+
+export default router;

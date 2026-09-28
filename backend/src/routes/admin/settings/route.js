@@ -1,57 +1,56 @@
-import { verifyUserToken } from '../../../lib/auth.js';
-import db from '../../../config/db.js';
+import { Router } from 'express';
+import { verifyAdminToken } from '../../../lib/auth.js';
+import { settingsDal } from '../../../dal/settingsDal.js';
 
-export async function GET(req, res) {
-    try {
-        const token = req.cookies['auth-token'];
-        if (!token) return res.status(401).json({ error: 'Unauthorized' });
+const router = Router({ mergeParams: true });
 
-        const decoded = await verifyUserToken(token);
-        if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
+async function handleGet(req, res) {
+  try {
+    const token = req.cookies['auth-token'];
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
-        let settings = await db.systemSetting.findFirst();
-        if (!settings) {
-            settings = await db.systemSetting.create({
-                data: {
-                    maintenanceMode: false,
-                    traderSelfRegistration: true
-                }
-            });
-        }
-        return res.status(200).json(settings);
-    } catch (error) {
-        console.error('Settings GET:', error);
-        return res.json({ error: 'Internal Server Error' });
+    const decoded = await verifyAdminToken(token);
+    if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
+
+    let settings = await settingsDal.find();
+    if (!settings) {
+      settings = await settingsDal.create({
+        maintenanceMode: false,
+        traderSelfRegistration: true,
+      });
     }
+    return res.status(200).json(settings);
+  } catch (error) {
+    console.error('Settings GET:', error);
+    return res.json({ error: 'Internal Server Error' });
+  }
 }
 
-export async function PUT(req, res) {
-  const params = req.params || {};
-    try {
-        const token = req.cookies['auth-token'];
-        if (!token) return res.status(401).json({ error: 'Unauthorized' });
+async function handlePut(req, res) {
+  try {
+    const token = req.cookies['auth-token'];
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
-        const decoded = await verifyUserToken(token);
-        if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
+    const decoded = await verifyAdminToken(token);
+    if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
 
-        const body = req.body;
-        const { maintenanceMode, traderSelfRegistration, notifyOnNewTrader } = body;
+    const body = req.body;
+    const { maintenanceMode, traderSelfRegistration, notifyOnNewTrader } = body;
 
-        let settings = await db.systemSetting.findFirst();
-        if (settings) {
-            settings = await db.systemSetting.update({
-                where: { id: settings.id },
-                data: { maintenanceMode, traderSelfRegistration, notifyOnNewTrader }
-            });
-        } else {
-            settings = await db.systemSetting.create({
-                data: { maintenanceMode, traderSelfRegistration, notifyOnNewTrader }
-            });
-        }
+    const settings = await settingsDal.save({
+      maintenanceMode,
+      traderSelfRegistration,
+      notifyOnNewTrader,
+    });
 
-        return res.status(200).json(settings);
-    } catch (error) {
-        console.error('Settings PUT:', error);
-        return res.json({ error: 'Failed to update settings' });
-    }
+    return res.status(200).json(settings);
+  } catch (error) {
+    console.error('Settings PUT:', error);
+    return res.json({ error: 'Failed to update settings' });
+  }
 }
+
+router.get('/', handleGet);
+router.put('/', handlePut);
+
+export default router;

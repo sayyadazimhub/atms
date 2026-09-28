@@ -1,8 +1,10 @@
+import { Router } from 'express';
 
 import { authService } from '../../../../services/userService/authService.js';
 
-export async function POST(req, res) {
-  const params = req.params || {};
+const router = Router({ mergeParams: true });
+
+async function handlePost(req, res) {
   try {
     const { email, otp } = req.body;
     if (!email || !otp) {
@@ -21,6 +23,12 @@ export async function POST(req, res) {
     return res.status(200).json({ message: 'Email verified successfully', user });
   } catch (err) {
     console.error('OTP verify error:', err);
-    return res.status(err.message === 'Invalid or expired OTP' ? 400 : 500).json({ error: err.message || 'Verification failed' });
+    return res
+      .status(err.message === 'Invalid or expired OTP' ? 400 : 500)
+      .json({ error: err.message || 'Verification failed' });
   }
 }
+
+router.post('/', handlePost);
+
+export default router;

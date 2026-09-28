@@ -1,25 +1,16 @@
-import db from '../../config/db.js';
+import { connectDB } from '../../config/db.js';
+import { Admin } from '../../models/index.js';
+
+const profileFields = 'name email phone role is_active createdAt';
 
 export const profileDal = {
-    async findById(id) {
-        return await db.admin.findUnique({
-            where: { id },
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                phone: true,
-                role: true,
-                is_active: true,
-                createdAt: true,
-            },
-        });
-    },
+  async findById(id) {
+    await connectDB();
+    return Admin.findById(id).select(profileFields);
+  },
 
-    async update(id, data) {
-        return await db.admin.update({
-            where: { id },
-            data,
-        });
-    },
+  async update(id, data) {
+    await connectDB();
+    return Admin.findByIdAndUpdate(id, data, { new: true, runValidators: true });
+  },
 };

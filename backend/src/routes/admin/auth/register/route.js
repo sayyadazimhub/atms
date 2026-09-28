@@ -1,9 +1,17 @@
+import { Router } from 'express';
 
+import { verifyAdminToken } from '../../../../lib/auth.js';
 import { authService } from '../../../../services/adminService/authService.js';
 
-export async function POST(req, res) {
-  const params = req.params || {};
+const router = Router({ mergeParams: true });
+
+async function handlePost(req, res) {
   try {
+    const existingAdminToken = req.cookies['auth-token'];
+    if (!existingAdminToken || !(await verifyAdminToken(existingAdminToken))) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
     const body = req.body;
     const { name, email, password, phone } = body;
 
@@ -26,3 +34,7 @@ export async function POST(req, res) {
     return res.status(500).json({ error: err.message || 'Registration failed' });
   }
 }
+
+router.post('/', handlePost);
+
+export default router;

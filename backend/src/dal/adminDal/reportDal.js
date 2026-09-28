@@ -1,64 +1,73 @@
-import db from '../../config/db.js';
+import { connectDB } from '../../config/db.js';
+import { Product, Sale, SaleItem, User } from '../../models/index.js';
 
 export const reportDal = {
-    async getOverallStats(where) {
-        return await db.sale.aggregate({
-            where,
-            _sum: { totalAmount: true, totalProfit: true },
-            _count: { id: true }
-        });
-    },
+  async getOverallStats(where) {
+    await connectDB();
+    const [result] = await Sale.aggregate([
+      { $match: where },
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: '$totalAmount' },
+          totalProfit: { $sum: '$totalProfit' },
+          transactionCount: { $sum: 1 },
+        },
+      },
+    ]);
+    return result ?? { totalAmount: 0, totalProfit: 0, transactionCount: 0 };
+  },
 
-    async getTraderPerformance(where, take = 5) {
-        return await db.sale.groupBy({
-            by: ['userId'],
-            where,
-            _sum: { totalAmount: true, totalProfit: true },
-            orderBy: { _sum: { totalAmount: 'desc' } },
-            take
-        });
-    },
+  async getTraderPerformance(where, take = 5) {
+    await connectDB();
+    return Sale.aggregate([
+      { $match: where },
+      {
+        $group: {
+          _id: '$userId',
+          totalAmount: { $sum: '$totalAmount' },
+          totalProfit: { $sum: '$totalProfit' },
+        },
+      },
+      { $sort: { totalAmount: -1 } },
+      { $limit: take },
+    ]);
+  },
 
-    async getRecentSalesForTimeline(since) {
-        return await db.sale.findMany({
-            where: {
-                createdAt: { gte: since },
-                userId: { not: null }
-            },
-            select: { createdAt: true, totalAmount: true, totalProfit: true },
-            orderBy: { createdAt: 'asc' }
-        });
-    },
+  async getRecentSalesForTimeline(since) {
+    await connectDB();
+    return Sale.find({ createdAt: { $gte: since }, userId: { $ne: null } })
+      .select('createdAt totalAmount totalProfit')
+      .sort({ createdAt: 1 });
+  },
 
-    async getTradersByIds(ids) {
-        return await db.user.findMany({
-            where: { id: { in: ids } },
-            select: { id: true, name: true }
-        });
-    },
+  async getTradersByIds(ids) {
+    await connectDB();
+    return User.find({ _id: { $in: ids } }).select('name');
+  },
 
-    async getItemStats(where, take = 4) {
-        return await db.saleItem.groupBy({
-            by: ['productId'],
-            where,
-            _sum: { quantity: true },
-            orderBy: { _sum: { quantity: 'desc' } },
-            take
-        });
-    },
+  async getItemStats(where, take = 4) {
+    await connectDB();
+    return SaleItem.aggregate([
+      { $match: where },
+      { $group: { _id: '$productId', quantity: { $sum: '$quantity' } } },
+      { $sort: { quantity: -1 } },
+      { $limit: take },
+    ]);
+  },
 
-    async getProductsByIds(ids) {
-        return await db.product.findMany({
-            where: { id: { in: ids } },
-            select: { id: true, name: true }
-        });
-    },
+  async getProductsByIds(ids) {
+    await connectDB();
+    return Product.find({ _id: { $in: ids } }).select('name');
+  },
 
-    async getTraderCount() {
-        return await db.user.count({ where: { role: 'USER' } });
-    },
+  async getTraderCount() {
+    await connectDB();
+    return User.countDocuments({ role: 'USER' });
+  },
 
-    async getProductCount() {
-        return await db.product.count();
-    }
+  async getProductCount() {
+    await connectDB();
+    return Product.countDocuments();
+  },
 };

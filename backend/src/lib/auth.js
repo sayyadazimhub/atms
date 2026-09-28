@@ -2,7 +2,12 @@ import bcrypt from 'bcryptjs';
 import * as jose from 'jose';
 import crypto from 'crypto';
 
-const secret = () => new TextEncoder().encode(process.env.JWT_SECRET || 'atms-jwt-secret');
+const secret = () => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET environment variable is required');
+  }
+  return new TextEncoder().encode(process.env.JWT_SECRET);
+};
 const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
 
 export async function hashPassword(password) {
@@ -40,13 +45,21 @@ export async function verifyToken(token) {
   }
 }
 
+export async function verifyAdminToken(token) {
+  const payload = await verifyToken(token);
+  return payload?.role === 'admin' ? payload : null;
+}
+
 export function generateResetToken() {
   return crypto.randomBytes(32).toString('hex');
 }
 
 export async function verifyAuth(request) {
   try {
-    const token = request.cookies.get('user-token')?.value || request.cookies.get('token')?.value || request.cookies.get('auth-token')?.value;
+    const token =
+      request.cookies.get('user-token')?.value ||
+      request.cookies.get('token')?.value ||
+      request.cookies.get('auth-token')?.value;
     if (!token) {
       return null;
     }
@@ -57,4 +70,8 @@ export async function verifyAuth(request) {
   }
 }
 
-export { generateToken as signUserToken, verifyToken as verifyUserToken, verifyToken as verifyUserTokenEdge };
+export {
+  generateToken as signUserToken,
+  verifyToken as verifyUserToken,
+  verifyToken as verifyUserTokenEdge,
+};

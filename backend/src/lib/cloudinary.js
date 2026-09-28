@@ -28,7 +28,7 @@ export const uploadToCloudinary = (fileBuffer, folder, originalFilename) => {
         } else {
           resolve(result);
         }
-      }
+      },
     );
 
     uploadStream.end(fileBuffer);
@@ -42,31 +42,34 @@ export const uploadToCloudinary = (fileBuffer, folder, originalFilename) => {
  */
 export const deleteFromCloudinary = async (url) => {
   if (!url || typeof url !== 'string' || !url.includes('cloudinary.com')) return;
-  
+
   try {
     const parts = url.split('/');
-    const uploadIndex = parts.findIndex(p => p === 'upload');
+    const uploadIndex = parts.findIndex((p) => p === 'upload');
     if (uploadIndex === -1) return;
-    
+
     const isRaw = parts.includes('raw');
-    
+
     let publicIdStartIndex = uploadIndex + 1;
     // Skip the version string (e.g. 'v1234567890')
-    if (parts[publicIdStartIndex].startsWith('v') && !isNaN(parts[publicIdStartIndex].substring(1))) {
-       publicIdStartIndex++;
+    if (
+      parts[publicIdStartIndex].startsWith('v') &&
+      !isNaN(parts[publicIdStartIndex].substring(1))
+    ) {
+      publicIdStartIndex++;
     }
-    
+
     const publicIdWithExt = parts.slice(publicIdStartIndex).join('/');
-    
+
     // Cloudinary requires public_id WITHOUT extension for images, but WITH extension for raw files
     let publicId = publicIdWithExt;
     if (!isRaw) {
-       const lastDotIndex = publicIdWithExt.lastIndexOf('.');
-       if (lastDotIndex !== -1) {
-         publicId = publicIdWithExt.substring(0, lastDotIndex);
-       }
+      const lastDotIndex = publicIdWithExt.lastIndexOf('.');
+      if (lastDotIndex !== -1) {
+        publicId = publicIdWithExt.substring(0, lastDotIndex);
+      }
     }
-    
+
     const resourceType = isRaw ? 'raw' : 'image';
     return await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
   } catch (error) {

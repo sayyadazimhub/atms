@@ -1,10 +1,11 @@
-
+import { Router } from 'express';
 
 import { verifyUserToken } from '../../../lib/auth.js';
 import { saleService } from '../../../services/userService/saleService.js';
 
-export async function GET(req, res) {
-  const params = req.params || {};
+const router = Router({ mergeParams: true });
+
+async function handleGet(req, res) {
   try {
     const token = req.cookies['user-token'];
     if (!token) return res.status(401).json({ error: 'Unauthorized' });
@@ -23,8 +24,7 @@ export async function GET(req, res) {
   }
 }
 
-export async function POST(req, res) {
-  const params = req.params || {};
+async function handlePost(req, res) {
   try {
     const token = req.cookies['user-token'];
     if (!token) return res.status(401).json({ error: 'Unauthorized' });
@@ -38,7 +38,17 @@ export async function POST(req, res) {
     return res.status(201).json(sale);
   } catch (err) {
     console.error('Sales POST error:', err);
-    const status = err.message.includes('required') || err.message.includes('not found') || err.message.includes('Insufficient') ? 400 : 500;
-    return res.json({ error: err.message || 'Failed to create sale' }, { status });
+    const status =
+      err.message.includes('required') ||
+      err.message.includes('not found') ||
+      err.message.includes('Insufficient')
+        ? 400
+        : 500;
+    return res.respond({ error: err.message || 'Failed to create sale' }, status);
   }
 }
+
+router.get('/', handleGet);
+router.post('/', handlePost);
+
+export default router;

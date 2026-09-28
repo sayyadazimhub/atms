@@ -1,24 +1,29 @@
+import { Router } from 'express';
 
-
-import { verifyUserToken } from '../../../lib/auth.js';
+import { verifyAdminToken } from '../../../lib/auth.js';
 import { reportService } from '../../../services/adminService/reportService.js';
 
-export async function GET(req, res) {
-  const params = req.params || {};
-    try {
-        const token = req.cookies['auth-token'];
-        if (!token) return res.status(401).json({ error: 'Unauthorized' });
+const router = Router({ mergeParams: true });
 
-        const decoded = await verifyUserToken(token);
-        if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
+async function handleGet(req, res) {
+  try {
+    const token = req.cookies['auth-token'];
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
-        const { range = '30d' } = req.query;
+    const decoded = await verifyAdminToken(token);
+    if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
 
-        const data = await reportService.getAdminReports(range);
+    const { range = '30d' } = req.query;
 
-        return res.status(200).json(data);
-    } catch (error) {
-        console.error('Admin Reports API Error:', error);
-        return res.json({ error: 'Report generation failed' });
-    }
+    const data = await reportService.getAdminReports(range);
+
+    return res.status(200).json(data);
+  } catch (error) {
+    console.error('Admin Reports API Error:', error);
+    return res.json({ error: 'Report generation failed' });
+  }
 }
+
+router.get('/', handleGet);
+
+export default router;

@@ -1,41 +1,46 @@
-
+import { Router } from 'express';
 
 import { verifyUserToken } from '../../../lib/auth.js';
 import { settingsService } from '../../../services/userService/settingsService.js';
 
-export async function GET(req, res) {
-  const params = req.params || {};
-    try {
-        const token = req.cookies['user-token'];
-        if (!token) return res.status(401).json({ error: 'Unauthorized' });
+const router = Router({ mergeParams: true });
 
-        const decoded = await verifyUserToken(token);
-        if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
+async function handleGet(req, res) {
+  try {
+    const token = req.cookies['user-token'];
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
-        const settings = await settingsService.getSettings(decoded.id);
+    const decoded = await verifyUserToken(token);
+    if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
 
-        return res.status(200).json(settings);
-    } catch (err) {
-        console.error('Settings GET error:', err);
-        return res.json({ error: 'Failed to fetch settings' });
-    }
+    const settings = await settingsService.getSettings(decoded.id);
+
+    return res.status(200).json(settings);
+  } catch (err) {
+    console.error('Settings GET error:', err);
+    return res.json({ error: 'Failed to fetch settings' });
+  }
 }
 
-export async function PUT(req, res) {
-  const params = req.params || {};
-    try {
-        const token = req.cookies['user-token'];
-        if (!token) return res.status(401).json({ error: 'Unauthorized' });
+async function handlePut(req, res) {
+  try {
+    const token = req.cookies['user-token'];
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
-        const decoded = await verifyUserToken(token);
-        if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
+    const decoded = await verifyUserToken(token);
+    if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
 
-        const body = req.body;
-        const settings = await settingsService.updateSettings(decoded.id, body);
+    const body = req.body;
+    const settings = await settingsService.updateSettings(decoded.id, body);
 
-        return res.status(200).json(settings);
-    } catch (err) {
-        console.error('Settings PUT error:', err);
-        return res.json({ error: 'Failed to update settings' });
-    }
+    return res.status(200).json(settings);
+  } catch (err) {
+    console.error('Settings PUT error:', err);
+    return res.json({ error: 'Failed to update settings' });
+  }
 }
+
+router.get('/', handleGet);
+router.put('/', handlePut);
+
+export default router;

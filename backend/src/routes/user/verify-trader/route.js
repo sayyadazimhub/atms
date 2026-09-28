@@ -1,10 +1,12 @@
+import { Router } from 'express';
 import { verifyUserToken } from '../../../lib/auth.js';
-import db from '../../../config/db.js';
+import { authDal } from '../../../dal/userDal/authDal.js';
 import { uploadToCloudinary } from '../../../lib/cloudinary.js';
 import Busboy from 'busboy';
 
-export async function POST(req, res) {
-  const params = req.params || {};
+const router = Router({ mergeParams: true });
+
+async function handlePost(req, res) {
   try {
     const token = req.cookies['user-token'];
     if (!token) return res.status(401).json({ error: 'Unauthorized' });
@@ -48,18 +50,17 @@ export async function POST(req, res) {
           }
 
           const uploadResult = await uploadToCloudinary(fileBuffer, 'atms/proofs', fileName);
-          await db.user.update({
-            where: { id: decoded.id },
-            data: {
-              state,
-              district,
-              verificationProofUrl: uploadResult.secure_url,
-              verificationStatus: 'PENDING',
-              rejectionReason: null,
-            },
+          await authDal.update(decoded.id, {
+            state,
+            district,
+            verificationProofUrl: uploadResult.secure_url,
+            verificationStatus: 'PENDING',
+            rejectionReason: null,
           });
 
-          return resolve(res.status(200).json({ message: 'Verification application submitted successfully' }));
+          return resolve(
+            res.status(200).json({ message: 'Verification application submitted successfully' }),
+          );
         } catch (error) {
           console.error('Verify trader error:', error);
           return resolve(res.status(500).json({ error: 'Failed to submit verification' }));
@@ -78,3 +79,7 @@ export async function POST(req, res) {
     return res.status(500).json({ error: 'Failed to submit verification' });
   }
 }
+
+router.post('/', handlePost);
+
+export default router;

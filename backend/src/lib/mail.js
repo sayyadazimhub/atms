@@ -23,9 +23,7 @@ export async function sendResetEmail(to, resetLink) {
 /** Send OTP email for User (verification or password reset) via Resend */
 export async function sendOtpEmail(to, otp, purpose = 'verification') {
   const subject =
-    purpose === 'reset'
-      ? 'ATMS - Your password reset OTP'
-      : 'ATMS - Verify your email';
+    purpose === 'reset' ? 'ATMS - Your password reset OTP' : 'ATMS - Verify your email';
   const message =
     purpose === 'reset'
       ? `Use this OTP to reset your password: <strong>${otp}</strong>. It expires in 10 minutes.`
@@ -46,7 +44,7 @@ export async function sendOtpEmail(to, otp, purpose = 'verification') {
 /** Send notification to admins about a new trader registration */
 export async function sendNewTraderNotification(adminEmails, newTraderData) {
   if (!adminEmails || adminEmails.length === 0) return;
-  
+
   const { data, error } = await resend.emails.send({
     from: `ATMS <${fromEmail}>`,
     to: adminEmails,

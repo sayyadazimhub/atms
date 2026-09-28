@@ -1,130 +1,141 @@
-import db from '../../config/db.js';
+import { connectDB } from '../../config/db.js';
+import { Product, Purchase, PurchaseItem, StockBatch } from '../../models/index.js';
+import { withTransaction } from '../transaction.js';
 
 export const purchaseDal = {
-    async findMany(userId, skip, take) {
-        return await db.purchase.findMany({
-            where: { userId },
-            include: { provider: true, items: { include: { product: true } } },
-            orderBy: { createdAt: 'desc' },
-            skip,
-            take,
-        });
-    },
+  async findMany(userId, skip, take) {
+    await connectDB();
+    const query = Purchase.find({ userId })
+      .populate('provider')
+      .populate({ path: 'items', populate: { path: 'product' } })
+      .sort({ createdAt: -1 });
+    if (skip) query.skip(skip);
+    if (take) query.limit(take);
+    return query.exec();
+  },
 
-    async count(userId) {
-        return await db.purchase.count({ where: { userId } });
-    },
+  async count(userId) {
+    await connectDB();
+    return Purchase.countDocuments({ userId });
+  },
 
-    async findById(id) {
-        return await db.purchase.findUnique({
-            where: { id },
-            include: { provider: true, items: { include: { product: true } } },
-        });
-    },
+  async findById(id, userId) {
+    await connectDB();
+    return Purchase.findOne({ _id: id, userId })
+      .populate('provider')
+      .populate({ path: 'items', populate: { path: 'product' } });
+  },
 
-    async findByIdSimple(id) {
-        return await db.purchase.findUnique({ where: { id } });
-    },
+  async findByIdSimple(id, userId) {
+    await connectDB();
+    return Purchase.findOne({ _id: id, userId });
+  },
 
-    async findByIdWithItems(id, userId) {
-        return await db.purchase.findFirst({
-            where: { id, userId },
-            include: { items: true },
-        });
-    },
+  async createPurchaseWithStock(userId, providerId, totalAmount, paidAmount, dueAmount, lineItems) {
+    return withTransaction(async (session) => {
+      const [purchase] = await Purchase.create(
+        [{ providerId, userId, totalAmount, paidAmount, dueAmount }],
+        { session },
+      );
+      await PurchaseItem.create(
+        lineItems.map((item) => ({ ...item, purchaseId: purchase._id })),
+        { session },
+      );
 
-    async createPurchaseWithStock(userId, providerId, totalAmount, paidAmount, dueAmount, lineItems) {
-        return await db.$transaction(async (tx) => {
-            const purchase = await tx.purchase.create({
-                data: {
-                    providerId,
-                    userId,
-                    totalAmount,
-                    paidAmount,
-                    dueAmount,
-                    items: { create: lineItems },
-                },
-                include: { provider: true, items: { include: { product: true } } },
-            });
+      for (const item of lineItems) {
+        const productUpdate = await Product.updateOne(
+          { _id: item.productId, userId },
+          {
+            $inc: { currentStock: item.quantity },
+            $set: { baseCostPrice: item.unitPrice },
+          },
+          { session },
+        );
+        if (!productUpdate.matchedCount) throw new Error('Product not found');
 
-            for (const it of lineItems) {
-                // Update product aggregate stock
-                await tx.product.update({
-                    where: { id: it.productId, userId },
-                    data: {
-                        currentStock: { increment: it.quantity },
-                        baseCostPrice: it.unitPrice,
-                    },
-                });
+        const existingBatch = await StockBatch.findOne({
+          productId: item.productId,
+          userId,
+          purchasePrice: item.unitPrice,
+        }).session(session);
 
-                // Manage StockBatch
-                const existingBatch = await tx.stockBatch.findFirst({
-                    where: {
-                        productId: it.productId,
-                        userId,
-                        purchasePrice: it.unitPrice,
-                    },
-                });
+        if (existingBatch) {
+          await StockBatch.updateOne(
+            { _id: existingBatch._id },
+            { $inc: { quantity: item.quantity } },
+            { session },
+          );
+        } else {
+          await StockBatch.create(
+            [
+              {
+                productId: item.productId,
+                userId,
+                purchasePrice: item.unitPrice,
+                quantity: item.quantity,
+              },
+            ],
+            { session },
+          );
+        }
+      }
 
-                if (existingBatch) {
-                    await tx.stockBatch.update({
-                        where: { id: existingBatch.id },
-                        data: { quantity: { increment: it.quantity } },
-                    });
-                } else {
-                    await tx.stockBatch.create({
-                        data: {
-                            productId: it.productId,
-                            userId,
-                            purchasePrice: it.unitPrice,
-                            quantity: it.quantity,
-                        },
-                    });
-                }
-            }
-            return purchase;
-        });
-    },
+      return Purchase.findById(purchase._id)
+        .session(session)
+        .populate('provider')
+        .populate({ path: 'items', populate: { path: 'product' } });
+    });
+  },
 
-    async update(id, data) {
-        return await db.purchase.update({
-            where: { id },
-            data,
-            include: {
-                provider: true,
-                items: { include: { product: true } },
-            },
-        });
-    },
+  async update(id, userId, data) {
+    await connectDB();
+    return Purchase.findOneAndUpdate({ _id: id, userId }, data, {
+      new: true,
+      runValidators: true,
+    })
+      .populate('provider')
+      .populate({ path: 'items', populate: { path: 'product' } });
+  },
 
-    async deletePurchaseWithRollback(id, userId) {
-        const purchase = await this.findByIdWithItems(id, userId);
-        if (!purchase) throw new Error('Purchase not found');
+  async deletePurchaseWithRollback(id, userId) {
+    return withTransaction(async (session) => {
+      const purchase = await Purchase.findOne({ _id: id, userId })
+        .session(session)
+        .populate('items');
+      if (!purchase) throw new Error('Purchase not found');
 
-        return await db.$transaction(async (tx) => {
-            for (const item of purchase.items) {
-                await tx.product.update({
-                    where: { id: item.productId },
-                    data: { currentStock: { decrement: item.quantity } },
-                });
+      for (const item of purchase.items) {
+        await Product.updateOne(
+          { _id: item.productId, userId },
+          { $inc: { currentStock: -item.quantity } },
+          { session },
+        );
 
-                const matchingBatch = await tx.stockBatch.findFirst({
-                    where: {
-                        productId: item.productId,
-                        userId,
-                        purchasePrice: item.unitPrice,
-                    },
-                });
+        const batch = await StockBatch.findOne({
+          productId: item.productId,
+          userId,
+          purchasePrice: item.unitPrice,
+        }).session(session);
 
-                if (matchingBatch) {
-                    await tx.stockBatch.update({
-                        where: { id: matchingBatch.id },
-                        data: { quantity: { decrement: item.quantity } },
-                    });
-                }
-            }
+        if (batch) {
+          await StockBatch.updateOne(
+            { _id: batch._id },
+            { $inc: { quantity: -item.quantity } },
+            { session },
+          );
+        }
+      }
 
-            await tx.purchase.delete({ where: { id } });
-        });
-    }
+      await StockBatch.deleteMany(
+        {
+          userId,
+          productId: { $in: purchase.items.map((item) => item.productId) },
+          quantity: { $lte: 0 },
+        },
+        { session },
+      );
+      await PurchaseItem.deleteMany({ purchaseId: purchase._id, userId }, { session });
+      await Purchase.deleteOne({ _id: purchase._id, userId }, { session });
+    });
+  },
 };
