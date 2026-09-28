@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { verifyAdminToken } from '../../../lib/auth.js';
 import { settingsDal } from '../../../dal/settingsDal.js';
+import { validateRequest } from '../../../middleware/validateRequest.js';
+import { systemSettingsSchema } from '../../../validations/resources.js';
 
 const router = Router({ mergeParams: true });
 
@@ -51,6 +53,6 @@ async function handlePut(req, res) {
 }
 
 router.get('/', handleGet);
-router.put('/', handlePut);
+router.put('/', validateRequest(systemSettingsSchema), handlePut);
 
 export default router;

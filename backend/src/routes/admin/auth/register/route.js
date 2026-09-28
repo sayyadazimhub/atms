@@ -2,6 +2,8 @@ import { Router } from 'express';
 
 import { verifyAdminToken } from '../../../../lib/auth.js';
 import { authService } from '../../../../services/adminService/authService.js';
+import { validateRequest } from '../../../../middleware/validateRequest.js';
+import { adminRegistrationSchema } from '../../../../validations/auth.js';
 
 const router = Router({ mergeParams: true });
 
@@ -35,6 +37,6 @@ async function handlePost(req, res) {
   }
 }
 
-router.post('/', handlePost);
+router.post('/', validateRequest(adminRegistrationSchema), handlePost);
 
 export default router;

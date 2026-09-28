@@ -1,8 +1,11 @@
 import { Router } from 'express';
 
 import { authService } from '../../../../services/userService/authService.js';
+import { authDal as adminAuthDal } from '../../../../dal/adminDal/authDal.js';
 import { settingsDal } from '../../../../dal/settingsDal.js';
 import { sendNewTraderNotification } from '../../../../lib/mail.js';
+import { validateRequest } from '../../../../middleware/validateRequest.js';
+import { userRegistrationSchema } from '../../../../validations/auth.js';
 
 const router = Router({ mergeParams: true });
 
@@ -33,7 +36,7 @@ async function handlePost(req, res) {
     // Send admin notification if enabled
     if (settings && settings.notifyOnNewTrader) {
       try {
-        const activeAdmins = await settingsDal.findActiveAdminEmails();
+        const activeAdmins = await adminAuthDal.findActiveEmails();
         const adminEmails = activeAdmins.map((a) => a.email);
 
         if (adminEmails.length > 0) {
@@ -55,6 +58,6 @@ async function handlePost(req, res) {
   }
 }
 
-router.post('/', handlePost);
+router.post('/', validateRequest(userRegistrationSchema), handlePost);
 
 export default router;

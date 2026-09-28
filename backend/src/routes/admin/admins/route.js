@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import { verifyAdminToken, hashPassword } from '../../../lib/auth.js';
 import { authDal } from '../../../dal/adminDal/authDal.js';
+import { validateRequest } from '../../../middleware/validateRequest.js';
+import { adminSearchQuerySchema, idQuerySchema } from '../../../validations/queries.js';
+import { adminCreateSchema, adminUpdateSchema } from '../../../validations/resources.js';
 
 async function requireAdmin(req) {
   const token = req.cookies['auth-token'];
@@ -129,9 +132,9 @@ async function handleDelete(req, res) {
   }
 }
 
-router.get('/', handleGet);
-router.post('/', handlePost);
-router.put('/', handlePut);
-router.delete('/', handleDelete);
+router.get('/', validateRequest(adminSearchQuerySchema, 'query'), handleGet);
+router.post('/', validateRequest(adminCreateSchema), handlePost);
+router.put('/', validateRequest(adminUpdateSchema), handlePut);
+router.delete('/', validateRequest(idQuerySchema, 'query'), handleDelete);
 
 export default router;

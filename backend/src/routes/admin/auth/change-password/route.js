@@ -2,6 +2,8 @@ import { Router } from 'express';
 
 import { verifyAdminToken } from '../../../../lib/auth.js';
 import { authService } from '../../../../services/adminService/authService.js';
+import { validateRequest } from '../../../../middleware/validateRequest.js';
+import { changePasswordSchema } from '../../../../validations/auth.js';
 
 const router = Router({ mergeParams: true });
 
@@ -31,6 +33,6 @@ async function handlePut(req, res) {
   }
 }
 
-router.put('/', handlePut);
+router.put('/', validateRequest(changePasswordSchema), handlePut);
 
 export default router;

@@ -2,6 +2,8 @@ import { Router } from 'express';
 
 import { authDal } from '../../../../dal/adminDal/authDal.js';
 import { hashPassword } from '../../../../lib/auth.js';
+import { validateRequest } from '../../../../middleware/validateRequest.js';
+import { adminResetPasswordSchema } from '../../../../validations/auth.js';
 
 const router = Router({ mergeParams: true });
 
@@ -24,6 +26,6 @@ async function handlePost(req, res) {
   }
 }
 
-router.post('/', handlePost);
+router.post('/', validateRequest(adminResetPasswordSchema), handlePost);
 
 export default router;

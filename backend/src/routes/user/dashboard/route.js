@@ -2,6 +2,8 @@ import { Router } from 'express';
 
 import { verifyUserToken } from '../../../lib/auth.js';
 import { dashboardService } from '../../../services/userService/dashboardService.js';
+import { validateRequest } from '../../../middleware/validateRequest.js';
+import { dashboardQuerySchema } from '../../../validations/queries.js';
 
 const router = Router({ mergeParams: true });
 
@@ -25,6 +27,6 @@ async function handleGet(req, res) {
   }
 }
 
-router.get('/', handleGet);
+router.get('/', validateRequest(dashboardQuerySchema, 'query'), handleGet);
 
 export default router;

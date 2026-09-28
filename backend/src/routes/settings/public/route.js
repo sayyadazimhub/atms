@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { traderDal } from '../../../dal/adminDal/traderDal.js';
 import { settingsDal } from '../../../dal/settingsDal.js';
 
 const router = Router();
@@ -13,7 +14,7 @@ router.get('/', async (_req, res) => {
     };
   }
 
-  const traderCount = await settingsDal.countActiveTraders();
+  const traderCount = await traderDal.countActiveTraders();
 
   return res.respond({
     maintenanceMode: settings.maintenanceMode,

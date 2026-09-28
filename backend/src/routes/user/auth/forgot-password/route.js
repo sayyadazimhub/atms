@@ -3,6 +3,8 @@ import { Router } from 'express';
 import { authDal } from '../../../../dal/userDal/authDal.js';
 import { sendOtpEmail } from '../../../../lib/mail.js';
 import crypto from 'crypto';
+import { validateRequest } from '../../../../middleware/validateRequest.js';
+import { emailRequestSchema } from '../../../../validations/auth.js';
 
 function generateOtp() {
   return crypto.randomInt(100000, 999999).toString();
@@ -31,6 +33,6 @@ async function handlePost(req, res) {
   }
 }
 
-router.post('/', handlePost);
+router.post('/', validateRequest(emailRequestSchema), handlePost);
 
 export default router;

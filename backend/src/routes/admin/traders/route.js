@@ -4,6 +4,12 @@ import { verifyAdminToken } from '../../../lib/auth.js';
 import { traderService } from '../../../services/adminService/traderService.js';
 import { uploadToCloudinary } from '../../../lib/cloudinary.js';
 import Busboy from 'busboy';
+import { parseRequest, validateRequest } from '../../../middleware/validateRequest.js';
+import { idQuerySchema, adminTraderQuerySchema } from '../../../validations/queries.js';
+import {
+  traderRegistrationFieldsSchema,
+  traderUpdateSchema,
+} from '../../../validations/resources.js';
 
 const router = Router({ mergeParams: true });
 
@@ -67,11 +73,25 @@ async function handlePost(req, res) {
             return resolve(res.status(400).json({ error: 'Proof document is required' }));
           }
 
+          const parsedFields = parseRequest(traderRegistrationFieldsSchema, data);
+          if (!parsedFields.success) {
+            const errors = Object.fromEntries(
+              parsedFields.error.issues.map((issue) => [
+                issue.path.join('.') || 'body',
+                issue.message,
+              ]),
+            );
+            return resolve(res.status(400).json({ errors }));
+          }
+
           // Upload to Cloudinary
           const uploadResult = await uploadToCloudinary(fileBuffer, 'atms/proofs', fileName);
-          data.verificationProofUrl = uploadResult.secure_url;
+          const validatedTraderData = {
+            ...parsedFields.data,
+            verificationProofUrl: uploadResult.secure_url,
+          };
 
-          const newTrader = await traderService.createTrader(data);
+          const newTrader = await traderService.createTrader(validatedTraderData);
 
           const { password, ...traderData } = newTrader;
           resolve(res.status(201).json(traderData));
@@ -142,9 +162,9 @@ async function handleDelete(req, res) {
   }
 }
 
-router.get('/', handleGet);
+router.get('/', validateRequest(adminTraderQuerySchema, 'query'), handleGet);
 router.post('/', handlePost);
-router.put('/', handlePut);
-router.delete('/', handleDelete);
+router.put('/', validateRequest(traderUpdateSchema), handlePut);
+router.delete('/', validateRequest(idQuerySchema, 'query'), handleDelete);
 
 export default router;

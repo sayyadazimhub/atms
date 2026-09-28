@@ -3,6 +3,8 @@ import { Router } from 'express';
 import { authDal } from '../../../../dal/adminDal/authDal.js';
 import { generateResetToken } from '../../../../lib/auth.js';
 import { sendResetEmail } from '../../../../lib/mail.js';
+import { validateRequest } from '../../../../middleware/validateRequest.js';
+import { emailRequestSchema } from '../../../../validations/auth.js';
 
 const router = Router({ mergeParams: true });
 
@@ -29,6 +31,6 @@ async function handlePost(req, res) {
   }
 }
 
-router.post('/', handlePost);
+router.post('/', validateRequest(emailRequestSchema), handlePost);
 
 export default router;

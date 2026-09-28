@@ -6,6 +6,8 @@ import {
   sendVerificationRejectionEmail,
 } from '../../../../lib/mail.js';
 import { deleteFromCloudinary } from '../../../../lib/cloudinary.js';
+import { validateRequest } from '../../../../middleware/validateRequest.js';
+import { traderVerificationSchema } from '../../../../validations/resources.js';
 
 const router = Router({ mergeParams: true });
 
@@ -66,6 +68,6 @@ async function handlePut(req, res) {
   }
 }
 
-router.put('/', handlePut);
+router.put('/', validateRequest(traderVerificationSchema), handlePut);
 
 export default router;

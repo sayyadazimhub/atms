@@ -1,5 +1,5 @@
 import { connectDB } from '../config/db.js';
-import { Admin, SystemSetting, User } from '../models/index.js';
+import { SystemSetting } from '../models/index.js';
 
 const defaultSettings = {
   maintenanceMode: false,
@@ -27,15 +27,5 @@ export const settingsDal = {
       new: true,
       runValidators: true,
     });
-  },
-
-  async countActiveTraders() {
-    await connectDB();
-    return User.countDocuments({ role: 'USER', is_active: true });
-  },
-
-  async findActiveAdminEmails() {
-    await connectDB();
-    return Admin.find({ is_active: true }).select('email');
   },
 };

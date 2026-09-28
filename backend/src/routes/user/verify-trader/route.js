@@ -3,6 +3,8 @@ import { verifyUserToken } from '../../../lib/auth.js';
 import { authDal } from '../../../dal/userDal/authDal.js';
 import { uploadToCloudinary } from '../../../lib/cloudinary.js';
 import Busboy from 'busboy';
+import { parseRequest } from '../../../middleware/validateRequest.js';
+import { verificationUploadFieldsSchema } from '../../../validations/resources.js';
 
 const router = Router({ mergeParams: true });
 
@@ -44,10 +46,18 @@ async function handlePost(req, res) {
             return resolve(res.status(400).json({ error: 'Proof document is required' }));
           }
 
-          const { state, district } = fields;
-          if (!state || !district) {
-            return resolve(res.status(400).json({ error: 'State and district are required' }));
+          const parsedFields = parseRequest(verificationUploadFieldsSchema, fields);
+          if (!parsedFields.success) {
+            const errors = Object.fromEntries(
+              parsedFields.error.issues.map((issue) => [
+                issue.path.join('.') || 'body',
+                issue.message,
+              ]),
+            );
+            return resolve(res.status(400).json({ errors }));
           }
+
+          const { state, district } = parsedFields.data;
 
           const uploadResult = await uploadToCloudinary(fileBuffer, 'atms/proofs', fileName);
           await authDal.update(decoded.id, {

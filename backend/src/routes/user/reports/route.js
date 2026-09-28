@@ -2,6 +2,8 @@ import { Router } from 'express';
 
 import { verifyUserToken } from '../../../lib/auth.js';
 import { reportService } from '../../../services/userService/reportService.js';
+import { validateRequest } from '../../../middleware/validateRequest.js';
+import { userReportQuerySchema } from '../../../validations/queries.js';
 
 const router = Router({ mergeParams: true });
 
@@ -28,6 +30,6 @@ async function handleGet(req, res) {
   }
 }
 
-router.get('/', handleGet);
+router.get('/', validateRequest(userReportQuerySchema, 'query'), handleGet);
 
 export default router;

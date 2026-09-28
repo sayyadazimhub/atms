@@ -2,6 +2,9 @@ import { Router } from 'express';
 
 import { verifyUserToken } from '../../../lib/auth.js';
 import { customerService } from '../../../services/userService/customerService.js';
+import { validateRequest } from '../../../middleware/validateRequest.js';
+import { paginationQuerySchema } from '../../../validations/common.js';
+import { customerSchema } from '../../../validations/resources.js';
 
 const router = Router({ mergeParams: true });
 
@@ -46,7 +49,7 @@ async function handlePost(req, res) {
   }
 }
 
-router.get('/', handleGet);
-router.post('/', handlePost);
+router.get('/', validateRequest(paginationQuerySchema, 'query'), handleGet);
+router.post('/', validateRequest(customerSchema), handlePost);
 
 export default router;

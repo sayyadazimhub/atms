@@ -1,6 +1,8 @@
 import { Router } from 'express';
 
 import { authService } from '../../../../services/adminService/authService.js';
+import { validateRequest } from '../../../../middleware/validateRequest.js';
+import { loginSchema } from '../../../../validations/auth.js';
 
 const router = Router({ mergeParams: true });
 
@@ -29,6 +31,6 @@ async function handlePost(req, res) {
   }
 }
 
-router.post('/', handlePost);
+router.post('/', validateRequest(loginSchema), handlePost);
 
 export default router;

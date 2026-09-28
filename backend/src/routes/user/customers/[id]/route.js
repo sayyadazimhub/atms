@@ -1,8 +1,12 @@
 import { Router } from 'express';
 
 import { customerService } from '../../../../services/userService/customerService.js';
+import { validateRequest } from '../../../../middleware/validateRequest.js';
+import { idParamsSchema } from '../../../../validations/common.js';
+import { customerUpdateSchema } from '../../../../validations/resources.js';
 
 const router = Router({ mergeParams: true });
+router.use(validateRequest(idParamsSchema, 'params'));
 
 async function handleGet(req, res) {
   try {
@@ -42,7 +46,7 @@ async function handleDelete(req, res) {
 }
 
 router.get('/', handleGet);
-router.put('/', handlePut);
+router.put('/', validateRequest(customerUpdateSchema), handlePut);
 router.delete('/', handleDelete);
 
 export default router;

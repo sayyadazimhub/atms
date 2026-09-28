@@ -24,6 +24,11 @@ export const authDal = {
     return Admin.findOne({ email });
   },
 
+  async findActiveEmails() {
+    await connectDB();
+    return Admin.find({ is_active: true }).select('email');
+  },
+
   async findById(id) {
     await connectDB();
     return Admin.findById(id);

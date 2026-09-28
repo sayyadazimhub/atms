@@ -27,6 +27,11 @@ function buildTraderFilter(search = '') {
 }
 
 export const traderDal = {
+  async countActiveTraders() {
+    await connectDB();
+    return User.countDocuments({ role: 'USER', is_active: true });
+  },
+
   async findMany(search, skip, take) {
     await connectDB();
     return User.find(buildTraderFilter(search))

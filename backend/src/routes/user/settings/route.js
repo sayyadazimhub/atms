@@ -2,6 +2,8 @@ import { Router } from 'express';
 
 import { verifyUserToken } from '../../../lib/auth.js';
 import { settingsService } from '../../../services/userService/settingsService.js';
+import { validateRequest } from '../../../middleware/validateRequest.js';
+import { userSettingsSchema } from '../../../validations/resources.js';
 
 const router = Router({ mergeParams: true });
 
@@ -41,6 +43,6 @@ async function handlePut(req, res) {
 }
 
 router.get('/', handleGet);
-router.put('/', handlePut);
+router.put('/', validateRequest(userSettingsSchema), handlePut);
 
 export default router;

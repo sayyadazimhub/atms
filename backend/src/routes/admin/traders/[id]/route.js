@@ -2,8 +2,11 @@ import { Router } from 'express';
 
 import { verifyAdminToken } from '../../../../lib/auth.js';
 import { traderService } from '../../../../services/adminService/traderService.js';
+import { validateRequest } from '../../../../middleware/validateRequest.js';
+import { idParamsSchema } from '../../../../validations/common.js';
 
 const router = Router({ mergeParams: true });
+router.use(validateRequest(idParamsSchema, 'params'));
 
 async function handleGet(req, res) {
   try {
