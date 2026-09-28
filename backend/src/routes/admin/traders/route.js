@@ -178,7 +178,7 @@ async function handleDelete(req, res) {
   } catch (error) {
     console.error('Delete trader error:', error);
 
-    if (error.code === 'P2025' || error.message.includes('not found')) {
+    if (error.message.includes('not found')) {
       return res.json({ error: 'Trader not found or already deleted' });
     }
 
