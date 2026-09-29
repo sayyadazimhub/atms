@@ -2,10 +2,51 @@ import { Toaster } from 'react-hot-toast';
 import './globals.css';
 
 export const metadata = {
-  title: 'ATMS - Agricultural Trading Management System',
-  description: 'Manage inventory, sales, purchases, and reports for your agricultural trading business.',
+  title: {
+    template: '%s | ATMS',
+    default: 'ATMS - Agriculture Trader Management System',
+  },
+  description: 'ATMS is an advanced agriculture management software designed to streamline crop trading, farmer management, buyer transactions, and agricultural business operations.',
+  keywords: ['agriculture trading software', 'farmer management', 'crop trading', 'agriculture transaction management', 'buyer management'],
+  metadataBase: new URL('https://atms.app'),
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: 'ATMS - Agriculture Trader Management System',
+    description: 'Digitize your agriculture trading business with ATMS. Manage inventory, sales, purchases, farmers, and buyers effectively.',
+    url: 'https://atms.app',
+    siteName: 'ATMS',
+    images: [
+      {
+        url: '/og-image.jpg', // Placeholder for actual OG image
+        width: 1200,
+        height: 630,
+        alt: 'ATMS - Agriculture Trader Management System',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ATMS - Agriculture Trader Management System',
+    description: 'Digitize your agriculture trading business with ATMS.',
+    images: ['/og-image.jpg'],
+  },
   icons: {
     icon: '/favicon.svg',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
 };
 
