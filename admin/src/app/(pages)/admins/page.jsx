@@ -55,7 +55,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import api from '@/lib/api';
+import { ConfirmModal } from '@/components/ConfirmModal';
+import { PageHeader } from '@/components/PageHeader';
 
 export default function AdminsPage() {
   const [admins, setAdmins] = useState([]);
@@ -76,7 +78,7 @@ export default function AdminsPage() {
 
   const fetchAdmins = () => {
     setLoading(true);
-    axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/admins?search=${debouncedSearch}`, { withCredentials: true })
+    api.get(`/api/admin/admins?search=${debouncedSearch}`)
       .then((res) => setAdmins(res.data.admins || []))
       .catch(() => toast.error('Failed to load administrators'))
       .finally(() => setLoading(false));
@@ -103,7 +105,7 @@ export default function AdminsPage() {
   const toggleStatus = async (id, currentStatus) => {
     try {
       const newStatus = !currentStatus;
-      await axios.put(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/admins`, { id, is_active: newStatus }, { withCredentials: true });
+      await api.put(`/api/admin/admins`, { id, is_active: newStatus });
       toast.success(`Admin account ${newStatus ? 'activated' : 'suspended'}`);
       fetchAdmins();
     } catch (error) {
@@ -115,7 +117,7 @@ export default function AdminsPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/admins`, formData, { withCredentials: true });
+      await api.post(`/api/admin/admins`, formData);
       toast.success('Administrator created successfully');
       setIsAddModalOpen(false);
       setFormData({ name: '', email: '', phone: '', password: '' });
@@ -131,11 +133,11 @@ export default function AdminsPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await axios.put(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/admins`, { 
+      await api.put(`/api/admin/admins`, { 
         id: editData.id, 
         name: editData.name, 
         phone: editData.phone 
-      }, { withCredentials: true });
+      });
       toast.success('Administrator updated successfully');
       setIsEditModalOpen(false);
       setEditData(null);
@@ -151,7 +153,7 @@ export default function AdminsPage() {
     if (!deleteId) return;
     setSubmitting(true);
     try {
-      await axios.delete(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/admins?id=${deleteId}`, { withCredentials: true });
+      await api.delete(`/api/admin/admins?id=${deleteId}`);
       toast.success('Admin deleted successfully');
       setDeleteId(null);
       fetchAdmins();
@@ -172,17 +174,20 @@ export default function AdminsPage() {
 
   return (
     <div className="space-y-6">
+      <ConfirmModal
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={handleDelete}
+        title="Delete Administrator"
+        description="Are you absolutely sure you want to permanently delete this administrator account? This action cannot be undone."
+        isLoading={submitting}
+      />
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-emerald-100 text-emerald-600">
-              <Shield className="h-6 w-6" />
-            </div>
-            Administrators
-          </h1>
-          <p className="text-slate-500 mt-2">Manage system administrators and staff access</p>
-        </div>
+      <PageHeader 
+        title="Administrators"
+        description="Manage system administrators and staff access"
+        icon={Shield}
+        actionButton={
           <Button 
             onClick={() => setIsAddModalOpen(true)}
             className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg transition-all rounded-xl h-11 px-6 font-medium"
@@ -190,7 +195,8 @@ export default function AdminsPage() {
             <Plus className="h-4 w-4 mr-2" />
             Add Administrator
           </Button>
-      </div>
+        }
+      />
 
       {/* Main Content */}
       <Card className="border-slate-200 shadow-sm">
@@ -509,34 +515,6 @@ export default function AdminsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <DialogContent className="sm:max-w-[400px] bg-white">
-          <DialogHeader>
-            <DialogTitle className="text-rose-600 flex items-center gap-2">
-              <Trash2 className="h-5 w-5" />
-              Delete Administrator
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-slate-600 text-sm">
-              Are you absolutely sure you want to permanently delete this administrator account? This action cannot be undone.
-            </p>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setDeleteId(null)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleDelete}
-              className="bg-rose-600 hover:bg-rose-700 text-white" 
-              disabled={submitting}
-            >
-              {submitting ? 'Deleting...' : 'Delete Permanently'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

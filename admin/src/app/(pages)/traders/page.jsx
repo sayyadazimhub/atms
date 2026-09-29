@@ -58,8 +58,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import api from '@/lib/api';
 import { ConfirmModal } from '@/components/ConfirmModal';
+import { PageHeader } from '@/components/PageHeader';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UploadCloud } from 'lucide-react';
 import statesDistrictsData from '@/lib/states-districts.json';
@@ -104,7 +105,7 @@ export default function TradersPage() {
 
   const fetchTraders = () => {
     setLoading(true);
-    axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/traders?search=${debouncedSearch}`, { withCredentials: true })
+    api.get(`/api/admin/traders?search=${debouncedSearch}`)
       .then((res) => setTraders(res.data.traders || []))
       .catch(() => toast.error('Failed to load traders'))
       .finally(() => setLoading(false));
@@ -130,7 +131,7 @@ export default function TradersPage() {
   const toggleStatus = async (id, currentStatus) => {
     try {
       const newStatus = currentStatus === 'active' ? 'suspended' : 'active';
-      await axios.put(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/traders`, { id, status: newStatus }, { withCredentials: true });
+      await api.put(`/api/admin/traders`, { id, status: newStatus });
       toast.success(`Trader ${newStatus === 'active' ? 'activated' : 'suspended'}`);
       fetchTraders();
     } catch (error) {
@@ -142,7 +143,7 @@ export default function TradersPage() {
     if (!deleteId) return;
     setSubmitting(true);
     try {
-      await axios.delete(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/traders?id=${deleteId}`, { withCredentials: true });
+      await api.delete(`/api/admin/traders?id=${deleteId}`);
       toast.success('Trader account deleted successfully');
       setDeleteId(null);
       fetchTraders();
@@ -174,7 +175,7 @@ export default function TradersPage() {
       data.append('district', formData.district);
       data.append('proof', formData.proof);
 
-      await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/traders`, data, { withCredentials: true });
+      await api.post(`/api/admin/traders`, data);
       toast.success('Trader created successfully');
       setIsAddModalOpen(false);
       setFormData({ name: '', email: '', phone: '', password: '', state: '', district: '', proof: null });
@@ -190,11 +191,11 @@ export default function TradersPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await axios.put(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/traders`, { 
+      await api.put(`/api/admin/traders`, { 
         id: editData.id, 
         name: editData.name, 
         phone: editData.phone 
-      }, { withCredentials: true });
+      });
       toast.success('Trader updated successfully');
       setIsEditModalOpen(false);
       setEditData(null);
@@ -214,11 +215,11 @@ export default function TradersPage() {
 
     setSubmitting(true);
     try {
-      await axios.put(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/traders/verify`, { 
+      await api.put(`/api/admin/traders/verify`, { 
         id: reviewData.id, 
         status, 
         reason: status === 'REJECTED' ? rejectionReason : null 
-      }, { withCredentials: true });
+      });
       toast.success(`Trader ${status.toLowerCase()} successfully`);
       setIsReviewModalOpen(false);
       setReviewData(null);
@@ -242,24 +243,20 @@ export default function TradersPage() {
         isLoading={submitting}
       />
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-emerald-100 text-emerald-600">
-              <Users className="h-6 w-6" />
-            </div>
-            Traders Management
-          </h1>
-          <p className="text-slate-500 mt-2">View and manage all registered trading accounts</p>
-        </div>
-        <Button 
-          onClick={() => setIsAddModalOpen(true)}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg transition-all rounded-xl h-11 px-6 font-medium"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Trader
-        </Button>
-      </div>
+      <PageHeader 
+        title="Traders Management"
+        description="View and manage all registered trading accounts"
+        icon={Users}
+        actionButton={
+          <Button 
+            onClick={() => setIsAddModalOpen(true)}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg transition-all rounded-xl h-11 px-6 font-medium"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Trader
+          </Button>
+        }
+      />
 
       {/* Filters & Search & Table */}
       <Card className="border-slate-200 shadow-sm">

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import axios from 'axios';
+import api from '@/lib/api';
 import {
     Card, CardContent, CardHeader, CardTitle, CardDescription
 } from '@/components/ui/card';
@@ -26,7 +26,7 @@ export default function TraderProfilePage() {
 
     const fetchTraderDetail = async () => {
         try {
-            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/traders/${id}`, { withCredentials: true });
+            const res = await api.get(`/api/admin/traders/${id}`);
             setData(res.data);
         } catch (error) {
             console.error('Failed to fetch trader detail:', error);

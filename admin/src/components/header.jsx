@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '@/lib/api';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { User, Bell, Activity, Menu, LogOut, Settings, ChevronDown, Sprout, TrendingUp, Sun, Moon, Monitor } from 'lucide-react';
@@ -25,14 +25,14 @@ export default function Header() {
 
   useEffect(() => {
     setMounted(true);
-    axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/profile`, { withCredentials: true })
+    api.get(`/api/user/profile`)
       .then(res => setProfile(res.data))
       .catch(err => console.error("Header profile fetch error:", err));
   }, []);
 
   const handleLogout = async () => {
     try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/auth/logout`);
+      await api.post(`/api/user/auth/logout`);
       toast.success('Logged out successfully');
       router.push('/user/login');
     } catch (err) {

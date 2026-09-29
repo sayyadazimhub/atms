@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import axios from 'axios';
+import api from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,7 +20,7 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/auth/login`, { email, password }, { withCredentials: true });
+      await api.post(`/api/admin/auth/login`, { email, password });
       toast.success('Login successful');
       window.location.href = '/dashboard';
       return;
@@ -113,7 +113,7 @@ export default function LoginPage() {
 
 // import { useState } from 'react';
 // import Link from 'next/link';
-// import axios from 'axios';
+// import api from '@/lib/api';
 // import toast from 'react-hot-toast';
 // import { Button } from '@/components/ui/button';
 // import { Input } from '@/components/ui/input';
@@ -128,7 +128,7 @@ export default function LoginPage() {
 //     e.preventDefault();
 //     setLoading(true);
 //     try {
-//       await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/auth/register`, form, { withCredentials: true });
+//       await api.post(`/api/admin/auth/register`, form);
 //       toast.success('Account created');
 //       window.location.href = '/dashboard';
 //       return;

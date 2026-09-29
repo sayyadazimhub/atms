@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import axios from 'axios';
+import api from '@/lib/api';
 import toast from 'react-hot-toast';
 import {
   BarChart3,
@@ -24,6 +24,7 @@ import {
   LineChart, Line, PieChart, Pie, Cell
 } from 'recharts';
 import { cn } from '@/lib/utils';
+import { PageHeader } from '@/components/PageHeader';
 
 export default function AdminReportsPage() {
   const [data, setData] = useState(null);
@@ -32,7 +33,7 @@ export default function AdminReportsPage() {
 
   useEffect(() => {
     setLoading(true);
-    axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/reports?range=${timeRange}`, { withCredentials: true })
+    api.get(`/api/admin/reports?range=${timeRange}`)
       .then((res) => setData(res.data))
       .catch(() => toast.error('Failed to load reports'))
       .finally(() => setLoading(false));
@@ -55,39 +56,36 @@ export default function AdminReportsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-3 rounded-2xl bg-slate-900 text-white">
-            <BarChart3 className="h-6 w-6" />
+      <PageHeader 
+        title="System Reports"
+        description="Aggregate analytics across the entire network"
+        icon={BarChart3}
+        actionButton={
+          <div className="flex items-center gap-2 print:hidden">
+            <Button
+              variant="outline"
+              className="h-10 rounded-xl gap-2 border-slate-200"
+              onClick={handleDownloadPDF}
+            >
+              <Download className="h-4 w-4" />
+              Download PDF
+            </Button>
+            <Select value={timeRange} onValueChange={setTimeRange}>
+              <SelectTrigger className="h-10 w-[160px] rounded-xl border-slate-200 bg-white">
+                <Calendar className="h-4 w-4 mr-2 text-slate-500" />
+                <SelectValue placeholder="Select Period" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-slate-100 dark:border-slate-800 shadow-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+                <SelectItem value="7d">Last 7 Days</SelectItem>
+                <SelectItem value="30d">Last 30 Days</SelectItem>
+                <SelectItem value="90d">Last 90 Days</SelectItem>
+                <SelectItem value="all">All Time</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">System Reports</h1>
-            <p className="text-sm text-slate-500">Aggregate analytics across the entire network</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 print:hidden">
-          <Button
-            variant="outline"
-            className="h-10 rounded-xl gap-2 border-slate-200"
-            onClick={handleDownloadPDF}
-          >
-            <Download className="h-4 w-4" />
-            Download PDF
-          </Button>
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="h-10 w-[160px] rounded-xl border-slate-200 bg-white">
-              <Calendar className="h-4 w-4 mr-2 text-slate-500" />
-              <SelectValue placeholder="Select Period" />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl border-slate-100 dark:border-slate-800 shadow-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
-              <SelectItem value="7d">Last 7 Days</SelectItem>
-              <SelectItem value="30d">Last 30 Days</SelectItem>
-              <SelectItem value="90d">Last 90 Days</SelectItem>
-              <SelectItem value="all">All Time</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+        }
+      />
+
 
       {/* Summary Metrics */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

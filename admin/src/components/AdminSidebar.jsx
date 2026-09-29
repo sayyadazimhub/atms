@@ -16,7 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import api from '@/lib/api';
 
 const navLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -34,14 +34,14 @@ export default function AdminSidebar() {
 
   useEffect(() => {
     // Fetch admin profile
-    axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/profile`, { withCredentials: true })
+    api.get(`/api/admin/profile`)
       .then((res) => setAdmin(res.data))
       .catch(() => { });
   }, []);
 
   const handleLogout = async () => {
     try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/auth/logout`, {}, { withCredentials: true });
+      await api.post(`/api/admin/auth/logout`, {});
       toast.success('Logged out successfully');
       router.push('/login');
     } catch (err) {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import api from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
+import { PageHeader } from '@/components/PageHeader';
 
 export default function AdminSettingsPage() {
   const router = useRouter();
@@ -52,7 +53,7 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/profile`, { withCredentials: true });
+        const res = await api.get(`/api/admin/profile`);
         setProfile({
           name: res.data.name || '',
           email: res.data.email || '',
@@ -64,7 +65,7 @@ export default function AdminSettingsPage() {
     };
     const fetchSettings = async () => {
       try {
-        const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/settings`, { withCredentials: true });
+        const res = await api.get(`/api/admin/settings`);
         if (res.data) {
           setSettings({
             maintenanceMode: res.data.maintenanceMode,
@@ -85,10 +86,10 @@ export default function AdminSettingsPage() {
     setSettings(s => ({ ...s, [key]: newValue }));
     
     try {
-      await axios.put(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/settings`, {
+      await api.put(`/api/admin/settings`, {
         ...settings,
         [key]: newValue
-      }, { withCredentials: true });
+      });
       toast.success('Setting updated automatically');
     } catch (error) {
       toast.error('Failed to update setting');
@@ -103,7 +104,7 @@ export default function AdminSettingsPage() {
   const handleSaveProfile = async () => {
     setLoading(true);
     try {
-      await axios.put(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/profile`, profile, { withCredentials: true });
+      await api.put(`/api/admin/profile`, profile);
       toast.success('Profile updated successfully');
     } catch (error) {
       toast.error('Failed to update profile');
@@ -119,7 +120,7 @@ export default function AdminSettingsPage() {
     }
     setLoading(true);
     try {
-      await axios.put(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/auth/change-password`, passwordData, { withCredentials: true });
+      await api.put(`/api/admin/auth/change-password`, passwordData);
       toast.success('Password updated successfully');
       setPasswordData({ newPassword: '', confirmPassword: '' });
     } catch (error) {
@@ -143,7 +144,7 @@ export default function AdminSettingsPage() {
 
   const handleLogout = async () => {
     try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/auth/logout`, {}, { withCredentials: true });
+      await api.post(`/api/admin/auth/logout`, {});
       toast.success('Logged out successfully');
       router.push('/login');
     } catch (error) {
@@ -154,15 +155,11 @@ export default function AdminSettingsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="p-3 rounded-2xl bg-slate-900 text-white">
-          <SettingsIcon className="h-6 w-6" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Admin Settings</h1>
-          <p className="text-sm text-slate-500">Manage your profile and system configuration</p>
-        </div>
-      </div>
+      <PageHeader 
+        title="Admin Settings"
+        description="Manage your profile and system configuration"
+        icon={SettingsIcon}
+      />
 
       <div className="grid gap-6 lg:grid-cols-12">
         {/* Navigation Tabs */}

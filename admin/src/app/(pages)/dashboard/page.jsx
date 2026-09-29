@@ -18,7 +18,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell
 } from 'recharts';
-import axios from 'axios';
+import api from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 
@@ -28,7 +28,7 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     setLoading(true);
-    axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/dashboard`, { withCredentials: true })
+    api.get(`/api/admin/dashboard`)
       .then((res) => setData(res.data))
       .catch(() => toast.error('Failed to load dashboard'))
       .finally(() => setLoading(false));
