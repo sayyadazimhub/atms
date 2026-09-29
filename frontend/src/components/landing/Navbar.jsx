@@ -28,12 +28,12 @@ export default function Navbar() {
               Contact
             </Button>
           </Link>
-          <Link href="/user/login" className="hidden sm:block">
+          <Link href="/trader/login" className="hidden sm:block">
             <Button variant="ghost" className="h-10 rounded-xl font-bold uppercase tracking-widest text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">
               Sign In
             </Button>
           </Link>
-          <Link href="/user/register">
+          <Link href="/trader/register">
             <Button className="h-10 rounded-xl bg-slate-900 dark:bg-emerald-600 hover:bg-slate-800 dark:hover:bg-emerald-500 text-white px-6 font-bold uppercase tracking-widest text-xs shadow-md">
               Get Started
             </Button>

@@ -17,7 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import api from '@/lib/api';
 
 const navLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -35,14 +35,14 @@ export default function AdminSidebar() {
 
   useEffect(() => {
     // Fetch admin profile
-    axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/profile`, { withCredentials: true })
+    api.get(`/api/admin/profile`)
       .then((res) => setAdmin(res.data))
       .catch(() => { });
   }, []);
 
   const handleLogout = async () => {
     try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/admin/auth/logout`);
+      await api.post(`/api/admin/auth/logout`);
       toast.success('Logged out successfully');
       router.push('/login');
     } catch (err) {
@@ -72,7 +72,7 @@ export default function AdminSidebar() {
 
       {/* Sidebar Container */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 shrink-0 bg-white border-r transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static flex flex-col", mobileMenuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full", { withCredentials: true })}>
+        "fixed inset-y-0 left-0 z-50 w-64 shrink-0 bg-white border-r transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static flex flex-col", mobileMenuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full")}>
         {/* Logo / Brand */}
         <div className="flex items-center gap-3 p-6 border-b">
           <div className="h-10 w-10 flex items-center justify-center">

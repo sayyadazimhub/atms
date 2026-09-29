@@ -28,41 +28,41 @@ const navSections = [
   {
     title: 'Overview',
     items: [
-      { href: '/user/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/trader/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     ],
   },
   {
     title: 'Inventory',
     items: [
-      { href: '/user/products', label: 'Products', icon: Package },
-      { href: '/user/stock', label: 'Stock', icon: Boxes },
+      { href: '/trader/products', label: 'Products', icon: Package },
+      { href: '/trader/stock', label: 'Stock', icon: Boxes },
     ],
   },
   {
     title: 'Contacts',
     items: [
-      { href: '/user/providers', label: 'Providers', icon: Truck },
-      { href: '/user/customers', label: 'Customers', icon: Users },
+      { href: '/trader/providers', label: 'Providers', icon: Truck },
+      { href: '/trader/customers', label: 'Customers', icon: Users },
     ],
   },
   {
     title: 'Transactions',
     items: [
-      { href: '/user/purchases', label: 'Purchases', icon: ShoppingCart },
-      { href: '/user/sales', label: 'Sales', icon: BadgeDollarSign },
+      { href: '/trader/purchases', label: 'Purchases', icon: ShoppingCart },
+      { href: '/trader/sales', label: 'Sales', icon: BadgeDollarSign },
     ],
   },
   {
     title: 'Analytics',
     items: [
-      { href: '/user/reports', label: 'Reports', icon: BarChart3 },
+      { href: '/trader/reports', label: 'Reports', icon: BarChart3 },
     ],
   },
   {
     title: 'Account',
     items: [
-      { href: '/user/profile', label: 'Profile', icon: UserCircle },
-      { href: '/user/settings', label: 'Settings', icon: Settings },
+      { href: '/trader/profile', label: 'Profile', icon: UserCircle },
+      { href: '/trader/settings', label: 'Settings', icon: Settings },
     ],
   },
 ];
@@ -128,7 +128,7 @@ export default function Sidebar() {
           "flex h-16 items-center border-b px-4 transition-all duration-300",
           collapsed ? "lg:justify-center justify-between" : "justify-between"
         )}>
-          <Link href="/user/dashboard" className="flex items-center gap-3 group">
+          <Link href="/trader/dashboard" className="flex items-center gap-3 group">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white shadow-lg group-hover:scale-105 transition-all duration-300 relative overflow-hidden shrink-0">
               <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-transparent" />
               <Sprout className="h-6 w-6 text-emerald-400 relative z-10" />

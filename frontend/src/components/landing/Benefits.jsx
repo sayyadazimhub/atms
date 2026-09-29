@@ -41,7 +41,7 @@ export default function Benefits() {
               </div>
               
               <div className="mt-12">
-                <Link href="/user/register">
+                <Link href="/trader/register">
                   <Button size="lg" className="h-14 px-8 rounded-xl bg-slate-900 dark:bg-emerald-600 hover:bg-slate-800 dark:hover:bg-emerald-500 text-white transition-all shadow-xl shadow-slate-900/10 font-bold uppercase tracking-widest text-sm">
                     Start Now For Free
                     <ArrowRight className="ml-2 h-5 w-5" />

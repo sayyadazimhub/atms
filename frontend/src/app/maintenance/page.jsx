@@ -30,7 +30,7 @@ export default function MaintenancePage() {
         </p>
         
         <div className="flex flex-col sm:flex-row items-center gap-4">
-          <a href="/user/login" onClick={() => setIsReloading(true)}>
+          <a href="/trader/login" onClick={() => setIsReloading(true)}>
             <Button className="bg-emerald-500 hover:bg-emerald-600 text-white border-0 h-12 px-8 rounded-full text-base font-medium shadow-[0_0_40px_rgba(16,185,129,0.3)] transition-all hover:shadow-[0_0_60px_rgba(16,185,129,0.4)] flex items-center gap-2">
               <RefreshCcw className={`w-4 h-4 ${isReloading ? 'animate-spin' : ''}`} />
               Try Again

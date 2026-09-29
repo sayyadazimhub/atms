@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '@/lib/api';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { User, Bell, Activity, Menu, LogOut, Settings, ChevronDown, Sprout, TrendingUp, Sun, Moon, Monitor } from 'lucide-react';
@@ -25,18 +25,18 @@ export default function Header() {
 
   useEffect(() => {
     setMounted(true);
-    axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/profile`, { withCredentials: true })
+    api.get(`/api/user/profile`)
       .then(res => setProfile(res.data))
       .catch(err => console.error("Header profile fetch error:", err));
   }, []);
 
   const handleLogout = async () => {
     try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/user/auth/logout`, {}, {
+      await api.post(`/api/user/auth/logout`, {}, {
         withCredentials: true,
       });
       toast.success('Logged out successfully');
-      router.push('/user/login');
+      router.push('/trader/login');
     } catch (err) {
       toast.error('Logout failed');
     }
@@ -133,7 +133,7 @@ export default function Header() {
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="mx-1 bg-slate-50 dark:bg-slate-800" />
               <DropdownMenuItem
-                onClick={() => router.push('/user/profile')}
+                onClick={() => router.push('/trader/profile')}
                 className="rounded-xl cursor-pointer focus:bg-slate-50 dark:focus:bg-slate-900 transition-colors py-2.5 px-3 group"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 mr-3 group-hover:bg-blue-600 dark:group-hover:bg-blue-500 group-hover:text-white transition-all">
@@ -142,7 +142,7 @@ export default function Header() {
                 <span className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-widest">My Profile</span>
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => router.push('/user/settings')}
+                onClick={() => router.push('/trader/settings')}
                 className="rounded-xl cursor-pointer focus:bg-slate-50 dark:focus:bg-slate-900 transition-colors py-2.5 px-3 group"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 mr-3 group-hover:bg-slate-900 dark:group-hover:bg-slate-700 group-hover:text-white transition-all">

@@ -22,12 +22,12 @@ function isUserRoute(pathname) {
 }
 
 function isUserPublic(pathname) {
-  if (pathname === '/user' || pathname === '/user/') return true;
-  if (pathname === '/user/register' || pathname.startsWith('/user/register/')) return true;
-  if (pathname === '/user/login' || pathname.startsWith('/user/login/')) return true;
-  if (pathname.startsWith('/user/forgot-password')) return true;
-  if (pathname.startsWith('/user/reset-password')) return true;
-  if (pathname.startsWith('/user/verify-otp')) return true;
+  if (pathname === '/user' || pathname === '/trader/') return true;
+  if (pathname === '/trader/register' || pathname.startsWith('/trader/register/')) return true;
+  if (pathname === '/trader/login' || pathname.startsWith('/trader/login/')) return true;
+  if (pathname.startsWith('/trader/forgot-password')) return true;
+  if (pathname.startsWith('/trader/reset-password')) return true;
+  if (pathname.startsWith('/trader/verify-otp')) return true;
   return false;
 }
 
@@ -48,13 +48,13 @@ export async function middleware(request) {
     }
 
     if (settings.maintenanceMode) {
-      if (pathname !== '/user/logout') {
+      if (pathname !== '/trader/logout') {
         return NextResponse.redirect(new URL('/maintenance', request.url));
       }
     }
 
-    if (!settings.traderSelfRegistration && pathname.startsWith('/user/register')) {
-      const loginUrl = new URL('/user/login', request.url);
+    if (!settings.traderSelfRegistration && pathname.startsWith('/trader/register')) {
+      const loginUrl = new URL('/trader/login', request.url);
       loginUrl.searchParams.set('error', 'registration_disabled');
       return NextResponse.redirect(loginUrl);
     }
@@ -63,18 +63,18 @@ export async function middleware(request) {
     if (isUserPublic(pathname)) {
       if (userToken) {
         const decoded = await verifyUserToken(userToken);
-        if (decoded && (pathname === '/user/login' || pathname === '/user/register' || pathname === '/user/verify-otp')) {
-          return NextResponse.redirect(new URL('/user/dashboard', request.url));
+        if (decoded && (pathname === '/trader/login' || pathname === '/trader/register' || pathname === '/trader/verify-otp')) {
+          return NextResponse.redirect(new URL('/trader/dashboard', request.url));
         }
       }
       return NextResponse.next();
     }
     if (!userToken) {
-      return NextResponse.redirect(new URL('/user/login', request.url));
+      return NextResponse.redirect(new URL('/trader/login', request.url));
     }
     const decoded = await verifyUserToken(userToken);
     if (!decoded) {
-      const res = NextResponse.redirect(new URL('/user/login', request.url));
+      const res = NextResponse.redirect(new URL('/trader/login', request.url));
       res.cookies.delete('user-token');
       return res;
     }

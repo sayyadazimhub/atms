@@ -17,7 +17,7 @@ export default function CtaBanner() {
           Join thousands of agricultural traders who have already streamlined their inventory, automated their profit tracking, and scaled their operations.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link href="/user/register" className="w-full sm:w-auto">
+          <Link href="/trader/register" className="w-full sm:w-auto">
             <Button size="lg" className="w-full h-14 px-8 rounded-xl bg-white text-emerald-700 hover:bg-slate-50 hover:scale-105 transition-all duration-300 font-bold uppercase tracking-widest text-sm shadow-xl shadow-emerald-900/20 border-0">
               Create Free Account
               <ArrowRight className="ml-2 h-5 w-5" />
