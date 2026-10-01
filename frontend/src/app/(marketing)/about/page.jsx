@@ -5,6 +5,7 @@ import { Shield, Target, Users, Zap, Sprout, CheckCircle2, ArrowRight } from 'lu
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
+import CtaBanner from '@/components/landing/CtaBanner';
 
 export const metadata = {
   title: 'About Us - ATMS',
@@ -44,48 +45,64 @@ export default function AboutPage() {
 
       <main>
         {/* Hero Section matching Homepage layout */}
-        <section className="relative min-h-[calc(100vh-64px)] flex items-center border-b border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900 py-20">
+        <section className="relative flex items-center border-b border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900 py-16 lg:py-24 px-4">
+          {/* Grid Background */}
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
           
-          {/* Floating Icons for Depth */}
-          <div className="absolute top-20 left-[15%] opacity-20 animate-pulse hidden md:block">
-            <Sprout className="h-12 w-12 text-emerald-400/40 rotate-12" />
+          {/* Soft Radial Fade for better readability */}
+          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-transparent dark:from-slate-900 dark:via-slate-900/80 z-0 pointer-events-none hidden lg:block" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/50 to-white dark:via-slate-900/50 dark:to-slate-900 z-0 pointer-events-none lg:hidden" />
+
+          {/* Floating Background Icons */}
+          <div className="absolute top-20 right-[40%] opacity-20 animate-pulse hidden lg:block z-0">
+            <Sprout className="h-16 w-16 text-emerald-400/50 rotate-12" />
           </div>
-          <div className="absolute bottom-40 right-[15%] opacity-20 animate-pulse delay-700 hidden md:block">
-            <Users className="h-12 w-12 text-blue-400/40 -rotate-12" />
+          <div className="absolute bottom-20 left-[40%] opacity-20 animate-[pulse_3s_ease-in-out_infinite] hidden lg:block z-0">
+            <Users className="h-12 w-12 text-blue-400/50 -rotate-12" />
           </div>
-          
-          <div className="max-w-7xl mx-auto px-4 relative z-10 text-center w-full">
-            <div className="max-w-4xl mx-auto">
+
+          {/* Grid Row Content Container */}
+          <div className="relative z-10 w-full max-w-7xl mx-auto grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
+            
+            {/* Text Content (Left Column) */}
+            <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
               
-              {/* Badge matching homepage */}
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md px-4 py-1.5 text-[10px] sm:text-xs font-bold text-slate-600 dark:text-slate-400 mb-8 uppercase tracking-wider md:tracking-[0.2em] shadow-xl">
-                <Sprout className="h-3.5 w-3.5 text-emerald-500" />
+              {/* Premium Badge */}
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-500/10 backdrop-blur-md px-5 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 mb-8 uppercase tracking-widest shadow-sm">
+                <Sprout className="h-4 w-4" />
                 About Our Company
               </div>
 
-              <h1 className="text-4xl font-bold text-slate-900 dark:text-slate-50 sm:text-6xl leading-[1.1] tracking-tight">
+              {/* Title with Gradient */}
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 dark:text-slate-50 leading-[1.15] tracking-tight mb-6">
                 Empowering the <br />
-                <span className="text-emerald-600 dark:text-emerald-400">Future of Trading</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500 dark:from-emerald-400 dark:to-teal-300">Future of Trading</span>
               </h1>
-              
-              <p className="mt-8 text-xl text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl mx-auto font-medium mb-12">
+
+              {/* Subtitle */}
+              <p className="text-base md:text-lg text-slate-600 dark:text-slate-400 leading-relaxed max-w-xl font-medium lg:pr-6 mb-8 lg:mb-0">
                 ATMS was founded with a simple goal: to make agricultural trading management straightforward, efficient, and accessible to everyone.
               </p>
-
-              <div className="relative mx-auto max-w-5xl rounded-3xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 group">
-                <Image 
-                  src="/images/about-hero.jpg" 
-                  alt="Agricultural Trading Management" 
-                  width={1200} 
-                  height={600} 
-                  className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-105"
-                  priority
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              </div>
-              
             </div>
+
+            {/* Premium Image Container (Right Column) */}
+            <div className="relative w-full rounded-2xl overflow-hidden shadow-2xl border border-slate-200/50 dark:border-slate-700/50 group ring-1 ring-slate-900/5 dark:ring-white/5">
+              <div className="absolute inset-0 bg-emerald-500/10 mix-blend-overlay z-10 pointer-events-none"></div>
+              <Image
+                src="/images/about-hero.jpg"
+                alt="Agricultural Trading Management"
+                width={800}
+                height={600}
+                className="w-full h-auto aspect-video lg:aspect-[4/3] object-cover transition-transform duration-1000 group-hover:scale-105"
+                priority
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-20 flex items-end justify-center pb-8">
+                <span className="text-white font-bold tracking-widest uppercase text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-700 delay-100 transform translate-y-4 group-hover:translate-y-0">
+                  Built for Traders
+                </span>
+              </div>
+            </div>
+            
           </div>
         </section>
 
@@ -107,7 +124,7 @@ export default function AboutPage() {
                 <p className="text-slate-600 dark:text-slate-400 text-lg mb-6 leading-relaxed">
                   That's why we created <strong>ATMS (Agricultural Trading Management System)</strong>. We brought together industry experts and top-tier engineers to build a solution that is powerful enough to handle complex inventory and accounting, yet simple enough to use every day without a steep learning curve.
                 </p>
-                
+
                 <div className="mt-8 flex flex-wrap items-center gap-x-8 gap-y-4">
                   {[
                     "Built by Traders",
@@ -120,7 +137,7 @@ export default function AboutPage() {
                   ))}
                 </div>
               </div>
-              
+
               <div className="bg-white dark:bg-slate-900 p-8 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl relative overflow-hidden flex flex-col justify-center min-h-[400px]">
                 <div className="absolute inset-0 bg-emerald-500/5 dark:bg-emerald-500/10" />
                 <div className="relative z-10">
@@ -131,12 +148,12 @@ export default function AboutPage() {
                       "Organize and track all payments.",
                       "Grow trading businesses with absolute confidence."
                     ].map((item, idx) => (
-                       <li key={idx} className="flex items-start gap-4">
+                      <li key={idx} className="flex items-start gap-4">
                         <div className="h-10 w-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center shrink-0">
                           <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                         </div>
                         <p className="text-slate-700 dark:text-slate-300 font-medium text-lg leading-tight mt-2">{item}</p>
-                       </li>
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -178,27 +195,8 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* CTA matching Homepage exactly */}
-        <section className="py-24 bg-slate-900 dark:bg-slate-950 text-center relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-emerald-900/20" />
-          <div className="max-w-3xl mx-auto px-4 relative z-10">
-            <h2 className="text-4xl font-extrabold text-white mb-6 tracking-tight">Ready to scale your business?</h2>
-            <p className="text-slate-300 mb-10 text-xl font-medium">Join the traders who are already using ATMS to manage their daily operations.</p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-              <Link href="/trader/register" className="w-full sm:w-auto">
-                <Button size="lg" className="h-12 px-8 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold uppercase tracking-widest transition-all shadow-lg shadow-emerald-500/20 w-full group">
-                  Get Started Now
-                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
-              <Link href="/contact" className="w-full sm:w-auto">
-                <Button variant="outline" size="lg" className="h-12 px-8 rounded-xl border-slate-700 text-white hover:bg-slate-800 font-bold uppercase tracking-widest transition-all bg-transparent w-full">
-                  Contact Us
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </section>
+        {/* Central CTA Component */}
+        <CtaBanner />
 
       </main>
 

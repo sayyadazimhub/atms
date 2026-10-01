@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import AppPreview from '@/components/landing/AppPreview';
 import Features from '@/components/landing/Features';
 import HowItWorks from '@/components/landing/HowItWorks';
-import Benefits from '@/components/landing/Benefits';
 import Testimonials from '@/components/landing/Testimonials';
 import Pricing from '@/components/landing/Pricing';
 import FAQ from '@/components/landing/FAQ';
@@ -34,10 +33,10 @@ export default async function HomePage() {
       <section className="relative min-h-[calc(100vh-64px)] flex items-center border-b border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900">
         {/* Floating Icons for Depth */}
         <div className="absolute top-20 left-[15%] opacity-20 animate-pulse">
-          <ShoppingCart className="h-12 w-12 text-emerald-400/40 rotate-12" />
+          <TrendingUp className="h-12 w-12 text-emerald-400/40 rotate-12" />
         </div>
         <div className="absolute bottom-20 right-[15%] opacity-20 animate-pulse delay-700">
-          <BarChart3 className="h-12 w-12 text-blue-400/40 -rotate-12" />
+          <BarChart3 className="h-12 w-12 text-emerald-400/40 -rotate-12" />
         </div>
 
         <div className="max-w-7xl mx-auto px-4 relative z-10 text-center">
@@ -54,7 +53,7 @@ export default async function HomePage() {
               <span className="text-emerald-600 dark:text-emerald-400">Trading Business Success</span>
             </h2>
             <p className="mt-8 text-xl text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl mx-auto font-medium">
-              Join the elite club of traders who have scaled their operations with ATMS. Get started with professional tools in seconds...
+              Join the forward-thinking traders who have scaled their operations with ATMS. Get started with our professional suite of tools today.
             </p>
 
             <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-6">
@@ -93,8 +92,6 @@ export default async function HomePage() {
       <Features />
 
       <HowItWorks />
-
-      <Benefits />
 
       <Testimonials />
       <Pricing />

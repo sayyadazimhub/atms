@@ -81,32 +81,37 @@ export default function Testimonials() {
   ];
 
   return (
-    <section id="testimonials" className="py-24 bg-slate-100 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
-      <div className="max-w-7xl mx-auto px-4">
+    <section id="testimonials" className="py-12 lg:py-16 flex flex-col justify-center relative overflow-hidden bg-white dark:bg-slate-950/30 border-b border-slate-200 dark:border-slate-800">
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
+      <div className="max-w-7xl mx-auto px-4 relative z-10 w-full">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           
           {/* Left Column: Text & CTA */}
           <div className="max-w-xl text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-widest mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-slate-900/80 text-slate-600 dark:text-slate-300 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.2em] mb-6 border border-slate-200/50 dark:border-slate-800 shadow-sm backdrop-blur-md">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+              </span>
               Success Stories
             </div>
-            <h2 className="text-4xl font-extrabold text-slate-900 dark:text-slate-50 sm:text-5xl sm:leading-tight tracking-tight mb-6">
+            <h2 className="text-4xl font-black text-slate-900 dark:text-white sm:text-5xl lg:text-6xl tracking-tighter leading-[1.1] mb-6">
               Empowering Traders <br className="hidden xl:block" />
-              <span className="text-emerald-600 dark:text-emerald-400">Every Single Day.</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500">Every Single Day.</span>
             </h2>
-            <p className="text-slate-600 dark:text-slate-400 text-lg mb-8 leading-relaxed max-w-lg">
+            <p className="text-slate-600 dark:text-slate-400 text-sm md:text-base font-medium leading-relaxed max-w-lg mb-10">
               Join the growing community of agricultural wholesalers and distributors who have transformed their operations, scaled their profits, and taken control of their inventory with ATMS.
             </p>
 
             {/* Social Proof Stats */}
             <div className="mb-10 grid grid-cols-2 gap-8 max-w-md">
               <div>
-                <h3 className="text-4xl font-black text-slate-900 dark:text-slate-50 tracking-tight">500<span className="text-emerald-500">+</span></h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider mt-2">Active Traders</p>
+                <h3 className="text-4xl font-black text-slate-900 dark:text-slate-50 tracking-tight">500<span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-400">+</span></h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-[0.15em] mt-2">Active Traders</p>
               </div>
               <div>
-                <h3 className="text-4xl font-black text-slate-900 dark:text-slate-50 tracking-tight">₹10Cr<span className="text-emerald-500">+</span></h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider mt-2">Processed Daily</p>
+                <h3 className="text-4xl font-black text-slate-900 dark:text-slate-50 tracking-tight">₹10Cr<span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-400">+</span></h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-[0.15em] mt-2">Processed Daily</p>
               </div>
             </div>
             
@@ -167,7 +172,7 @@ export default function Testimonials() {
           {testimonials.map((t, i) => (
             <div key={i} className="shrink-0 w-full snap-center px-4 sm:px-6">
               <div className="relative">
-                <div className="absolute -inset-4 bg-gradient-to-br from-emerald-500/10 to-blue-500/10 blur-2xl rounded-[3rem] -z-10" />
+                <div className="absolute bg-gradient-to-br from-emerald-500/10 to-blue-500/10 blur-2xl rounded-[3rem] -z-10" />
                 <div className="bg-white dark:bg-slate-950 p-8 sm:p-10 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl relative overflow-hidden flex flex-col items-center text-center">
                   <div className="flex gap-1 mb-6 text-emerald-500 justify-center">
                     {[...Array(5)].map((_, j) => (
