@@ -81,7 +81,7 @@ export default function Testimonials() {
   ];
 
   return (
-    <section className="py-24 bg-slate-100 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
+    <section id="testimonials" className="py-24 bg-slate-100 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
       <div className="max-w-7xl mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           

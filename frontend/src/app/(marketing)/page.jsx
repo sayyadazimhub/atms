@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Package, TrendingUp, BarChart3, Users, Truck, ShoppingCart, ArrowRight, CheckCircle2, Sprout } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import Footer from '@/components/Footer';
+
 import AppPreview from '@/components/landing/AppPreview';
 import Features from '@/components/landing/Features';
 import HowItWorks from '@/components/landing/HowItWorks';
@@ -12,7 +12,7 @@ import FAQ from '@/components/landing/FAQ';
 import CtaBanner from '@/components/landing/CtaBanner';
 import serverApiUrl from '@/lib/server-api-url';
 // import prisma from '@/lib/prisma'; // Removed direct DB access
-import Navbar from '@/components/landing/Navbar';
+
 
 export default async function HomePage() {
   let displayCount = 200;
@@ -28,8 +28,7 @@ export default async function HomePage() {
 
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-emerald-100 selection:text-emerald-900">
-      <Navbar />
+    <>
 
       {/* Hero Section */}
       <section className="relative min-h-[calc(100vh-64px)] flex items-center border-b border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900">
@@ -102,8 +101,6 @@ export default async function HomePage() {
       <FAQ />
       <CtaBanner />
 
-      {/* Professional Footer */}
-      <Footer />
-    </div>
+    </>
   );
 }

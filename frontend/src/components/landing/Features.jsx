@@ -42,7 +42,7 @@ export default function Features() {
   ];
 
   return (
-    <section className="min-h-screen flex items-center py-24 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+    <section id="features" className="min-h-screen flex items-center py-24 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
       <div className="max-w-7xl mx-auto px-4 w-full">
         <div className="text-center mb-16 max-w-2xl mx-auto">
           <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-50 sm:text-4xl tracking-tight mb-4">

@@ -1,8 +1,8 @@
 import React from 'react';
 import { Mail, Phone, MapPin, Send, Building2, Globe2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import Navbar from '@/components/landing/Navbar';
-import Footer from '@/components/Footer';
+
+
 
 export const metadata = {
   title: 'Contact Us | ATMS Trading Systems',
@@ -11,8 +11,7 @@ export const metadata = {
 
 export default function ContactPage() {
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 font-sans selection:bg-emerald-100 selection:text-emerald-900">
-      <Navbar />
+    <>
       
       <main className="flex-grow relative z-10 w-full max-w-7xl mx-auto px-4 py-16 md:py-24">
         
@@ -109,9 +108,6 @@ export default function ContactPage() {
         </div>
       </main>
 
-      <div className="w-full bg-white dark:bg-slate-900 mt-auto">
-        <Footer />
-      </div>
-    </div>
+    </>
   );
 }
