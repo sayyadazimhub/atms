@@ -75,7 +75,7 @@ export default function AdminReportsPage() {
                 <Calendar className="h-4 w-4 mr-2 text-slate-500" />
                 <SelectValue placeholder="Select Period" />
               </SelectTrigger>
-              <SelectContent className="rounded-xl border-slate-100 dark:border-slate-800 shadow-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+              <SelectContent className="rounded-xl border-slate-100 shadow-xl bg-white text-slate-900">
                 <SelectItem value="7d">Last 7 Days</SelectItem>
                 <SelectItem value="30d">Last 30 Days</SelectItem>
                 <SelectItem value="90d">Last 90 Days</SelectItem>

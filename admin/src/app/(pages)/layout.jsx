@@ -17,7 +17,7 @@ export default async function AdminDashboardLayout({ children }) {
     }
 
     return (
-        <div className="flex h-screen overflow-hidden flex-col lg:flex-row force-light bg-slate-50">
+        <div className="flex h-screen overflow-hidden flex-col lg:flex-row bg-slate-50">
             <AdminSidebar />
             <main className="flex-1 overflow-y-auto p-4 lg:p-8">
                 <div className="max-w-7xl mx-auto h-full">

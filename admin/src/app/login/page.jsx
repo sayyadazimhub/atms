@@ -32,7 +32,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="force-light relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-50 px-4 py-10 sm:px-6">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-50 px-4 py-10 sm:px-6">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-emerald-600" />
       <main className="relative w-full max-w-md">
         <Card className="overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-white shadow-xl shadow-slate-900/5">
@@ -140,7 +140,7 @@ export default function LoginPage() {
 //   };
 
 //   return (
-//     <div className="flex min-h-screen items-center justify-center bg-background bg-gradient-to-br from-slate-50 to-blue-50/40 p-4 force-light">
+//     <div className="flex min-h-screen items-center justify-center bg-background bg-gradient-to-br from-slate-50 to-blue-50/40 p-4 ">
 //       <Card className="w-full max-w-md shadow-lg">
 //         <CardHeader className="space-y-1 text-center">
 //           <CardTitle className="text-2xl">Create account</CardTitle>

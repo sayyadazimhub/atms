@@ -26,21 +26,16 @@ export function ConfirmModal({
 }) {
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[425px] rounded-3xl p-8 border-none shadow-2xl bg-white dark:bg-slate-900 dark:border dark:border-slate-800">
+            <DialogContent className="sm:max-w-[425px] rounded-3xl p-8 border-none shadow-2xl bg-white">
                 <DialogHeader className="flex flex-col items-center text-center gap-4">
                     <div className={cn(
-                        "p-4 rounded-2xl transition-colors",
-                        variant === 'destructive'
-                            ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400'
-                            : 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
-                    )}>
-                        {variant === 'destructive' ? <Trash2 className="h-8 w-8" /> : <AlertTriangle className="h-8 w-8" />}
+                        "p-4 rounded-2xl transition-colors", variant === 'destructive' ? 'bg-rose-50 text-rose-600' : 'bg-blue-50 text-blue-600')}> {variant === 'destructive' ? <Trash2 className="h-8 w-8" /> : <AlertTriangle className="h-8 w-8" />}
                     </div>
                     <div className="space-y-1">
-                        <DialogTitle className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100">
+                        <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">
                             {title}
                         </DialogTitle>
-                        <DialogDescription className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+                        <DialogDescription className="text-slate-500 font-medium leading-relaxed">
                             {description}
                         </DialogDescription>
                     </div>
@@ -50,7 +45,7 @@ export function ConfirmModal({
                         type="button"
                         variant="outline"
                         onClick={onClose}
-                        className="flex-1 rounded-2xl h-12 font-bold border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all"
+                        className="flex-1 rounded-2xl h-12 font-bold border-slate-200 text-slate-600 hover:bg-slate-50 transition-all"
                         disabled={isLoading}
                     >
                         {cancelText}
@@ -60,14 +55,7 @@ export function ConfirmModal({
                         variant={variant === 'destructive' ? 'destructive' : 'default'}
                         onClick={onConfirm}
                         className={cn(
-                            "flex-1 rounded-2xl h-12 font-bold transition-all border-none",
-                            variant === 'destructive'
-                                ? 'bg-rose-600 hover:bg-rose-700 text-white'
-                                : 'bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-slate-200 text-white'
-                        )}
-                        disabled={isLoading}
-                    >
-                        {isLoading ? "Processing..." : confirmText}
+                            "flex-1 rounded-2xl h-12 font-bold transition-all border-none", variant === 'destructive' ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-slate-900 hover:bg-slate-800 text-white' )} disabled={isLoading} > {isLoading ? "Processing..." : confirmText}
                     </Button>
                 </DialogFooter>
             </DialogContent>
