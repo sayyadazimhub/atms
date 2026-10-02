@@ -50,7 +50,7 @@ export default function Pricing() {
   ];
 
   return (
-    <section id="pricing" className="py-12 lg:py-16 relative overflow-hidden bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex flex-col justify-center min-h-[auto] xl:min-h-screen">
+    <section id="pricing" className="py-12 lg:py-16 relative overflow-hidden bg-slate-50 border-b border-slate-200 flex flex-col justify-center min-h-[auto] xl:min-h-screen">
       {/* Background Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
 
@@ -58,17 +58,17 @@ export default function Pricing() {
         
         {/* Premium Header */}
         <div className="mb-10 lg:mb-16 flex flex-col items-center text-center max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 dark:bg-slate-900/80 text-slate-600 dark:text-slate-300 text-[10px] font-bold uppercase tracking-[0.2em] mb-4 border border-slate-200/50 dark:border-slate-800 shadow-sm backdrop-blur-md">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 text-slate-600 text-[10px] font-bold uppercase tracking-[0.2em] mb-4 border border-slate-200/50 shadow-sm backdrop-blur-md">
             <span className="relative flex h-1.5 w-1.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
             </span>
             Flexible Plans
           </div>
-          <h2 className="text-3xl font-black text-slate-900 dark:text-white sm:text-4xl lg:text-5xl tracking-tighter leading-[1.1] mb-4">
+          <h2 className="text-3xl font-black text-slate-900 sm:text-4xl lg:text-5xl tracking-tighter leading-[1.1] mb-4">
             Simple, <span className="text-transparent bg-clip-text bg-gradient-to-br from-emerald-500 via-teal-500 to-emerald-700">Transparent Pricing</span>
           </h2>
-          <p className="text-slate-600 dark:text-slate-400 text-sm md:text-base font-medium max-w-2xl mx-auto">
+          <p className="text-slate-600 text-sm md:text-base font-medium max-w-2xl mx-auto">
             Choose the plan that fits your business needs. No hidden fees, cancel anytime.
           </p>
         </div>
@@ -77,10 +77,10 @@ export default function Pricing() {
           {plans.map((plan, i) => (
             <div 
               key={i} 
-              className={`relative bg-white/50 dark:bg-slate-950/50 backdrop-blur-md p-6 sm:p-8 rounded-3xl border transition-all duration-500 ${
+              className={`relative bg-white/50 backdrop-blur-md p-6 sm:p-8 rounded-3xl border transition-all duration-500 ${
                 plan.popular 
                   ? 'border-emerald-500/50 shadow-2xl shadow-emerald-500/10 md:scale-105 z-10 hover:border-emerald-500 hover:shadow-emerald-500/20' 
-                  : 'border-slate-200 dark:border-slate-800 shadow-lg hover:border-slate-300 dark:hover:border-slate-700'
+                  : 'border-slate-200 shadow-lg hover:border-slate-300'
               }`}
             >
               {plan.popular && (
@@ -90,22 +90,22 @@ export default function Pricing() {
               )}
               
               <div className="mb-6">
-                <h3 className={`text-xl font-bold mb-2 ${plan.popular ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
+                <h3 className={`text-xl font-bold mb-2 ${plan.popular ? 'text-emerald-600' : 'text-slate-900'}`}>
                   {plan.name}
                 </h3>
-                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 h-10">{plan.desc}</p>
+                <p className="text-xs sm:text-sm text-slate-500 h-10">{plan.desc}</p>
               </div>
               
               <div className="mb-8 flex items-end gap-1">
-                <span className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight">{plan.price}</span>
-                {plan.period && <span className="text-slate-500 dark:text-slate-400 font-medium mb-1 text-sm">{plan.period}</span>}
+                <span className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight">{plan.price}</span>
+                {plan.period && <span className="text-slate-500 font-medium mb-1 text-sm">{plan.period}</span>}
               </div>
               
               <ul className="space-y-3 sm:space-y-4 mb-8">
                 {plan.features.map((feature, j) => (
                   <li key={j} className="flex items-start gap-3">
                     <CheckCircle2 className={`h-4 w-4 sm:h-5 sm:w-5 shrink-0 ${plan.popular ? 'text-emerald-500' : 'text-slate-400'}`} />
-                    <span className="text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-medium">{feature}</span>
+                    <span className="text-slate-700 text-xs sm:text-sm font-medium">{feature}</span>
                   </li>
                 ))}
               </ul>
@@ -114,7 +114,7 @@ export default function Pricing() {
                 className={`w-full h-11 sm:h-12 rounded-xl font-bold uppercase tracking-widest text-[10px] sm:text-xs transition-all ${
                   plan.popular 
                     ? 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-lg shadow-emerald-500/25 border-0' 
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700'
+                    : 'bg-slate-100 text-slate-900 hover:bg-slate-200'
                 }`}
               >
                 {plan.buttonText}

@@ -1,10 +1,10 @@
-import Sidebar from '@/components/Sidebar';
-import Header from '@/components/Header';
+import Sidebar from '@/components/trader/Sidebar';
+import Header from '@/components/trader/Header';
 import { cookies } from 'next/headers';
 import { verifyUserToken } from '@/lib/auth';
 import serverApiUrl from '@/lib/server-api-url';
 import { redirect } from 'next/navigation';
-import { ThemeProvider } from '@/components/ThemeProvider';
+import { ThemeProvider } from '@/components/trader/ThemeProvider';
 
 export default async function UserDashboardLayout({ children }) {
   const cookieStore = cookies();

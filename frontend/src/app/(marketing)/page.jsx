@@ -30,7 +30,7 @@ export default async function HomePage() {
     <>
 
       {/* Hero Section */}
-      <section className="relative min-h-[calc(100vh-64px)] flex items-center border-b border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900">
+      <section className="relative min-h-[calc(100vh-64px)] flex items-center border-b border-slate-200 overflow-hidden bg-white">
         {/* Floating Icons for Depth */}
         <div className="absolute top-20 left-[15%] opacity-20 animate-pulse">
           <TrendingUp className="h-12 w-12 text-emerald-400/40 rotate-12" />
@@ -42,17 +42,17 @@ export default async function HomePage() {
         <div className="max-w-7xl mx-auto px-4 relative z-10 text-center">
           <div className="max-w-4xl mx-auto">
             {/* Social Proof Badge */}
-            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md px-4 py-1.5 text-[10px] sm:text-xs font-bold text-slate-600 dark:text-slate-400 mb-8 uppercase tracking-wider md:tracking-[0.2em] shadow-xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/50 backdrop-blur-md px-4 py-1.5 text-[10px] sm:text-xs font-bold text-slate-600 mb-8 uppercase tracking-wider md:tracking-[0.2em] shadow-xl">
               <Users className="h-3.5 w-3.5 text-emerald-500" />
               Trusted by {displayCount}+ Professional Traders
               {/* Agricultural Trading Made Simple */}
             </div>
 
-            <h2 className="text-4xl font-bold text-slate-900 dark:text-slate-50 sm:text-6xl leading-[1.1] tracking-tight">
+            <h2 className="text-4xl font-bold text-slate-900 sm:text-6xl leading-[1.1] tracking-tight">
               Professional Tools for <br />
-              <span className="text-emerald-600 dark:text-emerald-400">Trading Business Success</span>
+              <span className="text-emerald-600">Trading Business Success</span>
             </h2>
-            <p className="mt-8 text-xl text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl mx-auto font-medium">
+            <p className="mt-8 text-xl text-slate-600 leading-relaxed max-w-2xl mx-auto font-medium">
               Join the forward-thinking traders who have scaled their operations with ATMS. Get started with our professional suite of tools today.
             </p>
 
@@ -64,7 +64,7 @@ export default async function HomePage() {
                 </Button>
               </Link>
               <Link href="/trader/login" className="w-full sm:w-auto">
-                <Button variant="outline" size="lg" className="h-12 px-6 rounded-xl border-slate-200 dark:border-slate-800 bg-transparent hover:bg-slate-50 dark:hover:bg-slate-900 w-full font-bold uppercase tracking-widest transition-all">
+                <Button variant="outline" size="lg" className="h-12 px-6 rounded-xl border-slate-200 bg-transparent hover:bg-slate-50 w-full font-bold uppercase tracking-widest transition-all">
                   Sign In
                 </Button>
               </Link>
@@ -77,7 +77,7 @@ export default async function HomePage() {
                 "Instant Dashboard Setup",
                 "24/7 Dedicated Support"
               ].map((badge) => (
-                <div key={badge} className="flex items-center gap-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
+                <div key={badge} className="flex items-center gap-2 text-sm font-semibold text-slate-500">
                   <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                   {badge}
                 </div>

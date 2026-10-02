@@ -19,7 +19,7 @@ import {
   Boxes
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { PageHeader } from '@/components/PageHeader';
+import { PageHeader } from '@/components/trader/PageHeader';
 import Link from 'next/link';
 
 export default function StockMonitorPage() {

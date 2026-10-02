@@ -23,8 +23,8 @@ import {
 import * as Dialog from '@radix-ui/react-dialog';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
-import { ConfirmModal } from '@/components/ConfirmModal';
-import { PageHeader } from '@/components/PageHeader';
+import { ConfirmModal } from '@/components/trader/ConfirmModal';
+import { PageHeader } from '@/components/trader/PageHeader';
 
 export default function SalesPage() {
     const [sales, setSales] = useState([]);

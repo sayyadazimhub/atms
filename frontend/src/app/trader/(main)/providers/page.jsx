@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Plus, Pencil, Trash2, Search, Eye, Filter, Users, Phone, MapPin, Truck } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 // import { cn } from '@/lib/utils';
-import { ConfirmModal } from '@/components/ConfirmModal';
+import { ConfirmModal } from '@/components/trader/ConfirmModal';
 
 export default function ProvidersPage() {
   const [providers, setProviders] = useState([]);

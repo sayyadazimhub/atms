@@ -18,7 +18,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { PageHeader } from '@/components/PageHeader';
+import { PageHeader } from '@/components/trader/PageHeader';
 
 export default function ReportsPage() {
   const [type, setType] = useState('today');

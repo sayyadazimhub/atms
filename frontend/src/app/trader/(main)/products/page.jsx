@@ -10,8 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Plus, Pencil, Trash2, Search, Package } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { cn } from '@/lib/utils';
-import { ConfirmModal } from '@/components/ConfirmModal';
-import { PageHeader } from '@/components/PageHeader';
+import { ConfirmModal } from '@/components/trader/ConfirmModal';
+import { PageHeader } from '@/components/trader/PageHeader';
 
 const UNITS = ['KG', 'Quintal', 'Ton'];
 
