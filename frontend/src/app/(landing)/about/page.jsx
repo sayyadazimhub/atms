@@ -104,7 +104,7 @@ export default function AboutPage() {
                   Agricultural trading is the backbone of our economy, yet many traders still rely on outdated methods like pen and paper or complex, clunky software to manage their daily operations. We saw the frustration firsthand.
                 </p>
                 <p className="text-slate-600 text-sm md:text-base font-medium mb-6 leading-relaxed">
-                  That's why we created <strong>ATMS (Agricultural Trading Management System)</strong>. We brought together industry experts and top-tier engineers to build a solution that is powerful enough to handle complex inventory and accounting, yet simple enough to use every day without a steep learning curve.
+                  That&apos;s why we created <strong>ATMS (Agricultural Trading Management System)</strong>. We brought together industry experts and top-tier engineers to build a solution that is powerful enough to handle complex inventory and accounting, yet simple enough to use every day without a steep learning curve.
                 </p>
 
                 <div className="mt-8 flex flex-wrap items-center gap-x-8 gap-y-4">

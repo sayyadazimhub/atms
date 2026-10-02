@@ -40,7 +40,7 @@ export default function NotFound() {
         </p>
 
         <p className="text-sm font-medium text-slate-500 mb-10 leading-relaxed">
-          The page you are looking for doesn't exist or has been moved. Let's get you back on track.
+          The page you are looking for doesn&apos;t exist or has been moved. Let&apos;s get you back on track.
         </p>
 
         {/* Buttons */}

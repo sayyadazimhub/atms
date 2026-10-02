@@ -11,6 +11,7 @@ import { Plus, Pencil, Trash2, Search, Eye, Filter, Users, Phone, MapPin, Truck 
 import * as Dialog from '@radix-ui/react-dialog';
 // import { cn } from '@/lib/utils';
 import { ConfirmModal } from '@/components/trader/ConfirmModal';
+import { PageHeader } from '@/components/trader/PageHeader';
 
 export default function ProvidersPage() {
   const [providers, setProviders] = useState([]);

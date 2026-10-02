@@ -68,7 +68,7 @@ export default function AppPreview() {
               <div className="flex justify-between items-end mb-4 sm:mb-5 relative z-10">
                 <div>
                   <h3 className="text-lg sm:text-xl font-bold text-slate-900">Welcome back, Admin</h3>
-                  <p className="text-slate-500 text-xs mt-1">Here's what's happening with your store today.</p>
+                  <p className="text-slate-500 text-xs mt-1">Here&apos;s what&apos;s happening with your store today.</p>
                 </div>
               </div>
 
