@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -153,43 +153,45 @@ export default function AdminSettingsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 max-w-6xl mx-auto pb-10">
       {/* Header */}
       <PageHeader 
-        title="Admin Settings"
+        title="Settings"
         description="Manage your profile and system configuration"
         icon={SettingsIcon}
       />
 
-      <div className="grid gap-6 lg:grid-cols-12">
+      <div className="flex flex-col md:flex-row gap-8">
         {/* Navigation Tabs */}
-        <aside className="lg:col-span-3 space-y-2">
-          {[
-            { id: 'profile', label: 'Personal Profile', icon: User },
-            { id: 'security', label: 'Security', icon: Shield },
-            { id: 'notifications', label: 'Notifications', icon: Bell },
-            { id: 'system', label: 'System Config', icon: Layout },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                "w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 font-medium text-sm",
-                activeTab === tab.id
-                  ? "bg-slate-900 text-white shadow-sm"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              )}
-            >
-              <tab.icon className="h-4 w-4" />
-              {tab.label}
-            </button>
-          ))}
+        <aside className="md:w-64 shrink-0 space-y-1">
+          <nav className="flex md:flex-col gap-1 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
+            {[
+              { id: 'profile', label: 'Personal Profile', icon: User },
+              { id: 'security', label: 'Security', icon: Shield },
+              { id: 'notifications', label: 'Notifications', icon: Bell },
+              { id: 'system', label: 'System Config', icon: Layout },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
+                  activeTab === tab.id
+                    ? "bg-slate-100 text-slate-900 shadow-sm"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                )}
+              >
+                <tab.icon className="h-4 w-4 shrink-0" />
+                {tab.label}
+              </button>
+            ))}
+          </nav>
 
           <div className="pt-4 mt-4 border-t border-slate-200">
             <Button
               onClick={handleLogout}
               variant="outline"
-              className="w-full justify-start text-rose-600 border-rose-200 hover:bg-rose-50 hover:text-rose-700 font-bold gap-3 rounded-lg"
+              className="w-full justify-start text-rose-600 border-rose-200 hover:bg-rose-50 hover:text-rose-700 font-medium gap-3 rounded-md shadow-sm"
             >
               <LogOut className="h-4 w-4" />
               Log Out
@@ -198,26 +200,26 @@ export default function AdminSettingsPage() {
         </aside>
 
         {/* Content Area */}
-        <main className="lg:col-span-9">
+        <main className="flex-1 max-w-3xl">
           {activeTab === 'profile' && (
-            <Card className="border-slate-200 animate-in slide-in-from-right-4 duration-300">
-              <CardHeader className="border-b bg-slate-50">
-                <CardTitle className="text-lg">Personal Profile</CardTitle>
+            <Card className="border-slate-200 shadow-sm animate-in fade-in duration-300">
+              <CardHeader className="border-b bg-slate-50/50">
+                <CardTitle className="text-xl">Personal Profile</CardTitle>
                 <CardDescription>Update your administrative account details</CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
-                <div className="space-y-4 max-w-2xl">
+                <div className="space-y-6 max-w-2xl">
                   <div className="space-y-2">
                     <Label htmlFor="name" className="text-sm font-medium">Full Name</Label>
                     <Input
                       id="name"
                       value={profile.name}
                       onChange={(e) => setProfile(p => ({ ...p, name: e.target.value }))}
-                      className="h-10 rounded-lg"
+                      className="max-w-md"
                       placeholder="Admin Name"
                     />
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <Label htmlFor="email" className="text-sm font-medium">Email Address</Label>
                       <Input
@@ -225,7 +227,7 @@ export default function AdminSettingsPage() {
                         type="email"
                         value={profile.email}
                         disabled
-                        className="h-10 rounded-lg bg-slate-50 border-slate-200 text-slate-500"
+                        className="bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed"
                       />
                     </div>
                     <div className="space-y-2">
@@ -234,33 +236,32 @@ export default function AdminSettingsPage() {
                         id="phone"
                         value={profile.phone}
                         onChange={(e) => setProfile(p => ({ ...p, phone: e.target.value }))}
-                        className="h-10 rounded-lg"
                         placeholder="+91 0000000000"
                       />
                     </div>
                   </div>
-                  <div className="pt-4">
-                    <Button onClick={handleSaveProfile} disabled={loading} className="h-10 rounded-lg">
-                      {loading ? 'Saving...' : 'Save Changes'}
-                    </Button>
-                  </div>
                 </div>
               </CardContent>
+              <CardFooter className="border-t bg-slate-50/50 px-6 py-4">
+                <Button onClick={handleSaveProfile} disabled={loading}>
+                  {loading ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </CardFooter>
             </Card>
           )}
 
           {activeTab === 'system' && (
-            <Card className="border-slate-200 animate-in slide-in-from-right-4 duration-300">
-              <CardHeader className="border-b bg-slate-50">
-                <CardTitle className="text-lg">System Configuration</CardTitle>
+            <Card className="border-slate-200 shadow-sm animate-in fade-in duration-300">
+              <CardHeader className="border-b bg-slate-50/50">
+                <CardTitle className="text-xl">System Configuration</CardTitle>
                 <CardDescription>Basic system identity and access rules</CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
-                <div className="space-y-4 max-w-2xl">
-                  <div className="flex items-center justify-between p-4 rounded-lg border border-slate-200 hover:bg-slate-50 transition-all">
-                    <div className="space-y-1">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
+                    <div className="space-y-0.5">
                       <Label className="text-sm font-medium text-slate-900">Maintenance Mode</Label>
-                      <p className="text-xs text-slate-500">Disable all trader access during maintenance</p>
+                      <p className="text-sm text-slate-500">Disable all trader access during maintenance windows</p>
                     </div>
                     <Switch
                       checked={settings.maintenanceMode}
@@ -268,90 +269,74 @@ export default function AdminSettingsPage() {
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-4 rounded-lg border border-slate-200 hover:bg-slate-50 transition-all">
-                    <div className="space-y-1">
+                  <div className="flex items-center justify-between p-4 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
+                    <div className="space-y-0.5">
                       <Label className="text-sm font-medium text-slate-900">Self Registration</Label>
-                      <p className="text-xs text-slate-500">Allow new traders to register on their own</p>
+                      <p className="text-sm text-slate-500">Allow new traders to register on their own</p>
                     </div>
                     <Switch
                       checked={settings.traderSelfRegistration}
                       onCheckedChange={() => handleToggle('traderSelfRegistration')}
                     />
                   </div>
-
-
-
-
                 </div>
               </CardContent>
             </Card>
           )}
 
           {activeTab === 'security' && (
-            <Card className="border-slate-200 animate-in slide-in-from-right-4 duration-300">
-              <CardHeader className="border-b bg-slate-50">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Lock className="h-5 w-5 text-amber-500" />
-                  Security Settings
-                </CardTitle>
-                <CardDescription>Authentication and access controls</CardDescription>
+            <Card className="border-slate-200 shadow-sm animate-in fade-in duration-300">
+              <CardHeader className="border-b bg-slate-50/50">
+                <CardTitle className="text-xl">Security Settings</CardTitle>
+                <CardDescription>Authentication and access controls for your admin account</CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
-                <div className="space-y-4 max-w-2xl">
-                    <div className="space-y-4">
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="newPassword" className="text-sm font-medium">New Password</Label>
-                          <Input
-                            id="newPassword"
-                            type="password"
-                            value={passwordData.newPassword}
-                            onChange={(e) => setPasswordData(p => ({ ...p, newPassword: e.target.value }))}
-                            className="h-10 rounded-lg"
-                            placeholder="Enter new password"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirm New Password</Label>
-                          <Input
-                            id="confirmPassword"
-                            type="password"
-                            value={passwordData.confirmPassword}
-                            onChange={(e) => setPasswordData(p => ({ ...p, confirmPassword: e.target.value }))}
-                            className="h-10 rounded-lg"
-                            placeholder="Confirm new password"
-                          />
-                        </div>
-                      </div>
-                      <div className="pt-2">
-                        <Button onClick={handleUpdatePassword} disabled={loading} className="h-10 rounded-lg">
-                          {loading ? 'Updating...' : 'Update Password'}
-                        </Button>
-                      </div>
-                    </div>
-
-
+                <div className="space-y-6 max-w-md">
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">New Password</Label>
+                    <Input
+                      id="newPassword"
+                      type="password"
+                      value={passwordData.newPassword}
+                      onChange={(e) => setPasswordData(p => ({ ...p, newPassword: e.target.value }))}
+                      placeholder="Enter new password"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      value={passwordData.confirmPassword}
+                      onChange={(e) => setPasswordData(p => ({ ...p, confirmPassword: e.target.value }))}
+                      placeholder="Confirm new password"
+                    />
+                  </div>
                 </div>
               </CardContent>
+              <CardFooter className="border-t bg-slate-50/50 px-6 py-4">
+                <Button onClick={handleUpdatePassword} disabled={loading}>
+                  {loading ? 'Updating...' : 'Update Password'}
+                </Button>
+              </CardFooter>
             </Card>
           )}
 
           {activeTab === 'notifications' && (
-            <Card className="border-slate-200 animate-in slide-in-from-right-4 duration-300">
-              <CardHeader className="border-b bg-slate-50">
-                <CardTitle className="text-lg">Global Notifications</CardTitle>
+            <Card className="border-slate-200 shadow-sm animate-in fade-in duration-300">
+              <CardHeader className="border-b bg-slate-50/50">
+                <CardTitle className="text-xl">Global Notifications</CardTitle>
                 <CardDescription>Configure system-wide alert triggers</CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
-                <div className="grid gap-4 sm:grid-cols-2 max-w-4xl">
+                <div className="space-y-4">
                   {[
-                    { id: 'notifyOnNewTrader', label: 'New Trader Alert', sub: 'Notify admin when a new trader registers' },
+                    { id: 'notifyOnNewTrader', label: 'New Trader Alert', sub: 'Notify admin when a new trader registers in the system' },
                   ].map((p) => (
-                    <div key={p.id} className="flex items-center justify-between p-4 rounded-lg border border-slate-200 hover:bg-slate-50 transition-all">
-                      <div className="space-y-1">
+                    <div key={p.id} className="flex items-center justify-between p-4 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
+                      <div className="space-y-0.5">
                         <Label className="text-sm font-medium text-slate-900">{p.label}</Label>
-                        <p className="text-xs text-slate-500">{p.sub}</p>
+                        <p className="text-sm text-slate-500">{p.sub}</p>
                       </div>
                       <Switch
                         checked={settings[p.id]}
@@ -360,7 +345,6 @@ export default function AdminSettingsPage() {
                     </div>
                   ))}
                 </div>
-
               </CardContent>
             </Card>
           )}
