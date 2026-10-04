@@ -3,10 +3,10 @@ import { LayoutDashboard, Users, Package, Wallet, ArrowUpRight, ArrowDownRight, 
 
 export default function AppPreview() {
   return (
-    <section className="py-12 lg:py-16 relative overflow-hidden bg-slate-50 border-b border-slate-200">
+    <section className="py-12 lg:py-16 relative overflow-hidden bg-slate-100 border-b border-slate-200">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-emerald-500/10 rounded-full blur-[100px] -z-10" />
       
-      <div className="max-w-7xl mx-auto px-4 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center mb-8 lg:mb-10 max-w-3xl mx-auto">
           <h2 className="text-3xl font-extrabold text-slate-900 sm:text-4xl lg:text-5xl tracking-tight mb-4 leading-tight">
             See Your Business <br className="hidden sm:block" />
@@ -104,8 +104,8 @@ export default function AppPreview() {
                    {/* Abstract chart bars */}
                    <div className="flex items-end gap-2 h-full w-full justify-between mt-2">
                      {[40, 70, 45, 90, 65, 85, 100].map((h, i) => (
-                        <div key={i} className="w-full bg-slate-100 rounded-t-lg relative h-full flex items-end overflow-hidden group-hover:bg-slate-200 transition-colors">
-                           <div className="w-full bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t-lg transition-all duration-1000 delay-100 shadow-[0_0_15px_rgba(16,185,129,0.2)]" style={{ height: `${h}%` }}></div>
+                        <div key={i} className="max-w-7xl mx-auto bg-slate-100 rounded-t-lg relative h-full flex items-end overflow-hidden group-hover:bg-slate-200 transition-colors">
+                           <div className="max-w-7xl mx-auto bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t-lg transition-all duration-1000 delay-100 shadow-[0_0_15px_rgba(16,185,129,0.2)]" style={{ height: `${h}%` }}></div>
                         </div>
                      ))}
                    </div>

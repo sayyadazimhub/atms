@@ -15,7 +15,7 @@ export default function ContactPage() {
   return (
     <>
 
-      <main className="flex-grow relative z-10 w-full mx-auto px-4 py-12 md:py-20 overflow-hidden">
+      <main className="flex-grow relative z-10 w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 overflow-hidden">
         {/* Background Glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none" />
 
@@ -95,17 +95,17 @@ export default function ContactPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <label htmlFor="fullName" className="text-xs font-bold text-slate-700 ml-1">Full Name</label>
-                      <input type="text" id="fullName" className="w-full h-12 px-4 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm font-medium text-slate-900 placeholder:text-slate-400" placeholder="John Doe" />
+                      <input type="text" id="fullName" className="max-w-7xl mx-auto h-12 px-4 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm font-medium text-slate-900 placeholder:text-slate-400" placeholder="John Doe" />
                     </div>
                     <div className="space-y-2">
                       <label htmlFor="email" className="text-xs font-bold text-slate-700 ml-1">Email Address</label>
-                      <input type="email" id="email" className="w-full h-12 px-4 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm font-medium text-slate-900 placeholder:text-slate-400" placeholder="john@example.com" />
+                      <input type="email" id="email" className="max-w-7xl mx-auto h-12 px-4 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm font-medium text-slate-900 placeholder:text-slate-400" placeholder="john@example.com" />
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <label htmlFor="subject" className="text-xs font-bold text-slate-700 ml-1">Subject</label>
-                    <input type="text" id="subject" className="w-full h-12 px-4 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm font-medium text-slate-900 placeholder:text-slate-400" placeholder="How can we help?" />
+                    <input type="text" id="subject" className="max-w-7xl mx-auto h-12 px-4 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm font-medium text-slate-900 placeholder:text-slate-400" placeholder="How can we help?" />
                   </div>
 
                   <div className="space-y-2">
@@ -113,13 +113,13 @@ export default function ContactPage() {
                     <textarea 
                       id="message" 
                       rows={4} 
-                      className="w-full p-4 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm font-medium text-slate-900 placeholder:text-slate-400 resize-none" 
+                      className="max-w-7xl mx-auto p-4 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm font-medium text-slate-900 placeholder:text-slate-400 resize-none" 
                       placeholder="Tell us more about your inquiry..."
                     ></textarea>
                   </div>
                 </div>
 
-                <Button type="button" className="w-full h-14 mt-8 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold uppercase tracking-[0.2em] text-[11px] shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 border-0 transition-all duration-300 group">
+                <Button type="button" className="max-w-7xl mx-auto h-14 mt-8 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold uppercase tracking-[0.2em] text-[11px] shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 border-0 transition-all duration-300 group">
                   Send Message
                   <Send className="w-4 h-4 ml-3 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
                 </Button>

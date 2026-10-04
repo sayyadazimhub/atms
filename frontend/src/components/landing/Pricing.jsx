@@ -50,11 +50,11 @@ export default function Pricing() {
   ];
 
   return (
-    <section id="pricing" className="py-12 lg:py-16 relative overflow-hidden bg-slate-50 border-b border-slate-200 flex flex-col justify-center min-h-[auto] xl:min-h-screen">
+    <section id="pricing" className="py-12 lg:py-16 relative overflow-hidden bg-slate-100 border-b border-slate-200 flex flex-col justify-center min-h-[auto]">
       {/* Background Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto px-4 relative z-10 w-full">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
         
         {/* Premium Header */}
         <div className="mb-10 lg:mb-16 flex flex-col items-center text-center max-w-3xl mx-auto">

@@ -30,16 +30,8 @@ export default async function HomePage() {
     <>
 
       {/* Hero Section */}
-      <section className="relative min-h-[calc(100vh-64px)] flex items-center border-b border-slate-200 overflow-hidden bg-white">
-        {/* Floating Icons for Depth */}
-        <div className="absolute top-20 left-[15%] opacity-20 animate-pulse">
-          <TrendingUp className="h-12 w-12 text-emerald-400/40 rotate-12" />
-        </div>
-        <div className="absolute bottom-20 right-[15%] opacity-20 animate-pulse delay-700">
-          <BarChart3 className="h-12 w-12 text-emerald-400/40 -rotate-12" />
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 relative z-10 text-center">
+      <section className="py-16 md:py-20 flex items-center border-b border-slate-200 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="max-w-4xl mx-auto">
             {/* Social Proof Badge */}
             <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/50 backdrop-blur-md px-4 py-1.5 text-[10px] sm:text-xs font-bold text-slate-600 mb-8 uppercase tracking-wider md:tracking-[0.2em] shadow-xl">
@@ -57,13 +49,13 @@ export default async function HomePage() {
             </p>
 
             <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-6">
-              <Link href="/portal/register" className="w-full sm:w-auto">
+              <Link href="/portal/register" className="max-w-7xl mx-auto sm:w-auto">
                 <Button size="lg" className="h-12 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white w-full font-bold uppercase tracking-widest transition-all group border-0 shadow-lg shadow-emerald-500/10">
                   Start Your Journey
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
-              <Link href="/portal/login" className="w-full sm:w-auto">
+              <Link href="/portal/login" className="max-w-7xl mx-auto sm:w-auto">
                 <Button variant="outline" size="lg" className="h-12 px-6 rounded-xl border-slate-200 bg-transparent hover:bg-slate-50 w-full font-bold uppercase tracking-widest transition-all">
                   Sign In
                 </Button>

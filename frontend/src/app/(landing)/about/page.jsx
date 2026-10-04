@@ -83,7 +83,7 @@ export default function AboutPage() {
 
         {/* Story Section matching Homepage Features layout */}
         <section className="flex items-center py-12 lg:py-16 bg-slate-50 border-b border-slate-200">
-          <div className="max-w-7xl mx-auto px-4 w-full relative">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative">
             {/* Background Glow */}
             <div className="absolute top-1/2 left-0 -translate-y-1/2 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
 
@@ -125,7 +125,7 @@ export default function AboutPage() {
                 <img 
                   src="/images/about-story.jpg" 
                   alt="Modern Agricultural Trading Operations" 
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="max-w-7xl mx-auto h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 
                 {/* Floating Glassmorphic Stat Card */}
@@ -145,7 +145,7 @@ export default function AboutPage() {
 
         {/* Values Section matching Homepage Features layout */}
         <section className="flex items-center py-12 lg:py-16 bg-white border-b border-slate-200">
-          <div className="max-w-7xl mx-auto px-4 w-full">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
             <div className="mb-12 lg:mb-16 flex flex-col items-center text-center max-w-3xl mx-auto">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.2em] mb-6 border border-emerald-200/50 shadow-sm backdrop-blur-md">
                 <span className="relative flex h-1.5 w-1.5">

@@ -54,11 +54,11 @@ export default function Features() {
   ];
 
   return (
-    <section id="features" className="py-12 lg:py-16 relative overflow-hidden bg-white border-b border-slate-200 flex flex-col justify-center min-h-[auto] xl:min-h-screen">
+    <section id="features" className="py-12 lg:py-16 relative overflow-hidden bg-white border-b border-slate-200 flex flex-col justify-center min-h-[auto]">
       {/* Background Glows */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
       
-      <div className="max-w-7xl mx-auto px-4 relative z-10 w-full">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
         <div className="mb-12 lg:mb-16 max-w-3xl">
           <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-white text-slate-600 text-[11px] font-bold uppercase tracking-[0.2em] mb-6 border border-slate-200/50 shadow-sm backdrop-blur-md">
             <span className="relative flex h-2 w-2">

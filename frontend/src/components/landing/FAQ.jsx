@@ -30,11 +30,11 @@ export default function FAQ() {
   const [openIndex, setOpenIndex] = useState(0);
 
   return (
-    <section id="faq" className="py-12 lg:py-16 flex flex-col justify-center min-h-[auto] xl:min-h-screen relative overflow-hidden bg-slate-50 border-b border-slate-200">
+    <section id="faq" className="py-12 lg:py-16 flex flex-col justify-center min-h-[auto] relative overflow-hidden bg-slate-50 border-b border-slate-200">
       {/* Background Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-teal-500/5 rounded-full blur-[100px] pointer-events-none" />
 
-      <div className="max-w-3xl mx-auto px-4 relative z-10 w-full">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
         {/* Premium Header */}
         <div className="mb-10 lg:mb-12 flex flex-col items-center text-center mx-auto">
           {/* <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white text-slate-600 text-[10px] font-bold uppercase tracking-[0.2em] mb-4 border border-slate-200/50 shadow-sm backdrop-blur-md">

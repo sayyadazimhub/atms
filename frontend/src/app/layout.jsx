@@ -54,8 +54,10 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen antialiased bg-background text-foreground">
-        {children}
-        <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
+        <div className="max-w-[1700px] mx-auto min-h-screen relative">
+          {children}
+          <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
+        </div>
       </body>
     </html>
   );
