@@ -40,15 +40,6 @@ body {
   font-feature-settings: "rlig" 1, "calt" 1;
 }
 
-/* Responsive touch targets */
-@media (max-width: 640px) {
-
-  button,
-  a,
-  [role="button"] {
-    min-height: 44px;
-  }
-}
 
 @layer base {
   .force-light {

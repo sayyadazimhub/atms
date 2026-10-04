@@ -49,13 +49,13 @@ export default async function HomePage() {
             </p>
 
             <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-6">
-              <Link href="/portal/register" className="max-w-7xl mx-auto sm:w-auto">
+              <Link href="/portal/register" className="w-full sm:w-auto">
                 <Button size="lg" className="h-12 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white w-full font-bold uppercase tracking-widest transition-all group border-0 shadow-lg shadow-emerald-500/10">
                   Start Your Journey
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
-              <Link href="/portal/login" className="max-w-7xl mx-auto sm:w-auto">
+              <Link href="/portal/login" className="w-full sm:w-auto">
                 <Button variant="outline" size="lg" className="h-12 px-6 rounded-xl border-slate-200 bg-transparent hover:bg-slate-50 w-full font-bold uppercase tracking-widest transition-all">
                   Sign In
                 </Button>

@@ -125,7 +125,7 @@ export default function AboutPage() {
                 <img 
                   src="/images/about-story.jpg" 
                   alt="Modern Agricultural Trading Operations" 
-                  className="max-w-7xl mx-auto h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 
                 {/* Floating Glassmorphic Stat Card */}

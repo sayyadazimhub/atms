@@ -104,8 +104,8 @@ export default function AppPreview() {
                    {/* Abstract chart bars */}
                    <div className="flex items-end gap-2 h-full w-full justify-between mt-2">
                      {[40, 70, 45, 90, 65, 85, 100].map((h, i) => (
-                        <div key={i} className="max-w-7xl mx-auto bg-slate-100 rounded-t-lg relative h-full flex items-end overflow-hidden group-hover:bg-slate-200 transition-colors">
-                           <div className="max-w-7xl mx-auto bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t-lg transition-all duration-1000 delay-100 shadow-[0_0_15px_rgba(16,185,129,0.2)]" style={{ height: `${h}%` }}></div>
+                        <div key={i} className="w-full bg-slate-100 rounded-t-lg relative h-full flex items-end overflow-hidden group-hover:bg-slate-200 transition-colors">
+                           <div className="w-full bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t-lg transition-all duration-1000 delay-100 shadow-[0_0_15px_rgba(16,185,129,0.2)]" style={{ height: `${h}%` }}></div>
                         </div>
                      ))}
                    </div>
