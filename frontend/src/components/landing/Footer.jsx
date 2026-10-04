@@ -42,8 +42,8 @@ export default function Footer() {
               {[
                 { name: 'Features', href: '/#features' },
                 { name: 'Pricing Plans', href: '/#pricing' },
-                { name: 'Sign In', href: '/trader/login' },
-                { name: 'Get Started', href: '/trader/register' }
+                { name: 'Sign In', href: '/portal/login' },
+                { name: 'Get Started', href: '/portal/register' }
               ].map((link) => (
                 <li key={link.name}>
                   <Link href={link.href} className="text-sm text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors font-medium">

@@ -45,7 +45,7 @@ export default function Navbar() {
               Contact
             </Button>
           </Link>
-          <Link href="/trader/login" className="hidden sm:block">
+          <Link href="/portal/login" className="hidden sm:block">
             <Button variant="ghost" className="h-10 rounded-xl font-bold uppercase tracking-widest text-xs text-slate-600 hover:text-slate-900">
               Sign In
             </Button>
@@ -54,7 +54,7 @@ export default function Navbar() {
 
         {/* Always visible Action & Hamburger (Hamburger hides on lg) */}
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-          <Link href="/trader/register">
+          <Link href="/portal/register">
             <Button className="h-9 sm:h-10 rounded-xl bg-slate-900 hover:bg-slate-800 text-white px-4 sm:px-6 font-bold uppercase tracking-widest text-[10px] sm:text-xs shadow-md">
               Get Started
             </Button>
@@ -99,7 +99,7 @@ export default function Navbar() {
           {/* Divider only shows if there are items above and below it, but we'll hide it on sm and up since Sign In disappears from here */}
           <div className="h-px bg-slate-200 my-2 block sm:hidden" />
           
-          <Link href="/trader/login" className="block sm:hidden" onClick={() => setIsMobileMenuOpen(false)}>
+          <Link href="/portal/login" className="block sm:hidden" onClick={() => setIsMobileMenuOpen(false)}>
             <Button variant="outline" className="w-full h-12 rounded-xl font-bold uppercase tracking-widest text-sm border-slate-200 hover:bg-slate-50 text-slate-900">
               Sign In
             </Button>

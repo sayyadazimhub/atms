@@ -6,7 +6,7 @@ export default function robots() {
       userAgent: '*',
       allow: '/',
       disallow: [
-        '/trader/*',     // Block private trading dashboard
+        '/portal/*',     // Block private trading dashboard
         '/api/*',        // Block backend API proxy routes
         '/admin/*',      // Block any admin routes
       ],

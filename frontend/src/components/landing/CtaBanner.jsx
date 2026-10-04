@@ -21,7 +21,7 @@ export default function CtaBanner() {
         </p>
         
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
-          <Link href="/trader/register" className="w-full sm:w-auto">
+          <Link href="/portal/register" className="w-full sm:w-auto">
             <Button size="lg" className="w-full sm:w-auto h-14 px-10 rounded-xl bg-white text-slate-900 hover:bg-slate-100 hover:scale-105 transition-all duration-300 font-bold uppercase tracking-[0.2em] text-[11px] shadow-xl shadow-emerald-500/20 border-0 group">
               Create Free Account
               <ArrowRight className="ml-3 h-4 w-4 transition-transform group-hover:translate-x-1 text-emerald-600" />
