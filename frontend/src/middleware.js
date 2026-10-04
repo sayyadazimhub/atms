@@ -18,11 +18,11 @@ function isAdminPublic(pathname) {
 }
 
 function isUserRoute(pathname) {
-  return pathname.startsWith('/user');
+  return pathname.startsWith('/portal');
 }
 
 function isUserPublic(pathname) {
-  if (pathname === '/user' || pathname === '/portal/') return true;
+  if (pathname === '/portal' || pathname === '/portal/') return true;
   if (pathname === '/portal/register' || pathname.startsWith('/portal/register/')) return true;
   if (pathname === '/portal/login' || pathname.startsWith('/portal/login/')) return true;
   if (pathname.startsWith('/portal/forgot-password')) return true;
