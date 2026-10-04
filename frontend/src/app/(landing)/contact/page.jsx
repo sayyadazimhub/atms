@@ -3,6 +3,7 @@ import { Mail, Phone, MapPin, Send, Building2, Globe2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import ContactForm from '@/components/landing/ContactForm';
 
 
 
@@ -15,9 +16,9 @@ export default function ContactPage() {
   return (
     <>
 
-      <main className="flex-grow relative z-10 w-full mx-auto py-12 md:py-20 overflow-hidden">
+      <main className="flex-grow relative z-10 w-full mx-auto py-12 md:py-16 overflow-hidden bg-gray-100/50">
         {/* Background Glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none" />
+        {/* <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none" /> */}
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-start">
@@ -26,7 +27,7 @@ export default function ContactPage() {
             <div className="flex flex-col h-full">
               {/* Premium Header Section */}
               <div className="mb-10 flex flex-col items-center lg:items-start text-center lg:text-left">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.2em] mb-6 border border-emerald-200/50 shadow-sm backdrop-blur-md">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold uppercase tracking-[0.2em] mb-6 border border-emerald-200/50 shadow-sm backdrop-blur-md">
                   <span className="relative flex h-1.5 w-1.5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
@@ -36,7 +37,7 @@ export default function ContactPage() {
                 <h1 className="text-4xl font-black text-slate-900 sm:text-5xl lg:text-6xl tracking-tighter leading-[1.1] mb-6">
                   Get in <span className="text-transparent bg-clip-text bg-gradient-to-br from-emerald-500 via-teal-500 to-emerald-700">Touch</span>
                 </h1>
-                <p className="text-slate-600 text-sm md:text-base font-medium max-w-lg leading-relaxed">
+                <p className="text-slate-600 text-base md:text-lg font-medium max-w-lg leading-relaxed">
                   Have questions about ATMS? Whether you need help with features, pricing, or anything else, our team is here to help you optimize your agricultural trading business.
                 </p>
               </div>
@@ -50,11 +51,11 @@ export default function ContactPage() {
                     <Mail className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mb-1">Chat to sales</h4>
-                    <a href="mailto:support@atms-trading.com" className="text-sm font-bold text-slate-900 hover:text-emerald-600 block mb-0.5">
+                    <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500 mb-1">Chat to sales</h4>
+                    <a href="mailto:support@atms-trading.com" className="text-base font-bold text-slate-900 hover:text-emerald-600 block mb-0.5">
                       support@atms-trading.com
                     </a>
-                    <p className="text-xs font-medium text-slate-500">Our friendly team is here to help.</p>
+                    <p className="text-sm font-medium text-slate-500">Our friendly team is here to help.</p>
                   </div>
                 </div>
 
@@ -64,21 +65,21 @@ export default function ContactPage() {
                     <Phone className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mb-1">Call us</h4>
-                    <a href="tel:+919075909896" className="text-sm font-bold text-slate-900 hover:text-emerald-600 block mb-0.5">
+                    <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500 mb-1">Call us</h4>
+                    <a href="tel:+919075909896" className="text-base font-bold text-slate-900 hover:text-emerald-600 block mb-0.5">
                       +91 907590-9896
                     </a>
-                    <p className="text-xs font-medium text-slate-500">Mon-Fri from 8am to 5pm.</p>
+                    <p className="text-sm font-medium text-slate-500">Mon-Fri from 8am to 5pm.</p>
                   </div>
                 </div>
               </div>
 
               {/* Social Links */}
-              <div className="pt-6 mt-0 md:mt-8 flex flex-col items-center lg:items-start">
-                <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mb-4 lg:pl-2 text-center lg:text-left">Follow Us</h4>
+              <div className="pt-6 mt-0 md:mt-4 flex flex-col items-center lg:items-start">
+                <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500 mb-4 lg:pl-2 text-center lg:text-left">Follow Us</h4>
                 <div className="flex flex-wrap justify-center lg:justify-start items-center gap-3">
                   {['Twitter', 'LinkedIn', 'Facebook'].map((social) => (
-                    <a key={social} href={`#${social.toLowerCase()}`} className="px-4 py-2 rounded-full bg-white/40 border border-slate-200/60 text-xs font-bold text-slate-600 hover:text-emerald-600 hover:bg-white/80 transition-all backdrop-blur-md shadow-sm hover:shadow">
+                    <a key={social} href={`#${social.toLowerCase()}`} className="px-4 py-2 rounded-full bg-white/40 border border-slate-200/60 text-sm font-bold text-slate-600 hover:text-emerald-600 hover:bg-white/80 transition-all backdrop-blur-md shadow-sm hover:shadow">
                       {social}
                     </a>
                   ))}
@@ -90,40 +91,7 @@ export default function ContactPage() {
             <div className="bg-white p-8 sm:p-12 rounded-3xl border border-slate-200 shadow-xl h-full flex flex-col">
               <h3 className="text-2xl font-bold text-slate-900 tracking-tight mb-8">Send us a message</h3>
 
-              <form className="space-y-6 flex-grow flex flex-col justify-between">
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label htmlFor="fullName" className="text-xs font-bold text-slate-700 ml-1">Full Name</label>
-                      <input type="text" id="fullName" className="w-full h-12 px-4 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm font-medium text-slate-900 placeholder:text-slate-400" placeholder="John Doe" />
-                    </div>
-                    <div className="space-y-2">
-                      <label htmlFor="email" className="text-xs font-bold text-slate-700 ml-1">Email Address</label>
-                      <input type="email" id="email" className="w-full h-12 px-4 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm font-medium text-slate-900 placeholder:text-slate-400" placeholder="john@example.com" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label htmlFor="subject" className="text-xs font-bold text-slate-700 ml-1">Subject</label>
-                    <input type="text" id="subject" className="w-full h-12 px-4 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm font-medium text-slate-900 placeholder:text-slate-400" placeholder="How can we help?" />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label htmlFor="message" className="text-xs font-bold text-slate-700 ml-1">Message</label>
-                    <textarea 
-                      id="message" 
-                      rows={4} 
-                      className="w-full p-4 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm font-medium text-slate-900 placeholder:text-slate-400 resize-none" 
-                      placeholder="Tell us more about your inquiry..."
-                    ></textarea>
-                  </div>
-                </div>
-
-                <Button type="button" className="w-full h-14 mt-8 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold uppercase tracking-[0.2em] text-[11px] shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 border-0 transition-all duration-300 group">
-                  Send Message
-                  <Send className="w-4 h-4 ml-3 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
-                </Button>
-              </form>
+              <ContactForm />
             </div>
 
           </div>

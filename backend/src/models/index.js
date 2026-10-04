@@ -122,6 +122,14 @@ const SystemSettingSchema = createSchema({
   notifyOnNewTrader: { type: Boolean, default: true },
 });
 
+const ContactMessageSchema = createSchema({
+  fullName: { type: String, required: true },
+  email: { type: String, required: true },
+  subject: { type: String, required: true },
+  message: { type: String, required: true },
+  isRead: { type: Boolean, default: false },
+});
+
 ProductSchema.virtual('batches', {
   ref: 'StockBatch',
   localField: '_id',
@@ -167,3 +175,4 @@ export const Sale = mongoose.models.Sale || mongoose.model('Sale', SaleSchema);
 export const SaleItem = mongoose.models.SaleItem || mongoose.model('SaleItem', SaleItemSchema);
 export const SystemSetting =
   mongoose.models.SystemSetting || mongoose.model('SystemSetting', SystemSettingSchema);
+export const ContactMessage = mongoose.models.ContactMessage || mongoose.model('ContactMessage', ContactMessageSchema);

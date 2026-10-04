@@ -14,7 +14,9 @@ import adminSettingsRouter from './admin/settings/route.js';
 import adminTraderDetailsRouter from './admin/traders/[id]/route.js';
 import adminTradersRouter from './admin/traders/route.js';
 import adminVerifyTraderRouter from './admin/traders/verify/route.js';
+import adminContactMessagesRouter from './admin/contact-messages/route.js';
 import publicSettingsRouter from './settings/public/route.js';
+import publicContactRouter from './public/contact/route.js';
 import userForgotPasswordRouter from './user/auth/forgot-password/route.js';
 import userLoginRouter from './user/auth/login/route.js';
 import userLogoutRouter from './user/auth/logout/route.js';
@@ -59,9 +61,11 @@ apiRouter.use('/admin/settings', requireAdminSession, adminSettingsRouter);
 apiRouter.use('/admin/traders/verify', requireAdminSession, adminVerifyTraderRouter);
 apiRouter.use('/admin/traders/:id', requireAdminSession, adminTraderDetailsRouter);
 apiRouter.use('/admin/traders', requireAdminSession, adminTradersRouter);
+apiRouter.use('/admin/contact-messages', requireAdminSession, adminContactMessagesRouter);
 
-// Public Settings
+// Public Settings & General
 apiRouter.use('/settings/public', publicSettingsRouter);
+apiRouter.use('/contact', publicContactRouter);
 
 // User Auth (Public)
 apiRouter.use('/user/auth/login', userLoginRouter);

@@ -16,7 +16,8 @@ import {
   Bell,
   Layout,
   Lock,
-  ChevronDown
+  ChevronDown,
+  Mail
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -28,6 +29,7 @@ const mainLinks = [
   { href: '/traders', label: 'Traders', icon: Users },
   { href: '/admins', label: 'Administrators', icon: Shield },
   { href: '/reports', label: 'Reports', icon: BarChart3 },
+  { href: '/contact-messages', label: 'Contact Msgs', icon: Mail },
 ];
 
 const settingsLinks = [
