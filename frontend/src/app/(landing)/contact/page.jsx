@@ -52,8 +52,8 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500 mb-1">Chat to sales</h4>
-                    <a href="mailto:support@atms-trading.com" className="text-base font-bold text-slate-900 hover:text-emerald-600 block mb-0.5">
-                      support@atms-trading.com
+                    <a href="mailto:support@atms.com" className="text-base font-bold text-slate-900 hover:text-emerald-600 block mb-0.5">
+                      support@atms.com
                     </a>
                     <p className="text-sm font-medium text-slate-500">Our friendly team is here to help.</p>
                   </div>

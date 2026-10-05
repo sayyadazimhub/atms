@@ -77,11 +77,11 @@ export default function Footer() {
             <h3 className="text-base font-bold text-slate-900 uppercase tracking-widest mb-4 lg:mb-6">Contact Us</h3>
             <ul className="flex flex-row flex-wrap gap-x-4 gap-y-2 md:gap-4 md:flex-col lg:gap-0 lg:space-y-4">
               <li>
-                <a href="mailto:support@atms-trading.com" className="flex items-center gap-3 group py-1">
+                <a href="mailto:support@atms.com" className="flex items-center gap-3 group py-1">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 group-hover:bg-emerald-100 group-hover:text-emerald-600 transition-all shrink-0">
                     <Mail className="h-4 w-4" />
                   </div>
-                  <span className="text-sm text-slate-600 group-hover:text-emerald-600 transition-colors font-medium">support@atms-trading.com</span>
+                  <span className="text-sm text-slate-600 group-hover:text-emerald-600 transition-colors font-medium">support@atms.com</span>
                 </a>
               </li>
               <li>
