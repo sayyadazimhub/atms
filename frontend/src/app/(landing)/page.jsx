@@ -40,11 +40,11 @@ export default async function HomePage() {
               {/* Agricultural Trading Made Simple */}
             </div>
 
-            <h2 className="text-4xl font-bold text-slate-900 sm:text-6xl leading-[1.1] tracking-tight">
-              Professional Tools for <br />
+            <h2 className="text-4xl font-extrabold text-slate-900 sm:text-6xl leading-[1.1] tracking-tight">
+              Professional Tools for <br className="hidden sm:block" />
               <span className="text-emerald-600">Trading Business Success</span>
             </h2>
-            <p className="mt-8 text-xl text-slate-600 leading-relaxed max-w-2xl mx-auto font-medium">
+            <p className="mt-8 text-lg md:text-xl text-slate-600 leading-relaxed max-w-2xl mx-auto font-medium">
               Join the forward-thinking traders who have scaled their operations with ATMS. Get started with our professional suite of tools today.
             </p>
 

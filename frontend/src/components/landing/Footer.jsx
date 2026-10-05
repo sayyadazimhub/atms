@@ -16,7 +16,7 @@ export default function Footer() {
               </div>
               <div className="flex flex-col">
                 <span className="text-3xl font-black text-slate-900 tracking-tight leading-none uppercase">ATMS</span>
-                <span className="text-xs font-bold text-emerald-600 uppercase tracking-[0.2em] mt-1">Premium</span>
+                <span className="text-xs font-bold text-emerald-600 uppercase tracking-[0.2em] mt-1">Platform</span>
               </div>
             </Link>
             <p className="text-base leading-relaxed text-slate-600 max-w-sm font-medium">
