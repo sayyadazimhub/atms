@@ -109,10 +109,10 @@ export default function Footer() {
           <p className="text-xs font-bold text-slate-500 uppercase tracking-widest text-center md:text-left">
             © {new Date().getFullYear()} ATMS. ALL RIGHTS RESERVED.
           </p>
-          <div className="flex flex-wrap justify-center gap-6 text-xs font-bold tracking-widest text-slate-500">
-            <Link href="#" className="hover:text-emerald-600 transition-colors">Privacy Policy</Link>
-            <Link href="#" className="hover:text-emerald-600 transition-colors">Terms of Service</Link>
-            <Link href="#" className="hover:text-emerald-600 transition-colors">Cookie Policy</Link>
+          <div className="flex flex-wrap justify-center gap-4 md:gap-6 text-xs font-bold tracking-widest text-slate-500">
+            <Link href="/security" className="hover:text-emerald-600 transition-colors">Security</Link>
+            <Link href="/privacy-policy" className="hover:text-emerald-600 transition-colors">Privacy Policy</Link>
+            <Link href="/terms-of-service" className="hover:text-emerald-600 transition-colors">Terms of Service</Link>
           </div>
         </div>
       </div>
