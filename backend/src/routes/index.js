@@ -15,8 +15,10 @@ import adminTraderDetailsRouter from './admin/traders/[id]/route.js';
 import adminTradersRouter from './admin/traders/route.js';
 import adminVerifyTraderRouter from './admin/traders/verify/route.js';
 import adminContactMessagesRouter from './admin/contact-messages/route.js';
+import adminTestimonialsRouter from './admin/testimonials/route.js';
 import publicSettingsRouter from './settings/public/route.js';
 import publicContactRouter from './public/contact/route.js';
+import publicTestimonialsRouter from './public/testimonials/route.js';
 import userForgotPasswordRouter from './user/auth/forgot-password/route.js';
 import userLoginRouter from './user/auth/login/route.js';
 import userLogoutRouter from './user/auth/logout/route.js';
@@ -62,10 +64,12 @@ apiRouter.use('/admin/traders/verify', requireAdminSession, adminVerifyTraderRou
 apiRouter.use('/admin/traders/:id', requireAdminSession, adminTraderDetailsRouter);
 apiRouter.use('/admin/traders', requireAdminSession, adminTradersRouter);
 apiRouter.use('/admin/contact-messages', requireAdminSession, adminContactMessagesRouter);
+apiRouter.use('/admin/testimonials', requireAdminSession, adminTestimonialsRouter);
 
 // Public Settings & General
 apiRouter.use('/settings/public', publicSettingsRouter);
 apiRouter.use('/contact', publicContactRouter);
+apiRouter.use('/testimonials', publicTestimonialsRouter);
 
 // User Auth (Public)
 apiRouter.use('/user/auth/login', userLoginRouter);

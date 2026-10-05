@@ -130,6 +130,14 @@ const ContactMessageSchema = createSchema({
   isRead: { type: Boolean, default: false },
 });
 
+const TestimonialSchema = createSchema({
+  name: { type: String, required: true },
+  role: { type: String, required: true },
+  message: { type: String, required: true },
+  image: { type: String },
+  status: { type: String, default: 'PENDING', enum: ['PENDING', 'APPROVED', 'REJECTED'] },
+});
+
 ProductSchema.virtual('batches', {
   ref: 'StockBatch',
   localField: '_id',
@@ -176,3 +184,4 @@ export const SaleItem = mongoose.models.SaleItem || mongoose.model('SaleItem', S
 export const SystemSetting =
   mongoose.models.SystemSetting || mongoose.model('SystemSetting', SystemSettingSchema);
 export const ContactMessage = mongoose.models.ContactMessage || mongoose.model('ContactMessage', ContactMessageSchema);
+export const Testimonial = mongoose.models.Testimonial || mongoose.model('Testimonial', TestimonialSchema);

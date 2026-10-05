@@ -17,7 +17,8 @@ import {
   Layout,
   Lock,
   ChevronDown,
-  Mail
+  Mail,
+  MessageSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -30,6 +31,7 @@ const mainLinks = [
   { href: '/admins', label: 'Administrators', icon: Shield },
   { href: '/reports', label: 'Reports', icon: BarChart3 },
   { href: '/contact-messages', label: 'Contact Msgs', icon: Mail },
+  { href: '/testimonials', label: 'Testimonials', icon: MessageSquare },
 ];
 
 const settingsLinks = [

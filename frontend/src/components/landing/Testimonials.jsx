@@ -3,13 +3,38 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import api from '@/lib/api';
+import { toast } from 'react-hot-toast';
 
 export default function Testimonials() {
   const scrollRef = useRef(null);
   const [isHovering, setIsHovering] = useState(false);
+  const [testimonials, setTestimonials] = useState([]);
+  const [formData, setFormData] = useState({ name: '', role: '', message: '', image: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    if (!scrollRef.current || isHovering) return;
+    fetchTestimonials();
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setFormData({ name: '', role: '', message: '', image: '' });
+    }
+  }, [isOpen]);
+
+  const fetchTestimonials = async () => {
+    try {
+      const response = await api.get('/api/testimonials');
+      setTestimonials(response.data);
+    } catch (error) {
+      console.error('Failed to load testimonials', error);
+    }
+  };
+
+  useEffect(() => {
+    if (!scrollRef.current || isHovering || testimonials.length <= 1) return;
     
     const interval = setInterval(() => {
       if (scrollRef.current) {
@@ -23,7 +48,7 @@ export default function Testimonials() {
     }, 4000);
 
     return () => clearInterval(interval);
-  }, [isHovering]);
+  }, [isHovering, testimonials.length]);
 
   const scrollLeft = () => {
     if (scrollRef.current) {
@@ -47,38 +72,28 @@ export default function Testimonials() {
     }
   };
 
-  const testimonials = [
-    {
-      name: "Rajesh Kumar",
-      role: "Wholesale Grain Trader",
-      text: "ATMS completely transformed how I track my inventory. I used to rely on notebooks, but now I know my exact stock value and profits at any given second.",
-      initials: "RK"
-    },
-    {
-      name: "Amit Patel",
-      role: "Agri-Inputs Supplier",
-      text: "The payment tracking feature is a lifesaver. I no longer have to manually chase down pending payments from customers. It's all perfectly organized on the dashboard.",
-      initials: "AP"
-    },
-    // {
-    //   name: "Amit Patel",
-    //   role: "Agri-Inputs Supplier",
-    //   text: "The payment tracking feature is a lifesaver. I no longer have to manually chase down pending payments from customers. It's all perfectly organized on the dashboard.",
-    //   initials: "AP"
-    // },
-    // {
-    //   name: "Amit Patel",
-    //   role: "Agri-Inputs Supplier",
-    //   text: "Th is very usefull",
-    //   initials: "AP"
-    // },
-    // {
-    //   name: "Suresh Reddy",
-    //   role: "Fresh Produce Distributor",
-    //   text: "I was hesitant to switch to software, but the interface is incredibly simple. It took me less than 10 minutes to understand the system and start adding my stock.",
-    //   initials: "SR"
-    // }
-  ];
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const response = await api.post('/api/testimonials', formData);
+      toast.success(response.data.message || 'Testimonial submitted successfully!');
+      setFormData({ name: '', role: '', message: '', image: '' });
+      setIsOpen(false);
+    } catch (error) {
+      if (error.response?.data?.errors) {
+        toast.error(Object.values(error.response.data.errors)[0]);
+      } else if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error('Failed to submit testimonial.');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <section id="testimonials" className="py-12 lg:py-16 flex flex-col justify-center relative overflow-hidden bg-white border-b border-slate-200">
@@ -102,52 +117,68 @@ export default function Testimonials() {
             <p className="text-slate-600 text-sm md:text-base font-medium leading-relaxed w-full lg:max-w-lg mb-10">
               Join the growing community of agricultural wholesalers and distributors who have transformed their operations, scaled their profits, and taken control of their inventory with ATMS.
             </p>
-
-            {/* Social Proof Stats */}
-            {/* <div className="mb-10 grid grid-cols-2 gap-8 w-full lg:max-w-md">
-              <div>
-                <h3 className="text-4xl font-black text-slate-900 tracking-tight">500<span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-400">+</span></h3>
-                <p className="text-[11px] text-slate-500 font-bold uppercase tracking-[0.15em] mt-2">Active Traders</p>
-              </div>
-              <div>
-                <h3 className="text-4xl font-black text-slate-900 tracking-tight">₹10Cr<span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-400">+</span></h3>
-                <p className="text-[11px] text-slate-500 font-bold uppercase tracking-[0.15em] mt-2">Processed Daily</p>
-              </div>
-            </div> */}
             
             <div className="flex flex-col sm:flex-row items-start gap-4">
-              <Dialog>
+              <Dialog open={isOpen} onOpenChange={setIsOpen}>
                 <DialogTrigger asChild>
                   <button className="inline-flex items-center justify-center px-8 py-4 text-sm font-bold uppercase tracking-wide rounded-xl text-white bg-slate-900 hover:bg-slate-800 shadow-xl shadow-slate-900/10 transition-all hover:-translate-y-1 duration-300">
                     Share Your Experience
                   </button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle className="">Submit a Testimonial</DialogTitle>
-                    <DialogDescription className="">
-                      We&apos;d love to hear about your experience with ATMS. Share your story below!
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                      <label htmlFor="name" className="text-sm font-semibold text-slate-700">Name</label>
-                      <input id="name" placeholder="E.g. John Doe" className="flex h-11 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-shadow" />
+                  <form onSubmit={handleSubmit}>
+                    <DialogHeader>
+                      <DialogTitle className="">Submit a Testimonial</DialogTitle>
+                      <DialogDescription className="">
+                        We&apos;d love to hear about your experience with ATMS. Share your story below!
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid gap-2">
+                        <label htmlFor="name" className="text-sm font-semibold text-slate-700">Name</label>
+                        <input id="name" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="E.g. John Doe" className="flex h-11 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-shadow" />
+                      </div>
+                      <div className="grid gap-2">
+                        <label htmlFor="role" className="text-sm font-semibold text-slate-700">Role / Business</label>
+                        <input id="role" value={formData.role} onChange={(e) => setFormData({...formData, role: e.target.value})} placeholder="E.g. Agricultural Trader" className="flex h-11 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-shadow" />
+                      </div>
+                      <div className="grid gap-2">
+                        <label htmlFor="message" className="text-sm font-semibold text-slate-700">Your Story</label>
+                        <textarea id="message" maxLength={300} value={formData.message} onChange={(e) => setFormData({...formData, message: e.target.value})} placeholder="How has ATMS helped your business?" rows={4} className="flex w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-shadow resize-none" />
+                        <div className="text-right text-[11px] font-medium text-slate-400 mt-1">
+                          {formData.message.length}/300
+                        </div>
+                      </div>
+                      <div className="grid gap-2">
+                        <label htmlFor="image" className="text-sm font-semibold text-slate-700">Profile Image (Optional)</label>
+                        <input 
+                          id="image" 
+                          type="file" 
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              if (file.size > 2 * 1024 * 1024) {
+                                toast.error('Image must be less than 2MB');
+                                return;
+                              }
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                setFormData({...formData, image: reader.result});
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className="flex w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 transition-shadow focus:outline-none focus:ring-2 focus:ring-emerald-500/50" 
+                        />
+                      </div>
                     </div>
-                    <div className="grid gap-2">
-                      <label htmlFor="role" className="text-sm font-semibold text-slate-700">Role / Business</label>
-                      <input id="role" placeholder="E.g. Agricultural Trader" className="flex h-11 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-shadow" />
-                    </div>
-                    <div className="grid gap-2">
-                      <label htmlFor="testimonial" className="text-sm font-semibold text-slate-700">Your Story</label>
-                      <textarea id="testimonial" placeholder="How has ATMS helped your business?" rows={4} className="flex w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-shadow resize-none" />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <button type="submit" className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2.5 border border-transparent text-sm font-semibold rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors">
-                      Submit Testimonial
-                    </button>
-                  </DialogFooter>
+                    <DialogFooter>
+                      <button disabled={isSubmitting} type="submit" className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2.5 border border-transparent text-sm font-semibold rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors disabled:opacity-50">
+                        {isSubmitting ? 'Submitting...' : 'Submit Testimonial'}
+                      </button>
+                    </DialogFooter>
+                  </form>
                 </DialogContent>
               </Dialog>
             </div>
@@ -199,12 +230,20 @@ export default function Testimonials() {
                     ))}
                   </div>
                   <p className="text-slate-700 mb-8 text-lg sm:text-xl italic leading-relaxed max-w-2xl mx-auto font-medium">
-                    &quot;{t.text}&quot;
+                    &quot;{t.message}&quot;
                   </p>
                   <div className="flex items-center justify-center gap-4 mt-auto text-left">
-                    <div className="h-12 w-12 rounded-full bg-slate-50 flex shrink-0 items-center justify-center text-emerald-600 font-bold text-lg border border-slate-200 shadow-inner">
-                      {t.initials}
-                    </div>
+                    {t.image ? (
+                      <img 
+                        src={t.image} 
+                        alt={t.name} 
+                        className="h-12 w-12 rounded-full object-cover shrink-0 border border-slate-200 shadow-sm"
+                      />
+                    ) : (
+                      <div className="h-12 w-12 rounded-full bg-slate-50 flex shrink-0 items-center justify-center text-emerald-600 font-bold text-lg border border-slate-200 shadow-inner">
+                        {t.name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                      </div>
+                    )}
                     <div>
                       <h4 className="font-bold text-base text-slate-900 tracking-tight">
                         {t.name}
