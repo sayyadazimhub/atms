@@ -2,27 +2,12 @@ import { NextResponse } from 'next/server';
 import { verifyUserToken } from '@/lib/auth';
 import serverApiUrl from '@/lib/server-api-url';
 
-function isAdminRoute(pathname) {
-  return pathname.startsWith('/');
-}
 
-function isAdminPublic(pathname) {
-  if (pathname === '/') return true;
-  if (pathname.startsWith('/contact')) return true;
-  if (pathname === '/login' || pathname.startsWith('/login/')) return true;
-  if (pathname === '/register' || pathname.startsWith('/register/')) return true;
-  if (pathname.startsWith('/forgot-password')) return true;
-  if (pathname.startsWith('/reset-password')) return true;
-  if (pathname === '/favicon.svg' || pathname === '/favicon.ico') return true;
-  return false;
-}
-
-function isUserRoute(pathname) {
+function isPortalRoute(pathname) {
   return pathname.startsWith('/portal');
 }
 
-function isUserPublic(pathname) {
-  if (pathname === '/portal' || pathname === '/portal/') return true;
+function isPublicPortalRoute(pathname) {
   if (pathname === '/portal/register' || pathname.startsWith('/portal/register/')) return true;
   if (pathname === '/portal/login' || pathname.startsWith('/portal/login/')) return true;
   if (pathname.startsWith('/portal/forgot-password')) return true;
@@ -34,8 +19,8 @@ function isUserPublic(pathname) {
 export async function middleware(request) {
   const pathname = request.nextUrl.pathname;
 
-  // ——— User routes (separate UI/API, jose token) ———
-  if (isUserRoute(pathname)) {
+  // ——— Portal routes (separate UI/API, jose token) ———
+  if (isPortalRoute(pathname)) {
     // Check system settings
     let settings = { maintenanceMode: false, traderSelfRegistration: true };
     try {
@@ -59,51 +44,32 @@ export async function middleware(request) {
       return NextResponse.redirect(loginUrl);
     }
 
-    const userToken = request.cookies.get('user-token')?.value;
-    if (isUserPublic(pathname)) {
-      if (userToken) {
-        const decoded = await verifyUserToken(userToken);
-        if (decoded && (pathname === '/portal/login' || pathname === '/portal/register' || pathname === '/portal/verify-otp')) {
+    const sessionToken = request.cookies.get('user-token')?.value;
+    if (isPublicPortalRoute(pathname)) {
+      if (sessionToken) {
+        const decodedToken = await verifyUserToken(sessionToken);
+        if (decodedToken && (pathname === '/portal/login' || pathname === '/portal/register' || pathname === '/portal/verify-otp')) {
           return NextResponse.redirect(new URL('/portal/dashboard', request.url));
         }
       }
       return NextResponse.next();
     }
-    if (!userToken) {
+    
+    if (!sessionToken) {
       return NextResponse.redirect(new URL('/portal/login', request.url));
     }
-    const decoded = await verifyUserToken(userToken);
-    if (!decoded) {
+    
+    const decodedToken = await verifyUserToken(sessionToken);
+    if (!decodedToken) {
       const res = NextResponse.redirect(new URL('/portal/login', request.url));
       res.cookies.delete('user-token');
       return res;
     }
+    
     return NextResponse.next();
   }
 
-  // ——— Admin routes (existing auth-token, jwt-edge verify) ———
-  if (isAdminRoute(pathname)) {
-    const token = request.cookies.get('auth-token')?.value;
-    if (isAdminPublic(pathname)) {
-      if (token) {
-        const decoded = await verifyUserToken(token);
-        if (decoded && (pathname === '/login' || pathname === '/register')) {
-          return NextResponse.redirect(new URL('/dashboard', request.url));
-        }
-      }
-      return NextResponse.next();
-    }
-    if (!token) {
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
-    const decoded = await verifyUserToken(token);
-    if (!decoded) {
-      const res = NextResponse.redirect(new URL('/login', request.url));
-      res.cookies.delete('auth-token');
-      return res;
-    }
-    return NextResponse.next();
-  }
+  return NextResponse.next();
 }
 
 export const config = {
