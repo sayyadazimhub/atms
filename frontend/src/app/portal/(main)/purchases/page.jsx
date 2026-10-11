@@ -19,7 +19,8 @@ import {
   TrendingUp,
   Filter,
   CheckCircle2,
-  Wallet
+  Wallet,
+  Truck
 } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { cn } from '@/lib/utils';
@@ -478,76 +479,72 @@ export default function PurchasesPage() {
         isLoading={submitting}
       />
       {/* Header Section */}
-      <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between bg-slate-950 p-8 rounded-3xl text-white shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 -m-8 h-48 w-48 rounded-full bg-blue-500/10 blur-3xl" />
-        <div className="relative">
-          <h1 className="text-3xl font-black tracking-tight">Purchase Registry</h1>
-          <p className="text-slate-400 mt-2 flex items-center gap-2 font-medium">
-            <ShoppingCart className="h-4 w-4" />
-            Track inventory acquisitions and provider payments
-          </p>
-        </div>
-        <Button
-          onClick={() => setShowCreateModal(true)}
-          className="relative bg-white text-slate-900 hover:bg-slate-100 rounded-2xl h-12 px-6 font-bold shadow-lg"
-        >
-          <Plus className="mr-2 h-5 w-5" />
-          Log New Purchase
-        </Button>
-      </div>
+      <PageHeader 
+        title="Purchase Registry"
+        description="Track inventory acquisitions and provider payments"
+        icon={ShoppingCart}
+        actionButton={
+          <Button
+            onClick={() => setShowCreateModal(true)}
+            className="bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:hover:bg-white dark:text-slate-900 rounded-xl h-11 px-5 font-bold shadow-sm transition-all flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Log New Purchase
+          </Button>
+        }
+      />
 
       {/* Summary Cards */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <Card className="border-none shadow-md bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm overflow-hidden relative group">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Total Pending Dues</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-black text-rose-500 dark:text-rose-400">₹{totalDue.toLocaleString('en-IN')}</div>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1 font-medium">
-              <AlertCircle className="h-3 w-3" /> Payable to providers
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-md bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm overflow-hidden relative group transition-all">
-          <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Today&apos;s Volume</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-black text-slate-900 dark:text-slate-100">{totalPurchasesToday} Records</div>
-            <p className="text-xs text-blue-600 dark:text-blue-400 font-bold mt-1 flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" />
-              Activity for today
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-md bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm overflow-hidden relative group hidden lg:block">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Latest Provider</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-black text-slate-900 dark:text-slate-100 truncate">
-              {purchases[0]?.provider?.name || '---'}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm rounded-2xl bg-white dark:bg-slate-900/50 backdrop-blur-sm p-5 sm:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Pending Dues</p>
+              <p className="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400">₹{totalDue.toLocaleString('en-IN')}</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">Payable to suppliers</p>
             </div>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1 italic">
-              <Clock className="h-3 w-3" />
-              Last entry recorded
-            </p>
-          </CardContent>
+            <div className="p-3.5 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shrink-0">
+              <AlertCircle className="h-6 w-6" />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm rounded-2xl bg-white dark:bg-slate-900/50 backdrop-blur-sm p-5 sm:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Today&apos;s Purchases</p>
+              <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">{totalPurchasesToday} Records</p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Activity recorded today</p>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0">
+              <TrendingUp className="h-6 w-6" />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm rounded-2xl bg-white dark:bg-slate-900/50 backdrop-blur-sm p-5 sm:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Latest Supplier</p>
+              <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 truncate">{purchases[0]?.provider?.name || '---'}</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">Last supplier billed</p>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+              <Truck className="h-6 w-6" />
+            </div>
+          </div>
         </Card>
       </div>
 
-      <Card className="border-none shadow-md bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm overflow-hidden">
-        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 pb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50">
-              <ShoppingCart className="h-5 w-5" />
-            </div>
+      {/* Purchases Table Card */}
+      <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm rounded-2xl bg-white dark:bg-slate-900/50 backdrop-blur-sm overflow-hidden">
+        <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 p-4 sm:p-5">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <CardTitle className="dark:text-slate-100">Transaction History</CardTitle>
-              <CardDescription className="dark:text-slate-400">Records of all procurement activities</CardDescription>
+              <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">Transaction History</CardTitle>
+              <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Total {purchases.length} recorded procurement transactions
+              </CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -630,7 +627,7 @@ export default function PurchasesPage() {
                             {new Date(p.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                           </td>
                           <td className="p-4 text-right">
-                            <div className="flex justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                            <div className="flex justify-end gap-2">
                               <Button
                                 size="icon"
                                 variant="outline"

@@ -58,6 +58,7 @@ export default function StockMonitorPage() {
 
   // Derived stats
   const lowStockCount = products.filter(p => p.currentStock <= 10).length;
+  const totalStockUnits = products.reduce((acc, p) => acc + (p.currentStock || 0), 0);
 
   const filteredProducts = filterLowStock
     ? products.filter(p => p.currentStock <= 10)
@@ -83,86 +84,97 @@ export default function StockMonitorPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
-      {/* Header Section - Exact Match with Product Page */}
-      <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between bg-slate-950 p-8 rounded-3xl text-white shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 -m-8 h-48 w-48 rounded-full bg-blue-500/10 blur-3xl" />
-        <div className="relative">
-          <h1 className="text-3xl font-black tracking-tight">Inventory Monitor</h1>
-          <p className="text-slate-400 mt-2 flex items-center gap-2 font-medium">
-            <Boxes className="h-4 w-4" />
-            Stock tracking and management
-          </p>
-        </div>
-        <Link href="/portal/products">
-          <Button className="relative bg-white text-slate-900 hover:bg-slate-100 rounded-2xl h-12 px-6 font-bold shadow-lg">
-            <Package className="mr-2 h-5 w-5" />
-            Manage Products
-          </Button>
-        </Link>
-      </div>
+      {/* Header Section */}
+      <PageHeader 
+        title="Inventory Monitor"
+        description="Real-time stock tracking and inventory management"
+        icon={Boxes}
+        actionButton={
+          <Link href="/portal/products">
+            <Button className="bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:hover:bg-white dark:text-slate-900 rounded-xl h-11 px-5 font-bold shadow-sm transition-all flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              Manage Products
+            </Button>
+          </Link>
+        }
+      />
 
-      {/* Summary Cards - Styled to match Product Page color scheme */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <Card className={cn(
-          "border-none shadow-md text-white overflow-hidden relative group transition-all",
-          lowStockCount > 0 ? "bg-amber-500 shadow-amber-200/50" : "bg-emerald-600 shadow-emerald-200/50"
-        )}>
-          <div className="absolute top-0 right-0 -m-4 h-24 w-24 rounded-full bg-white/10 blur-2xl group-hover:bg-white/20 transition-all" />
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-bold opacity-80 uppercase tracking-widest">Low Stock Alerts</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-black">{lowStockCount} Items</div>
-            <p className="text-[10px] font-bold opacity-70 mt-1 uppercase tracking-tight">
-              {lowStockCount > 0 ? "Action required immediately" : "All levels are optimal"}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-md bg-white dark:bg-slate-900/50 dark:border dark:border-slate-800 text-slate-900 dark:text-slate-100 relative overflow-hidden group">
-          <div className="absolute bottom-0 right-0 h-24 w-24 rounded-full bg-blue-500/5 blur-2xl dark:bg-blue-500/10" />
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Total SKU Count</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-black text-slate-900 dark:text-slate-100">{products.length} Products</div>
-            <Link href="/portal/products" className="text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline flex items-center gap-1 mt-2 uppercase tracking-tighter">
-              View Catalog <ArrowRight className="h-3 w-3" />
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Registry Card - Exact Match with Product Page */}
-      <Card className="border-none shadow-md bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm overflow-hidden dark:border dark:border-slate-800">
-        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 pb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50">
-              <Boxes className="h-5 w-5" />
+      {/* Summary Cards */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm rounded-2xl bg-white dark:bg-slate-900/50 backdrop-blur-sm p-5 sm:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total SKUs</p>
+              <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">{products.length}</p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Catalog items</p>
             </div>
-            <div>
-              <CardTitle className="dark:text-slate-100">Inventory Registry</CardTitle>
-              <CardDescription className="dark:text-slate-400">Real-time stock levels across your catalog</CardDescription>
+            <div className="p-3.5 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0">
+              <Boxes className="h-6 w-6" />
             </div>
           </div>
+        </Card>
 
-          <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
-            <Button
-              variant={filterLowStock ? "destructive" : "outline"}
-              onClick={() => setFilterLowStock(!filterLowStock)}
-              className="rounded-xl px-6 w-full sm:w-auto transition-all"
-            >
-              <AlertTriangle className="mr-2 h-4 w-4" />
-              {filterLowStock ? "View All Stock" : "Low Stock Only"}
-            </Button>
-            <div className="relative w-full sm:w-80">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-              <Input
-                placeholder="Search registry..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 focus-visible:ring-emerald-500 focus-visible:border-emerald-500 dark:text-slate-100"
-              />
+        <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm rounded-2xl bg-white dark:bg-slate-900/50 backdrop-blur-sm p-5 sm:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Low Stock Alerts</p>
+              <p className={cn("text-2xl sm:text-3xl font-black", lowStockCount > 0 ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400")}>
+                {lowStockCount}
+              </p>
+              <p className={cn("text-xs font-medium", lowStockCount > 0 ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400")}>
+                {lowStockCount > 0 ? "Action required" : "All levels optimal"}
+              </p>
+            </div>
+            <div className={cn("p-3.5 rounded-2xl border shrink-0", lowStockCount > 0 ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20" : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20")}>
+              <AlertTriangle className="h-6 w-6" />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm rounded-2xl bg-white dark:bg-slate-900/50 backdrop-blur-sm p-5 sm:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Units</p>
+              <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">{totalStockUnits.toLocaleString()}</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">Physical inventory</p>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+              <Package className="h-6 w-6" />
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Inventory Table Card */}
+      <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm rounded-2xl bg-white dark:bg-slate-900/50 backdrop-blur-sm overflow-hidden">
+        <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 p-4 sm:p-5">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">Stock Inventory</CardTitle>
+              <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Real-time availability and stock levels across catalog
+              </CardDescription>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+              <Button
+                variant={filterLowStock ? "destructive" : "outline"}
+                onClick={() => setFilterLowStock(!filterLowStock)}
+                className="h-10 rounded-xl px-4 w-full sm:w-auto text-xs font-bold transition-all border-slate-200 dark:border-slate-700"
+              >
+                <AlertTriangle className="mr-2 h-3.5 w-3.5" />
+                {filterLowStock ? "All Stock" : "Low Stock Only"}
+              </Button>
+
+              <div className="relative w-full sm:w-72">
+                <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+                <Input
+                  placeholder="Search inventory..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-10 h-10 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus-visible:ring-slate-900 dark:focus-visible:ring-slate-100 dark:text-slate-100 text-sm"
+                />
+              </div>
             </div>
           </div>
         </CardHeader>

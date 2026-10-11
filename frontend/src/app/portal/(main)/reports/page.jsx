@@ -3,19 +3,19 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Printer,
   TrendingUp,
   ShoppingBag,
-  PieChart,
-  Info,
+  Wallet,
   ArrowUpRight,
   ArrowDownRight,
   Calendar,
-  RefreshCcw,
-  BarChart3
+  RefreshCw,
+  FileText,
+  Layers,
+  AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/portal/PageHeader';
@@ -26,7 +26,6 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Check for type in URL search params
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const typeParam = params.get('type');
@@ -43,8 +42,11 @@ export default function ReportsPage() {
   const fetchReport = () => {
     setLoading(true);
     fetch(`/api/user/reports?type=${type}`, { credentials: 'include' })
-      .then((res) => res.json())
-      .then((data) => setData(data))
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to load report');
+        return res.json();
+      })
+      .then((resData) => setData(resData))
       .catch((err) => console.error('Failed to load report:', err))
       .finally(() => setLoading(false));
   };
@@ -52,7 +54,6 @@ export default function ReportsPage() {
   const handlePrint = () => {
     if (!data) return;
 
-    // Create hidden iframe
     const iframe = document.createElement('iframe');
     iframe.style.display = 'none';
     document.body.appendChild(iframe);
@@ -84,7 +85,7 @@ export default function ReportsPage() {
             align-items: flex-end;
           }
           .brand h1 { 
-            font-size: 36px; 
+            font-size: 34px; 
             font-weight: 900; 
             margin: 0; 
             letter-spacing: -1px; 
@@ -107,13 +108,13 @@ export default function ReportsPage() {
             letter-spacing: 1px;
             margin-bottom: 2px;
           }
-          .meta-value { font-size: 14px; font-weight: 900; font-style: italic; }
+          .meta-value { font-size: 14px; font-weight: 900; }
 
           .summary-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin-bottom: 30px;
+            gap: 16px;
+            margin-bottom: 28px;
           }
           .summary-card {
             padding: 16px;
@@ -133,7 +134,7 @@ export default function ReportsPage() {
           }
 
           .section-title {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 900;
             color: #0f172a;
             text-transform: uppercase;
@@ -176,9 +177,9 @@ export default function ReportsPage() {
             margin-top: 40px; 
             text-align: center; 
             font-size: 9px; 
-            color: #94a3b8;
+            color: #94a3b8; 
             font-weight: 700;
-            text-transform: uppercase;
+            text-transform: uppercase; 
             border-top: 1px solid #e2e8f0;
             padding-top: 20px;
           }
@@ -215,7 +216,7 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        <div class="section-title">Detailed Sales Analytics</div>
+        <div class="section-title">Sales Analytics (${data.sales?.length || 0} Records)</div>
         <table>
           <thead>
             <tr>
@@ -227,23 +228,23 @@ export default function ReportsPage() {
             </tr>
           </thead>
           <tbody>
-            ${data.sales?.map(sale => `
+            ${(data.sales || []).map(sale => `
               <tr>
                 <td>${new Date(sale.createdAt).toLocaleDateString('en-IN')}</td>
                 <td class="font-bold">${sale.customer?.name || 'Walk-in'}</td>
                 <td>
                   <div class="items-list">
-                    ${sale.items.map(item => `<span class="item-tag">${item.product.name} (${item.quantity})</span>`).join('')}
+                    ${(sale.items || []).map(item => `<span class="item-tag">${item.product?.name || 'Item'} (${item.quantity})</span>`).join('')}
                   </div>
                 </td>
-                <td class="text-right font-bold" style="color: #15803d;">₹${sale.totalAmount.toLocaleString('en-IN')}</td>
-                <td class="text-right font-bold" style="color: ${sale.totalProfit >= 0 ? '#047857' : '#b91c1c'};">${sale.totalProfit >= 0 ? '+' : '-'}₹${Math.abs(sale.totalProfit).toLocaleString('en-IN')}</td>
+                <td class="text-right font-bold" style="color: #15803d;">₹${Number(sale.totalAmount || 0).toLocaleString('en-IN')}</td>
+                <td class="text-right font-bold" style="color: ${sale.totalProfit >= 0 ? '#047857' : '#b91c1c'};">${sale.totalProfit >= 0 ? '+' : '-'}₹${Math.abs(sale.totalProfit || 0).toLocaleString('en-IN')}</td>
               </tr>
             `).join('')}
           </tbody>
         </table>
 
-        <div class="section-title">Detailed Procurement Analytics</div>
+        <div class="section-title">Procurement Analytics (${data.purchases?.length || 0} Records)</div>
         <table>
           <thead>
             <tr>
@@ -255,17 +256,17 @@ export default function ReportsPage() {
             </tr>
           </thead>
           <tbody>
-            ${data.purchases?.map(p => `
+            ${(data.purchases || []).map(p => `
               <tr>
                 <td>${new Date(p.createdAt).toLocaleDateString('en-IN')}</td>
                 <td class="font-bold">${p.provider?.name || 'Unknown'}</td>
                 <td>
                   <div class="items-list">
-                    ${p.items.map(item => `<span class="item-tag">${item.product.name} (${item.quantity})</span>`).join('')}
+                    ${(p.items || []).map(item => `<span class="item-tag">${item.product?.name || 'Item'} (${item.quantity})</span>`).join('')}
                   </div>
                 </td>
-                <td class="text-right font-bold" style="color: #1d4ed8;">₹${p.totalAmount.toLocaleString('en-IN')}</td>
-                <td class="text-right font-bold" style="color: #b91c1c;">₹${p.dueAmount.toLocaleString('en-IN')}</td>
+                <td class="text-right font-bold" style="color: #1d4ed8;">₹${Number(p.totalAmount || 0).toLocaleString('en-IN')}</td>
+                <td class="text-right font-bold" style="color: #b91c1c;">₹${Number(p.dueAmount || 0).toLocaleString('en-IN')}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -283,7 +284,6 @@ export default function ReportsPage() {
     doc.write(htmlContent);
     doc.close();
 
-    // Print and cleanup
     setTimeout(() => {
       iframe.contentWindow.focus();
       iframe.contentWindow.print();
@@ -293,273 +293,318 @@ export default function ReportsPage() {
     }, 500);
   };
 
+  const totalSales = Number(data?.totalSales || 0);
+  const totalPurchases = Number(data?.totalPurchases || 0);
+  const totalProfit = Number(data?.totalProfit || 0);
+  const totalTransactions = (data?.sales?.length || 0) + (data?.purchases?.length || 0);
+  const netMargin = totalSales > 0 ? ((totalProfit / totalSales) * 100).toFixed(1) : '0';
+
+  const stats = [
+    {
+      label: 'Total Revenue',
+      value: `₹${totalSales.toLocaleString('en-IN')}`,
+      subtext: `${data?.sales?.length || 0} sales transactions`,
+      icon: TrendingUp,
+      badgeBg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+    },
+    {
+      label: 'Procurement Outlay',
+      value: `₹${totalPurchases.toLocaleString('en-IN')}`,
+      subtext: `${data?.purchases?.length || 0} purchase orders`,
+      icon: ShoppingBag,
+      badgeBg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+    },
+    {
+      label: totalProfit >= 0 ? 'Net Profit' : 'Net Loss',
+      value: `${totalProfit >= 0 ? '+' : '-'}₹${Math.abs(totalProfit).toLocaleString('en-IN')}`,
+      subtext: `${netMargin}% profit margin on sales`,
+      icon: Wallet,
+      badgeBg: totalProfit >= 0
+        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+        : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+    },
+    {
+      label: 'Total Operations',
+      value: `${totalTransactions} Records`,
+      subtext: 'Combined trade entries',
+      icon: Layers,
+      badgeBg: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20'
+    },
+  ];
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto print:p-0">
-      {/* Premium Header Section */}
-      <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between bg-slate-950 p-8 rounded-3xl text-white shadow-xl relative overflow-hidden print:hidden">
-        <div className="absolute top-0 right-0 -m-8 h-48 w-48 rounded-full bg-blue-500/10 blur-3xl" />
-        <div className="relative">
-          <h1 className="text-3xl font-black tracking-tight">Business Analytics</h1>
-          <p className="text-slate-400 mt-2 flex items-center gap-2 font-medium">
-            <PieChart className="h-4 w-4" />
-            Data-driven insights into your procurement and liquidations
-          </p>
-        </div>
-        <Button
-          onClick={handlePrint}
-          className="relative bg-white text-slate-900 hover:bg-slate-100 rounded-2xl h-12 px-6 font-bold shadow-lg"
-        >
-          <Printer className="mr-2 h-5 w-5" />
-          Export PDF Report
-        </Button>
-      </div>
-
-      {/* Control Panel - Simple Responsive Flex */}
-      <div className="flex flex-col sm:flex-row sm:items-end gap-3 print:hidden">
-        <div className="w-full sm:w-64">
-          <Label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider ml-1 mb-1.5 block">Analytical Window</Label>
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-slate-400" />
-            <Select value={type} onValueChange={setType}>
-              <SelectTrigger className="w-full h-10 rounded-lg dark:bg-slate-900 dark:border-slate-800 dark:text-slate-200">
-                <SelectValue placeholder="Select window" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border-slate-100 dark:border-slate-800 shadow-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
-                <SelectItem value="today">Today&apos;s Activity</SelectItem>
-                <SelectItem value="weekly">Last 7 Days</SelectItem>
-                <SelectItem value="daily">Trailing 30 Days</SelectItem>
-                <SelectItem value="monthly">Current Month Cycle</SelectItem>
-                <SelectItem value="yearly">Fiscal Year Overview</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <Button
-          onClick={fetchReport}
-          disabled={loading}
-          className="h-10 w-full sm:w-auto rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 dark:bg-blue-700 dark:hover:bg-blue-600"
-        >
-          {loading ? (
-            <RefreshCcw className="h-4 w-4 animate-spin mr-2" />
-          ) : (
-            <RefreshCcw className="h-4 w-4 mr-2" />
-          )}
-          Re-Sync Data
-        </Button>
-      </div>
-
-      {/* Print-only Header */}
-      <div className="hidden print:block border-b-4 border-slate-900 pb-8 mb-10">
-        <div className="flex justify-between items-end">
-          <div>
-            <h1 className="text-5xl font-black text-slate-900 tracking-tighter uppercase">Market Statement</h1>
-            <p className="text-slate-500 font-bold mt-2 uppercase tracking-widest text-sm">Agriculture Trading Management System</p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs font-black text-slate-400 mb-1">AUDIT PERIOD</p>
-            <p className="text-lg font-black text-slate-900 italic">
-              {data ? `${new Date(data.startDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })} — ${new Date(data.endDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}` : '...'}
-            </p>
-          </div>
-        </div>
-      </div>
-      <CardContent>
-        {loading && !data ? (
-          <div className="flex justify-center py-8">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          </div>
-        ) : data ? (
-          <>
-            <div className="mb-4 text-sm text-muted-foreground dark:text-slate-400">
-              <p>Period: {new Date(data.startDate).toLocaleDateString('en-IN')} - {new Date(data.endDate).toLocaleDateString('en-IN')}</p>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Card className="bg-green-50/50 dark:bg-emerald-950/20 border-green-100 dark:border-emerald-900/30">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-green-600 dark:text-emerald-400">Total Sales</p>
-                    <TrendingUp className="h-4 w-4 text-green-600 dark:text-emerald-400" />
-                  </div>
-                  <p className="mt-2 text-2xl font-bold text-green-700 dark:text-emerald-300">
-                    ₹{Number(data.totalSales || 0).toLocaleString('en-IN')}
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-blue-50/50 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900/30">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Total Purchases</p>
-                    <ShoppingBag className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <p className="mt-2 text-2xl font-bold text-blue-700 dark:text-blue-300">
-                    ₹{Number(data.totalPurchases || 0).toLocaleString('en-IN')}
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className={cn(
-                "border shadow-sm",
-                data.totalProfit >= 0
-                  ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/30"
-                  : "bg-rose-50/50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900/30"
-              )}>
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <p className={cn(
-                      "text-sm font-medium",
-                      data.totalProfit >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
-                    )}>
-                      {data.totalProfit >= 0 ? "Net Profit" : "Net Loss"}
-                    </p>
-                    <PieChart className={cn(
-                      "h-4 w-4",
-                      data.totalProfit >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
-                    )} />
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <p className={cn(
-                      "mt-2 text-2xl font-bold",
-                      data.totalProfit >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"
-                    )}>
-                      {data.totalProfit >= 0 ? '+' : '-'}₹{Math.abs(data.totalProfit || 0).toLocaleString('en-IN')}
-                    </p>
-                    <span className={cn(
-                      "text-[10px] font-black tracking-widest",
-                      data.totalProfit >= 0 ? "text-emerald-600/60" : "text-rose-600/60"
-                    )}>
-                      ({data.totalSales > 0 ? ((data.totalProfit / data.totalSales) * 100).toFixed(1) : 0}%)
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-muted/50 dark:bg-slate-900/50 border-muted dark:border-slate-800">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-muted-foreground dark:text-slate-400">Transactions</p>
-                    <Info className="h-4 w-4 text-muted-foreground dark:text-slate-400" />
-                  </div>
-                  <p className="mt-2 text-2xl font-bold dark:text-slate-100">
-                    {(data.sales?.length || 0) + (data.purchases?.length || 0)}
-                  </p>
-                </CardContent>
-              </Card>
+    <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto">
+      {/* Page Header */}
+      <PageHeader
+        title="Analytical Reports"
+        description="Comprehensive audit of revenue, procurement, and profitability performance"
+        icon={FileText}
+        actionButton={
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Timeframe Selector */}
+            <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl px-3 h-10 shadow-sm">
+              <Calendar className="h-4 w-4 text-slate-400" />
+              <Select value={type} onValueChange={setType}>
+                <SelectTrigger className="border-0 shadow-none p-0 h-auto text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-0 w-[140px]">
+                  <SelectValue placeholder="Analytical Window" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl bg-white dark:bg-slate-900">
+                  <SelectItem value="today" className="text-xs font-semibold">Today&apos;s Activity</SelectItem>
+                  <SelectItem value="weekly" className="text-xs font-semibold">Last 7 Days</SelectItem>
+                  <SelectItem value="daily" className="text-xs font-semibold">Trailing 30 Days</SelectItem>
+                  <SelectItem value="monthly" className="text-xs font-semibold">Current Month</SelectItem>
+                  <SelectItem value="yearly" className="text-xs font-semibold">Fiscal Year</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
-            <div className="mt-8 space-y-8">
-              {/* Detailed Sales Table */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold flex items-center gap-2">
-                    <ArrowUpRight className="h-5 w-5 text-green-600" />
-                    Sales Details
-                  </h3>
-                </div>
-                <div className="rounded-lg border dark:border-slate-800 overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[800px] text-sm">
-                      <thead className="bg-muted/50 dark:bg-slate-900">
-                        <tr>
-                          <th className="p-3 text-left dark:text-slate-400">Date</th>
-                          <th className="p-3 text-left dark:text-slate-400">Customer</th>
-                          <th className="p-3 text-left dark:text-slate-400">Items</th>
-                          <th className="p-3 text-right dark:text-slate-400">Amount</th>
-                          <th className="p-3 text-right dark:text-slate-400">Profit / Loss</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {data.sales?.map(sale => (
-                          <tr key={sale.id} className="border-t dark:border-slate-800 hover:bg-muted/20 dark:hover:bg-slate-900/50 transition-colors">
-                            <td className="p-3 text-muted-foreground dark:text-slate-500">
-                              {new Date(sale.createdAt).toLocaleDateString('en-IN')}
-                            </td>
-                            <td className="p-3 font-semibold dark:text-slate-200">
-                              {sale.customer?.name || 'Walk-in'}
-                            </td>
-                            <td className="p-3">
-                              <div className="flex flex-wrap gap-1">
-                                {sale.items.map(item => (
-                                  <span key={item.id} className="text-[10px] bg-muted dark:bg-slate-900 px-1.5 py-0.5 rounded ring-1 ring-inset ring-muted-foreground/10 dark:ring-slate-800 dark:text-slate-300">
-                                    {item.product.name} ({item.quantity})
-                                  </span>
-                                ))}
-                              </div>
-                            </td>
-                            <td className="p-3 text-right font-bold text-green-600 dark:text-emerald-500">
-                              ₹{sale.totalAmount.toLocaleString()}
-                            </td>
-                            <td className={cn(
-                              "p-3 text-right font-bold",
-                              sale.totalProfit >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
-                            )}>
-                              {sale.totalProfit >= 0 ? '+' : '-'}₹{Math.abs(sale.totalProfit).toLocaleString()}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+            {/* Re-Sync Button */}
+            <Button
+              variant="outline"
+              onClick={fetchReport}
+              disabled={loading}
+              className="h-10 rounded-xl px-3 border-slate-200/80 dark:border-slate-800 text-xs font-bold bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm"
+            >
+              <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", loading && "animate-spin")} />
+              Sync
+            </Button>
+
+            {/* Export PDF Button */}
+            <Button
+              onClick={handlePrint}
+              disabled={!data}
+              className="bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:hover:bg-white dark:text-slate-900 rounded-xl h-10 px-4 font-bold shadow-sm transition-all flex items-center gap-2 text-xs"
+            >
+              <Printer className="h-3.5 w-3.5" />
+              Export PDF
+            </Button>
+          </div>
+        }
+      />
+
+      {/* KPI Stats Grid */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((item) => (
+          <Card
+            key={item.label}
+            className="border border-slate-200/80 dark:border-slate-800 shadow-sm rounded-2xl bg-white dark:bg-slate-900/50 backdrop-blur-sm p-5 sm:p-6 hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  {item.label}
+                </p>
+                <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">
+                  {item.value}
+                </p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                  {item.subtext}
+                </p>
               </div>
-
-              {/* Detailed Purchases Table */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold flex items-center gap-2">
-                    <ArrowDownRight className="h-5 w-5 text-blue-600" />
-                    Purchase Details
-                  </h3>
-                </div>
-                <div className="rounded-lg border dark:border-slate-800 overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[800px] text-sm">
-                      <thead className="bg-muted/50 dark:bg-slate-900">
-                        <tr>
-                          <th className="p-3 text-left dark:text-slate-400">Date</th>
-                          <th className="p-3 text-left dark:text-slate-400">Provider</th>
-                          <th className="p-3 text-left dark:text-slate-400">Items</th>
-                          <th className="p-3 text-right dark:text-slate-400">Amount</th>
-                          <th className="p-3 text-right dark:text-slate-400">Due</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {data.purchases?.map(p => (
-                          <tr key={p.id} className="border-t dark:border-slate-800 hover:bg-muted/20 dark:hover:bg-slate-900/50 transition-colors">
-                            <td className="p-3 text-muted-foreground dark:text-slate-500">
-                              {new Date(p.createdAt).toLocaleDateString('en-IN')}
-                            </td>
-                            <td className="p-3 font-semibold dark:text-slate-200">
-                              {p.provider?.name || 'Unknown'}
-                            </td>
-                            <td className="p-3">
-                              <div className="flex flex-wrap gap-1">
-                                {p.items.map(item => (
-                                  <span key={item.id} className="text-[10px] bg-muted dark:bg-slate-900 px-1.5 py-0.5 rounded ring-1 ring-inset ring-muted-foreground/10 dark:ring-slate-800 dark:text-slate-300">
-                                    {item.product.name} ({item.quantity})
-                                  </span>
-                                ))}
-                              </div>
-                            </td>
-                            <td className="p-3 text-right font-bold text-blue-600 dark:text-blue-400">
-                              ₹{p.totalAmount.toLocaleString()}
-                            </td>
-                            <td className="p-3 text-right font-medium text-destructive dark:text-rose-400">
-                              ₹{p.dueAmount.toLocaleString()}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+              <div className={`p-3.5 rounded-2xl border shrink-0 ${item.badgeBg}`}>
+                <item.icon className="h-6 w-6" />
               </div>
             </div>
-          </>
-        ) : (
-          <p className="py-8 text-center text-muted-foreground">No data available</p>
-        )}
-      </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {loading && !data ? (
+        <div className="flex min-h-[30vh] flex-col items-center justify-center gap-3">
+          <div className="h-9 w-9 animate-spin rounded-full border-4 border-slate-900 border-t-transparent dark:border-slate-100" />
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Generating report...</p>
+        </div>
+      ) : data ? (
+        <div className="space-y-6">
+          {/* Sales Analytics Table Card */}
+          <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm rounded-2xl bg-white dark:bg-slate-900/50 backdrop-blur-sm overflow-hidden">
+            <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 p-4 sm:p-5">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    <ArrowUpRight className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
+                      Sales Transactions
+                    </CardTitle>
+                    <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Client liquidations and gross revenue breakdowns
+                    </CardDescription>
+                  </div>
+                </div>
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800">
+                  {data.sales?.length || 0} Total Transactions
+                </span>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {data.sales?.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[750px] text-sm text-slate-600 dark:text-slate-400">
+                    <thead>
+                      <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                        <th className="p-4 text-left">Date</th>
+                        <th className="p-4 text-left">Customer</th>
+                        <th className="p-4 text-left">Items Sold</th>
+                        <th className="p-4 text-right">Total Amount</th>
+                        <th className="p-4 text-right">Profit / Loss</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {data.sales.map((sale) => (
+                        <tr
+                          key={sale.id}
+                          className="hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition-colors"
+                        >
+                          <td className="p-4 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                            {new Date(sale.createdAt).toLocaleDateString('en-IN', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </td>
+                          <td className="p-4 font-bold text-slate-900 dark:text-slate-100">
+                            {sale.customer?.name || 'Walk-in Client'}
+                          </td>
+                          <td className="p-4">
+                            <div className="flex flex-wrap gap-1.5">
+                              {sale.items?.map((item, idx) => (
+                                <span
+                                  key={idx}
+                                  className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+                                >
+                                  {item.product?.name || 'Item'} ({item.quantity} {item.product?.unit || ''})
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="p-4 text-right font-black text-slate-900 dark:text-slate-100">
+                            ₹{Number(sale.totalAmount || 0).toLocaleString('en-IN')}
+                          </td>
+                          <td className="p-4 text-right">
+                            <span
+                              className={cn(
+                                "font-black text-sm",
+                                sale.totalProfit >= 0
+                                  ? "text-emerald-600 dark:text-emerald-400"
+                                  : "text-rose-600 dark:text-rose-400"
+                              )}
+                            >
+                              {sale.totalProfit >= 0 ? '+' : '-'}₹{Math.abs(sale.totalProfit || 0).toLocaleString('en-IN')}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="py-14 text-center text-xs text-slate-400 dark:text-slate-500">
+                  No sales recorded for this period
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Procurement Analytics Table Card */}
+          <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm rounded-2xl bg-white dark:bg-slate-900/50 backdrop-blur-sm overflow-hidden">
+            <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 p-4 sm:p-5">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                    <ArrowDownRight className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
+                      Procurement Invoices
+                    </CardTitle>
+                    <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Supplier purchasing and payment settlement records
+                    </CardDescription>
+                  </div>
+                </div>
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800">
+                  {data.purchases?.length || 0} Total Purchases
+                </span>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {data.purchases?.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[750px] text-sm text-slate-600 dark:text-slate-400">
+                    <thead>
+                      <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                        <th className="p-4 text-left">Date</th>
+                        <th className="p-4 text-left">Supplier</th>
+                        <th className="p-4 text-left">Items Acquired</th>
+                        <th className="p-4 text-right">Invoice Amount</th>
+                        <th className="p-4 text-right">Pending Balance</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {data.purchases.map((p) => (
+                        <tr
+                          key={p.id}
+                          className="hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition-colors"
+                        >
+                          <td className="p-4 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                            {new Date(p.createdAt).toLocaleDateString('en-IN', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </td>
+                          <td className="p-4 font-bold text-slate-900 dark:text-slate-100">
+                            {p.provider?.name || 'Unknown Supplier'}
+                          </td>
+                          <td className="p-4">
+                            <div className="flex flex-wrap gap-1.5">
+                              {p.items?.map((item, idx) => (
+                                <span
+                                  key={idx}
+                                  className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+                                >
+                                  {item.product?.name || 'Item'} ({item.quantity} {item.product?.unit || ''})
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="p-4 text-right font-black text-slate-900 dark:text-slate-100">
+                            ₹{Number(p.totalAmount || 0).toLocaleString('en-IN')}
+                          </td>
+                          <td className="p-4 text-right">
+                            <span
+                              className={cn(
+                                "font-black text-sm",
+                                Number(p.dueAmount || 0) > 0
+                                  ? "text-rose-600 dark:text-rose-400"
+                                  : "text-emerald-600 dark:text-emerald-400"
+                              )}
+                            >
+                              ₹{Number(p.dueAmount || 0).toLocaleString('en-IN')}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="py-14 text-center text-xs text-slate-400 dark:text-slate-500">
+                  No purchases recorded for this period
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm rounded-2xl bg-white dark:bg-slate-900/50 backdrop-blur-sm p-12 text-center">
+          <AlertCircle className="h-10 w-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+          <p className="text-sm font-bold text-slate-600 dark:text-slate-400">No report data found for this period</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Try selecting a different analytical window above.</p>
+        </Card>
+      )}
     </div>
   );
 }

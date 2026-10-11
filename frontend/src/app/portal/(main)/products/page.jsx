@@ -89,7 +89,7 @@ export default function ProductsPage() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
+    <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto">
       <ConfirmModal
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
@@ -101,41 +101,83 @@ export default function ProductsPage() {
       {/* Header Section */}
       <PageHeader 
         title="Product Management"
-        description="Manage all tradeable items"
+        description="Manage all tradeable items and pricing"
         icon={Package}
-        glowColor="bg-blue-500/10"
         actionButton={
           <Button
             onClick={() => handleOpen()}
-            className="relative bg-white text-slate-900 hover:bg-slate-100 rounded-2xl h-12 px-6 font-bold shadow-lg"
+            className="bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:hover:bg-white dark:text-slate-900 rounded-xl h-11 px-5 font-bold shadow-sm transition-all flex items-center gap-2"
           >
-            <Plus className="mr-2 h-5 w-5" />
+            <Plus className="h-4 w-4" />
             Add New Product
           </Button>
         }
       />
 
-      {/* Registry Card - Exact Match with Product Page */}
-      <Card className="border-none shadow-md bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm overflow-hidden dark:border dark:border-slate-800">
-        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 pb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50">
-              <Package className="h-5 w-5" />
+      {/* Summary Stats */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm rounded-2xl bg-white dark:bg-slate-900/50 backdrop-blur-sm p-5 sm:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Products</p>
+              <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">{products.length}</p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Catalog items</p>
             </div>
-            <div>
-              <CardTitle className="dark:text-slate-100">Product Registry</CardTitle>
-              <CardDescription className="dark:text-slate-400">View and manage all available SKUs</CardDescription>
+            <div className="p-3.5 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0">
+              <Package className="h-6 w-6" />
             </div>
           </div>
+        </Card>
 
-          <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+        <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm rounded-2xl bg-white dark:bg-slate-900/50 backdrop-blur-sm p-5 sm:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Low Stock</p>
+              <p className="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">
+                {products.filter(p => (p.currentStock || 0) <= 10).length}
+              </p>
+              <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">Items under 10 units</p>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+              <Package className="h-6 w-6 text-amber-500" />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm rounded-2xl bg-white dark:bg-slate-900/50 backdrop-blur-sm p-5 sm:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Inventory On Hand</p>
+              <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">
+                {products.reduce((acc, p) => acc + (p.currentStock || 0), 0).toLocaleString()}
+              </p>
+              <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Available volume</p>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+              <Package className="h-6 w-6" />
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Products Table Card */}
+      <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm rounded-2xl bg-white dark:bg-slate-900/50 backdrop-blur-sm overflow-hidden">
+        <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 p-4 sm:p-5">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">Product Catalog</CardTitle>
+              <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Total {products.length} registered products
+              </CardDescription>
+            </div>
+
             <div className="relative w-full sm:w-80">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+              <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
               <Input
-                placeholder="Search registry..."
+                placeholder="Search products..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 focus-visible:ring-blue-500 focus-visible:border-blue-500 dark:text-slate-100"
+                className="pl-10 h-10 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus-visible:ring-slate-900 dark:focus-visible:ring-slate-100 dark:text-slate-100 text-sm"
               />
             </div>
           </div>
@@ -184,7 +226,7 @@ export default function ProductsPage() {
                         </div>
                       </td>
                       <td className="p-4 text-right">
-                        <div className="flex justify-end gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex justify-end gap-2">
                           <Button
                             variant="outline"
                             size="icon"

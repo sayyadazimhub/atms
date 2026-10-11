@@ -73,8 +73,9 @@ export default function PreferencesSettingsPage() {
 
   if (initialLoading) {
     return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-900 dark:border-slate-100 border-t-transparent" />
+      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-900 border-t-transparent dark:border-slate-100" />
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Loading preferences...</p>
       </div>
     );
   }
@@ -107,80 +108,109 @@ export default function PreferencesSettingsPage() {
   ];
 
   return (
-    <div className="max-w-4xl space-y-8 animate-in fade-in duration-500 pb-16 mx-auto">
+    <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto">
       <PageHeader
         title="Preferences & Alerts"
         description="Configure system notifications and trading communication rules"
         icon={Bell}
-        glowColor="bg-blue-500/10"
+        actionButton={
+          <Button
+            onClick={handleSave}
+            disabled={loading}
+            className="h-10 px-5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-bold text-xs shadow-sm flex items-center gap-2"
+          >
+            <Save className="h-4 w-4" />
+            {loading ? 'Saving...' : 'Save Preferences'}
+          </Button>
+        }
       />
 
-      <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900/50 backdrop-blur-sm rounded-3xl overflow-hidden">
-        <CardHeader className="bg-slate-50/60 dark:bg-slate-800/40 p-6 sm:p-8 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-4">
-            <div className="p-2.5 rounded-xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900">
-              <Bell className="h-5 w-5" />
-            </div>
-            <div>
-              <CardTitle className="text-lg font-black text-slate-900 dark:text-slate-100">Notification Channels</CardTitle>
-              <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Customize which events and triggers push alerts to your workspace.
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-
-        <CardContent className="p-6 sm:p-8 space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2">
-            {preferenceItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <div
-                  key={item.id}
-                  className="group flex items-start justify-between p-5 rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-all duration-200"
-                >
-                  <div className="space-y-1 pr-3">
-                    <div className="flex items-center gap-2">
-                      <Icon className="h-4 w-4 text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-slate-200 transition-colors" />
-                      <Label htmlFor={item.id} className="text-xs font-bold text-slate-900 dark:text-slate-100 cursor-pointer">
-                        {item.title}
-                      </Label>
-                    </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">{item.desc}</p>
-                  </div>
-                  <Switch
-                    id={item.id}
-                    checked={!!preferences.notifications[item.id]}
-                    onCheckedChange={(checked) => handleToggle(item.id, checked)}
-                    className="data-[state=checked]:bg-slate-900 dark:data-[state=checked]:bg-slate-100 shrink-0 mt-0.5"
-                  />
+      <div className="grid gap-6 lg:grid-cols-12 items-start">
+        {/* Main Switches Card (8 cols) */}
+        <div className="lg:col-span-8">
+          <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900/50 backdrop-blur-sm rounded-2xl overflow-hidden">
+            <CardHeader className="bg-slate-50/50 dark:bg-slate-900/40 p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900">
+                  <Bell className="h-5 w-5" />
                 </div>
-              );
-            })}
-          </div>
+                <div>
+                  <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">Notification Triggers</CardTitle>
+                  <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Customize which business events push real-time alerts to your account.
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
 
-          <div className="p-5 rounded-2xl bg-blue-50/70 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 flex items-center gap-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm">
-              <Fingerprint className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-blue-950 dark:text-blue-200">Secure Synchronization</p>
-              <p className="text-[11px] text-blue-800/70 dark:text-blue-300/70 mt-0.5">Preferences are saved to your account and synced across your devices.</p>
-            </div>
-          </div>
+            <CardContent className="p-6 sm:p-8 space-y-6">
+              <div className="grid gap-4 sm:grid-cols-2">
+                {preferenceItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <div
+                      key={item.id}
+                      className="group flex items-start justify-between p-5 rounded-xl border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-950 hover:bg-slate-50/80 dark:hover:bg-slate-900/80 transition-all duration-200"
+                    >
+                      <div className="space-y-1 pr-3">
+                        <div className="flex items-center gap-2">
+                          <Icon className="h-4 w-4 text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-slate-200 transition-colors" />
+                          <Label htmlFor={item.id} className="text-xs font-bold text-slate-900 dark:text-slate-100 cursor-pointer">
+                            {item.title}
+                          </Label>
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">{item.desc}</p>
+                      </div>
+                      <Switch
+                        id={item.id}
+                        checked={!!preferences.notifications[item.id]}
+                        onCheckedChange={(checked) => handleToggle(item.id, checked)}
+                        className="data-[state=checked]:bg-slate-900 dark:data-[state=checked]:bg-slate-100 shrink-0 mt-0.5"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
 
-          <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-            <Button
-              onClick={handleSave}
-              disabled={loading}
-              className="h-11 px-8 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-bold text-xs uppercase tracking-wider shadow-sm transition-all flex items-center gap-2"
-            >
-              <Save className="h-4 w-4" />
-              {loading ? 'Saving...' : 'Save Preferences'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+                <Button
+                  onClick={handleSave}
+                  disabled={loading}
+                  className="h-10 px-6 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-bold text-xs uppercase tracking-wider shadow-sm transition-all flex items-center gap-2"
+                >
+                  <Save className="h-4 w-4" />
+                  {loading ? 'Saving...' : 'Save Preferences'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Sidebar Sync Info (4 cols) */}
+        <div className="lg:col-span-4 space-y-6">
+          <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                <Fingerprint className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-900 dark:text-slate-100">Secure Cloud Sync</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Preferences are synced automatically to your user session and browser.</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6">
+            <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
+              <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              Delivery Channels
+            </h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              In-app toast alerts are delivered instantly during transactions. Email digests are batched according to your selected analytical window.
+            </p>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

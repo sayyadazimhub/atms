@@ -18,7 +18,8 @@ import {
     CheckCircle2,
     Wallet,
     Eye,
-    Pencil
+    Pencil,
+    ArrowUpRight
 } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { cn } from '@/lib/utils';
@@ -542,81 +543,81 @@ export default function SalesPage() {
                 isLoading={submitting}
             />
             {/* Header Section */}
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between bg-slate-950 p-8 rounded-3xl text-white shadow-xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 -m-8 h-48 w-48 rounded-full bg-emerald-500/10 blur-3xl" />
-                <div className="relative">
-                    <h1 className="text-3xl font-black tracking-tight">Sales Terminal</h1>
-                    <p className="text-slate-400 mt-2 flex items-center gap-2 font-medium">
-                        <BadgeDollarSign className="h-4 w-4" />
-                        Manage customer liquidations and revenue tracking
-                    </p>
-                </div>
-                <Button
+            <PageHeader 
+                title="Sales Terminal"
+                description="Manage customer liquidations and revenue tracking"
+                icon={BadgeDollarSign}
+                actionButton={
+                  <Button
                     onClick={() => setShowCreateModal(true)}
-                    className="relative bg-white text-slate-900 hover:bg-slate-100 rounded-2xl h-12 px-6 font-bold shadow-lg"
-                >
-                    <Plus className="mr-2 h-5 w-5" />
+                    className="bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:hover:bg-white dark:text-slate-900 rounded-xl h-11 px-5 font-bold shadow-sm transition-all flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
                     Create New Sale
-                </Button>
-            </div>
+                  </Button>
+                }
+            />
 
             {/* Summary Cards */}
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                <Card className="border-none shadow-md bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm overflow-hidden relative group">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Total Receivables</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-black text-emerald-600 dark:text-emerald-500">₹{totalReceivables.toLocaleString('en-IN')}</div>
-                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1 font-medium">
-                            <TrendingUp className="h-3 w-3" /> Outstanding payments from customers
-                        </p>
-                    </CardContent>
-                </Card>
-
-                <Card className="border-none shadow-md bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm overflow-hidden relative group">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
-                            {totalProfitToday >= 0 ? "Today's Profit" : "Today's Loss"}
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className={cn(
-                            "text-3xl font-black",
-                            totalProfitToday >= 0 ? "text-blue-600 dark:text-blue-500" : "text-rose-600 dark:text-rose-500"
-                        )}>
-                            {totalProfitToday >= 0 ? "+" : "-"}₹{Math.abs(totalProfitToday).toLocaleString('en-IN')}
+            <div className="grid gap-4 sm:grid-cols-3">
+                <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm rounded-2xl bg-white dark:bg-slate-900/50 backdrop-blur-sm p-5 sm:p-6 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Receivables</p>
+                            <p className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">₹{totalReceivables.toLocaleString('en-IN')}</p>
+                            <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">Outstanding from clients</p>
                         </div>
-                        <p className="text-xs text-slate-400 dark:text-slate-500 font-bold mt-1 flex items-center gap-1">
-                            <TrendingUp className="h-3 w-3" />
-                            {totalProfitToday >= 0 ? "Net gain from today's trades" : "Net loss from today's trades"}
-                        </p>
-                    </CardContent>
+                        <div className="p-3.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                            <ArrowUpRight className="h-6 w-6" />
+                        </div>
+                    </div>
                 </Card>
 
-                <Card className="border-none shadow-md bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm overflow-hidden relative group hidden lg:block">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Performance</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-black text-slate-900 dark:text-slate-100">{totalSalesToday} Invoices</div>
-                        <p className="text-xs text-emerald-600 dark:text-emerald-500 font-bold mt-1 flex items-center gap-1">
-                            <CheckCircle2 className="h-3 w-3" />
-                            Successful sales today
-                        </p>
-                    </CardContent>
+                <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm rounded-2xl bg-white dark:bg-slate-900/50 backdrop-blur-sm p-5 sm:p-6 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                {totalProfitToday >= 0 ? "Today's Profit" : "Today's Loss"}
+                            </p>
+                            <p className={cn(
+                                "text-2xl sm:text-3xl font-black",
+                                totalProfitToday >= 0 ? "text-blue-600 dark:text-blue-400" : "text-rose-600 dark:text-rose-400"
+                            )}>
+                                {totalProfitToday >= 0 ? "+" : "-"}₹{Math.abs(totalProfitToday).toLocaleString('en-IN')}
+                            </p>
+                            <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                                {totalProfitToday >= 0 ? "Net trade gain" : "Net trade loss"}
+                            </p>
+                        </div>
+                        <div className="p-3.5 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0">
+                            <TrendingUp className="h-6 w-6" />
+                        </div>
+                    </div>
+                </Card>
+
+                <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm rounded-2xl bg-white dark:bg-slate-900/50 backdrop-blur-sm p-5 sm:p-6 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Today&apos;s Sales</p>
+                            <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">{totalSalesToday} Invoices</p>
+                            <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Completed today</p>
+                        </div>
+                        <div className="p-3.5 rounded-2xl bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 shrink-0">
+                            <CheckCircle2 className="h-6 w-6" />
+                        </div>
+                    </div>
                 </Card>
             </div>
 
-            <Card className="border-none shadow-md bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm overflow-hidden">
-                <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 pb-6">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50">
-                            <BadgeDollarSign className="h-5 w-5" />
-                        </div>
+            {/* Sales Table Card */}
+            <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm rounded-2xl bg-white dark:bg-slate-900/50 backdrop-blur-sm overflow-hidden">
+                <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 p-4 sm:p-5">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <div>
-                            <CardTitle className="dark:text-slate-100">Invoice Ledger</CardTitle>
-                            <CardDescription className="dark:text-slate-400">Comprehensive log of customer liquidations</CardDescription>
+                            <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">Invoice Ledger</CardTitle>
+                            <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                Total {sales.length} customer sales and liquidation records
+                            </CardDescription>
                         </div>
                     </div>
                 </CardHeader>
@@ -718,7 +719,7 @@ export default function SalesPage() {
                                                         {new Date(s.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                                                     </td>
                                                     <td className="p-4 text-right">
-                                                        <div className="flex justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                                        <div className="flex justify-end gap-2">
                                                             <Button
                                                                 size="icon"
                                                                 variant="outline"

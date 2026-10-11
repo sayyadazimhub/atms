@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Lock, Shield, KeyRound, CheckCircle2, AlertTriangle, Eye, EyeOff } from 'lucide-react';
+import { Shield, KeyRound, CheckCircle2, Eye, EyeOff, Lock, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageHeader } from '@/components/portal/PageHeader';
 
@@ -47,26 +47,25 @@ export default function SecuritySettingsPage() {
   };
 
   return (
-    <div className="max-w-4xl space-y-8 animate-in fade-in duration-500 pb-16 mx-auto">
+    <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto">
       <PageHeader
         title="Security Settings"
-        description="Update your password and protect your trading account credentials"
+        description="Update your account credentials, manage encryption password, and safeguard access"
         icon={Shield}
-        glowColor="bg-amber-500/10"
       />
 
-      <div className="grid gap-8 lg:grid-cols-12 items-start">
-        {/* Main Password Form */}
+      <div className="grid gap-6 lg:grid-cols-12 items-start">
+        {/* Main Password Form (8 cols) */}
         <div className="lg:col-span-8">
-          <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900/50 backdrop-blur-sm rounded-3xl overflow-hidden">
-            <CardHeader className="bg-slate-50/60 dark:bg-slate-800/40 p-6 sm:p-8 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-4">
-                <div className="p-2.5 rounded-xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900">
+          <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900/50 backdrop-blur-sm rounded-2xl overflow-hidden">
+            <CardHeader className="bg-slate-50/50 dark:bg-slate-900/40 p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900">
                   <KeyRound className="h-5 w-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg font-black text-slate-900 dark:text-slate-100">Change Password</CardTitle>
-                  <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">Change Password</CardTitle>
+                  <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     Choose a strong password with a mix of letters, numbers, and symbols.
                   </CardDescription>
                 </div>
@@ -82,7 +81,7 @@ export default function SecuritySettingsPage() {
                       type={showCurrent ? 'text' : 'password'}
                       value={passwords.current}
                       onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
-                      className="h-11 pr-10 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-slate-100 font-medium"
+                      className="h-11 pr-10 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 dark:text-slate-100 font-medium"
                       placeholder="••••••••"
                       required
                     />
@@ -103,7 +102,7 @@ export default function SecuritySettingsPage() {
                       type={showNew ? 'text' : 'password'}
                       value={passwords.next}
                       onChange={(e) => setPasswords({ ...passwords, next: e.target.value })}
-                      className="h-11 pr-10 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-slate-100 font-medium"
+                      className="h-11 pr-10 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 dark:text-slate-100 font-medium"
                       placeholder="••••••••"
                       required
                       minLength={6}
@@ -125,7 +124,7 @@ export default function SecuritySettingsPage() {
                       type={showConfirm ? 'text' : 'password'}
                       value={passwords.confirm}
                       onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
-                      className="h-11 pr-10 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-slate-100 font-medium"
+                      className="h-11 pr-10 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 dark:text-slate-100 font-medium"
                       placeholder="••••••••"
                       required
                       minLength={6}
@@ -154,27 +153,39 @@ export default function SecuritySettingsPage() {
           </Card>
         </div>
 
-        {/* Security Recommendations Sidebar */}
+        {/* Security Recommendations Sidebar (4 cols) */}
         <div className="lg:col-span-4 space-y-6">
-          <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm bg-gradient-to-br from-slate-50 to-white dark:from-slate-900/60 dark:to-slate-900/20 rounded-3xl p-6">
+          <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6">
             <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
               <Shield className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               Security Best Practices
             </h4>
-            <ul className="space-y-3 text-xs text-slate-600 dark:text-slate-400">
-              <li className="flex items-start gap-2">
+            <ul className="space-y-3.5 text-xs text-slate-600 dark:text-slate-400">
+              <li className="flex items-start gap-2.5">
                 <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                 <span>Use at least 8 characters with numbers and symbols</span>
               </li>
-              <li className="flex items-start gap-2">
+              <li className="flex items-start gap-2.5">
                 <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                <span>Avoid reusing passwords from personal accounts</span>
+                <span>Avoid reusing passwords from personal or social accounts</span>
               </li>
-              <li className="flex items-start gap-2">
+              <li className="flex items-start gap-2.5">
                 <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                <span>Rotate credentials regularly to prevent unauthorized access</span>
+                <span>Rotate credentials regularly to protect transactional records</span>
               </li>
             </ul>
+          </Card>
+
+          <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                <Lock className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-900 dark:text-slate-100">Session Protection</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Sessions expire automatically on inactive sessions to keep data safe.</p>
+              </div>
+            </div>
           </Card>
         </div>
       </div>
