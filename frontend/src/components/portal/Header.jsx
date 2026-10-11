@@ -3,8 +3,22 @@
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { User, Bell, Activity, Menu, LogOut, Settings, ChevronDown, Sprout, TrendingUp, Sun, Moon, Monitor } from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation';
+import {
+  User,
+  Bell,
+  Activity,
+  Menu,
+  LogOut,
+  Settings,
+  ChevronDown,
+  ChevronRight,
+  Sun,
+  Moon,
+  Monitor,
+  Lock,
+  ShieldCheck
+} from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +36,7 @@ export default function Header() {
   const [mounted, setMounted] = useState(false);
   const [profile, setProfile] = useState(null);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     setMounted(true);
@@ -46,123 +61,184 @@ export default function Header() {
     window.dispatchEvent(new CustomEvent('toggle-sidebar'));
   };
 
+  const userInitials = profile?.name
+    ? profile.name.split(' ').map((n) => n[0]).join('').toUpperCase().substring(0, 2)
+    : 'U';
+
+  // Generate dynamic breadcrumb segments from pathname
+  const getBreadcrumbs = () => {
+    const parts = pathname.split('/').filter(Boolean); // ['portal', 'settings', 'profile']
+    const breadcrumbs = [];
+    let currentPath = '';
+
+    parts.forEach((part, index) => {
+      currentPath += `/${part}`;
+      const label = part.charAt(0).toUpperCase() + part.slice(1);
+      if (part === 'portal') {
+        breadcrumbs.push({ label: 'Portal', href: '/portal/dashboard' });
+      } else {
+        breadcrumbs.push({ label, href: currentPath });
+      }
+    });
+
+    if (breadcrumbs.length === 1 && breadcrumbs[0].label === 'Portal') {
+      breadcrumbs.push({ label: 'Dashboard', href: '/portal/dashboard' });
+    }
+
+    return breadcrumbs;
+  };
+
   return (
-    <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background/80 px-4 sm:px-6 backdrop-blur-md">
-      {/* Mobile: Menu Toggle & Branding | Desktop: Search/Title */}
-      <div className="flex items-center gap-4">
+    <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between border-b bg-background/80 px-4 sm:px-6 backdrop-blur-md">
+      {/* Left: Mobile Menu Toggle & Breadcrumbs */}
+      <div className="flex items-center gap-3">
         <Button
           variant="ghost"
           size="icon"
           className="lg:hidden h-10 w-10 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-xl"
           onClick={toggleSidebar}
+          aria-label="Toggle Navigation"
         >
-          <Menu className="h-6 w-6" />
+          <Menu className="h-5 w-5" />
         </Button>
 
-        {/* Desktop Title or Breadcrumb could go here if needed in future */}
+        {/* Dynamic Breadcrumbs */}
+        <nav aria-label="Breadcrumbs" className="hidden sm:flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+          {getBreadcrumbs().map((item, index, arr) => {
+            const isLast = index === arr.length - 1;
+            return (
+              <div key={item.href + index} className="flex items-center gap-2">
+                {index > 0 && (
+                  <ChevronRight className="h-3.5 w-3.5 text-slate-400 dark:text-slate-600 shrink-0" />
+                )}
+                {isLast ? (
+                  <span className="font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+                    {item.label}
+                  </span>
+                ) : (
+                  <Link
+                    href={item.href}
+                    className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
+                  >
+                    {item.label}
+                  </Link>
+                )}
+              </div>
+            );
+          })}
+        </nav>
       </div>
 
-      <div className="flex items-center gap-3 sm:gap-6">
+      {/* Right: Status badge, Theme Toggle, User Profile Menu */}
+      <div className="flex items-center gap-3 sm:gap-4">
+        {/* Live Status Badge */}
         <div className="hidden md:flex items-center gap-2 text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-100 dark:border-emerald-900/30 uppercase tracking-widest shadow-sm dark:shadow-none">
           <Activity className="h-3 w-3 animate-pulse" />
           Live
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-4">
-          {/* <button className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors relative h-10 w-10 flex items-center justify-center rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900">
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-rose-500 border-2 border-white dark:border-slate-950" />
-          </button> */}
+        {/* Theme Toggle Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors h-9 w-9 flex items-center justify-center rounded-xl hover:bg-slate-100 dark:hover:bg-slate-900 outline-none"
+              aria-label="Toggle Theme"
+            >
+              {mounted && (
+                <>
+                  {theme === 'light' && <Sun className="h-4 w-4 text-amber-500" />}
+                  {theme === 'dark' && <Moon className="h-4 w-4 text-blue-400" />}
+                  {theme === 'system' && <Monitor className="h-4 w-4 text-slate-500" />}
+                </>
+              )}
+              {!mounted && <Sun className="h-4 w-4 text-amber-500" />}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-36 rounded-2xl shadow-xl border-slate-200/80 dark:border-slate-800 p-1.5 bg-white dark:bg-slate-950">
+            <DropdownMenuItem onClick={() => setTheme('light')} className="rounded-xl cursor-pointer py-2 px-3 flex items-center gap-2.5 text-xs font-semibold">
+              <Sun className="h-4 w-4 text-amber-500" />
+              <span>Light</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme('dark')} className="rounded-xl cursor-pointer py-2 px-3 flex items-center gap-2.5 text-xs font-semibold">
+              <Moon className="h-4 w-4 text-blue-400" />
+              <span>Dark</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme('system')} className="rounded-xl cursor-pointer py-2 px-3 flex items-center gap-2.5 text-xs font-semibold">
+              <Monitor className="h-4 w-4 text-slate-500" />
+              <span>System</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-          {/* Theme Toggle */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="text-slate-400 hover:text-slate-600 transition-colors h-10 w-10 flex items-center justify-center rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900 outline-none">
-                {mounted && (
-                  <>
-                    {theme === 'light' && <Sun className="h-5 w-5" />}
-                    {theme === 'dark' && <Moon className="h-5 w-5" />}
-                    {theme === 'system' && <Monitor className="h-5 w-5" />}
-                  </>
-                )}
-                {!mounted && <Sun className="h-5 w-5" />}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40 mt-2 rounded-2xl shadow-xl border-slate-100 dark:border-slate-800 p-1.5 overflow-hidden bg-white dark:bg-background">
-              <DropdownMenuItem onClick={() => setTheme('light')} className="rounded-xl cursor-pointer focus:bg-slate-50 dark:focus:bg-slate-900 transition-colors py-2 px-3 group flex items-center gap-2">
-                <Sun className="h-4 w-4 text-amber-500" />
-                <span className="text-[11px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">Light</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme('dark')} className="rounded-xl cursor-pointer focus:bg-slate-50 dark:focus:bg-slate-900 transition-colors py-2 px-3 group flex items-center gap-2">
-                <Moon className="h-4 w-4 text-blue-500" />
-                <span className="text-[11px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">Dark</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme('system')} className="rounded-xl cursor-pointer focus:bg-slate-50 dark:focus:bg-slate-900 transition-colors py-2 px-3 group flex items-center gap-2">
-                <Monitor className="h-4 w-4 text-slate-500" />
-                <span className="text-[11px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">System</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        {/* User Profile Avatar Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-3 pl-2 sm:pl-3 border-l border-slate-200 dark:border-slate-800 group outline-none">
+              <div className="text-right hidden sm:block">
+                <p className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-none group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                  {profile?.name || 'Trader'}
+                </p>
+                <p className="text-[10px] text-slate-400 font-semibold tracking-wider uppercase mt-1">
+                  {profile?.verificationStatus === 'APPROVED' ? 'Verified Trader' : 'Trader'}
+                </p>
+              </div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className="flex items-center gap-3 pl-2 sm:pl-4 border-l border-slate-200 dark:border-slate-800 group outline-none"
-              >
-                <div className="text-right hidden sm:block">
-                  <p className="text-xs font-black text-slate-900 dark:text-slate-100 leading-none uppercase tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                    {profile?.name || 'Trader'}
-                  </p>
-                  <p className="text-[9px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-[0.2em] mt-1">
-                    Authorized
-                  </p>
+              {/* Avatar with Initials & Online Status Dot */}
+              <div className="relative">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-950 text-white dark:bg-white dark:text-slate-950 text-xs font-bold shadow-sm ring-2 ring-slate-100 dark:ring-slate-800 group-hover:scale-105 transition-transform">
+                  {userInitials}
                 </div>
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 dark:bg-slate-950 text-white shadow-lg ring-2 ring-white dark:ring-slate-800 relative border dark:border-slate-800">
-                  <User className="h-4 w-4" />
-                  <div className="absolute -bottom-1 -right-1 h-3 w-3 bg-emerald-500 border-2 border-white dark:border-slate-800 rounded-full" />
-                </div>
-                <ChevronDown className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600 transition-colors hidden sm:block" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 mt-2 rounded-[1.5rem] shadow-xl border-slate-100 dark:border-slate-800 p-2 overflow-hidden bg-white dark:bg-background">
-              <DropdownMenuLabel className="px-3 py-3">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-tight">{profile?.name || 'Trader'}</p>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold truncate uppercase tracking-widest">{profile?.email || 'Authorized User'}</p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator className="mx-1 bg-slate-50 dark:bg-slate-800" />
-              <DropdownMenuItem
-                onClick={() => router.push('/portal/profile')}
-                className="rounded-xl cursor-pointer focus:bg-slate-50 dark:focus:bg-slate-900 transition-colors py-2.5 px-3 group"
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 mr-3 group-hover:bg-blue-600 dark:group-hover:bg-blue-500 group-hover:text-white transition-all">
-                  <User className="h-4 w-4" />
-                </div>
-                <span className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-widest">My Profile</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => router.push('/portal/settings')}
-                className="rounded-xl cursor-pointer focus:bg-slate-50 dark:focus:bg-slate-900 transition-colors py-2.5 px-3 group"
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 mr-3 group-hover:bg-slate-900 dark:group-hover:bg-slate-700 group-hover:text-white transition-all">
-                  <Settings className="h-4 w-4 text-inherit" />
-                </div>
-                <span className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-widest">Settings</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="mx-1 bg-slate-50 dark:bg-slate-800" />
-              <DropdownMenuItem
-                onClick={handleLogout}
-                className="rounded-xl cursor-pointer focus:bg-rose-50 text-rose-600 font-black py-2.5 px-3 group mt-1"
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-rose-600 mr-3 group-hover:bg-rose-600 group-hover:text-white transition-all">
-                  <LogOut className="h-4 w-4" />
-                </div>
-                <span className="text-xs uppercase tracking-widest">Sign Out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+                <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 bg-emerald-500 border-2 border-white dark:border-slate-950 rounded-full" />
+              </div>
+
+              <ChevronDown className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-colors hidden sm:block" />
+            </button>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent align="end" className="w-60 rounded-2xl shadow-xl border-slate-200/80 dark:border-slate-800 p-2 bg-white dark:bg-slate-950">
+            <DropdownMenuLabel className="px-3 py-2.5">
+              <p className="text-xs font-black text-slate-900 dark:text-slate-100">{profile?.name || 'Trader'}</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">{profile?.email || 'trader@atms.com'}</p>
+            </DropdownMenuLabel>
+
+            <DropdownMenuSeparator className="my-1 bg-slate-100 dark:bg-slate-800" />
+
+            {/* Quick settings links inside profile dropdown */}
+            <DropdownMenuItem
+              onClick={() => router.push('/portal/settings/profile')}
+              className="rounded-xl cursor-pointer py-2.5 px-3 flex items-center gap-3 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900"
+            >
+              <User className="h-4 w-4 text-slate-400" />
+              <span>Profile Settings</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={() => router.push('/portal/settings/security')}
+              className="rounded-xl cursor-pointer py-2.5 px-3 flex items-center gap-3 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900"
+            >
+              <Lock className="h-4 w-4 text-slate-400" />
+              <span>Security & Password</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={() => router.push('/portal/settings/preferences')}
+              className="rounded-xl cursor-pointer py-2.5 px-3 flex items-center gap-3 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900"
+            >
+              <Bell className="h-4 w-4 text-slate-400" />
+              <span>Preferences & Alerts</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator className="my-1 bg-slate-100 dark:bg-slate-800" />
+
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="rounded-xl cursor-pointer py-2.5 px-3 flex items-center gap-3 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Sign Out</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );
