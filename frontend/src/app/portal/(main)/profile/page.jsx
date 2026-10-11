@@ -38,7 +38,7 @@ export default function ProfilePage() {
 
   const fetchProfile = () => {
     setLoading(true);
-    axios
+    api
       .get(`/api/user/profile`)
       .then((res) => {
         setProfile(res.data);

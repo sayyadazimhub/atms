@@ -29,7 +29,7 @@ export default function ProvidersPage() {
 
   const fetchProviders = () => {
     setLoading(true);
-    axios
+    api
       .get(`/api/user/providers?page=${pagination.page}&search=${search}`)
       .then((res) => {
         setProviders(res.data.providers || []);

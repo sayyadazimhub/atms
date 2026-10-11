@@ -28,7 +28,7 @@ export default function ProductsPage() {
 
   const fetchProducts = () => {
     setLoading(true);
-    axios
+    api
       .get(`/api/user/products?page=${pagination.page}&search=${search}`)
       .then((res) => {
         setProducts(res.data.products);

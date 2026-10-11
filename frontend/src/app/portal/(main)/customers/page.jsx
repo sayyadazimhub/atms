@@ -29,7 +29,7 @@ export default function CustomersPage() {
 
   const fetchCustomers = () => {
     setLoading(true);
-    axios
+    api
       .get(`/api/user/customers?page=${pagination.page}&search=${search}`)
       .then((res) => {
         setCustomers(res.data.customers || []);

@@ -42,7 +42,7 @@ export default function StockMonitorPage() {
 
   const fetchProducts = () => {
     setLoading(true);
-    axios
+    api
       .get(`/api/user/products?page=${pagination.page}&search=${search}&limit=50`)
       .then((res) => {
         setProducts(res.data.products);
