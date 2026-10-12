@@ -143,7 +143,7 @@ export default function SecuritySettingsPage() {
                   <Button
                     type="submit"
                     disabled={loading || !passwords.current || !passwords.next || !passwords.confirm}
-                    className="h-11 px-8 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-bold text-xs uppercase tracking-wider shadow-sm transition-all"
+                    className="h-11 px-8 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-emerald-500/20 transition-all cursor-pointer disabled:opacity-50"
                   >
                     {loading ? 'Updating Password...' : 'Update Password'}
                   </Button>

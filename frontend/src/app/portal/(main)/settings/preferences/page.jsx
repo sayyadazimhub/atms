@@ -176,7 +176,7 @@ export default function PreferencesSettingsPage() {
                 <Button
                   onClick={handleSave}
                   disabled={loading}
-                  className="h-10 px-6 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-bold text-xs uppercase tracking-wider shadow-sm transition-all flex items-center gap-2"
+                  className="h-10 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-emerald-500/20 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   <Save className="h-4 w-4" />
                   {loading ? 'Saving...' : 'Save Preferences'}

@@ -20,13 +20,15 @@ import {
   Filter,
   CheckCircle2,
   Wallet,
-  Truck
+  Truck,
+  ChevronDown
 } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { cn } from '@/lib/utils';
 import { toast } from 'react-hot-toast';
 import { ConfirmModal } from '@/components/portal/ConfirmModal';
 import { PageHeader } from '@/components/portal/PageHeader';
+import { CustomSelect } from '@/components/ui/custom-select';
 
 export default function PurchasesPage() {
   const [purchases, setPurchases] = useState([]);
@@ -699,123 +701,151 @@ export default function PurchasesPage() {
       {/* Create Purchase Modal */}
       <Dialog.Root open={showCreateModal} onOpenChange={setShowCreateModal}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm" />
-          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-4xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white dark:bg-slate-950 shadow-xl max-h-[90vh] overflow-y-auto border dark:border-slate-800">
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[95vw] sm:w-full max-w-4xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white dark:bg-slate-950 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
 
             {/* Header */}
-            <div className="bg-slate-900 p-6 text-white flex justify-between items-center rounded-t-2xl">
-              <div className="flex items-center gap-3">
-                <div className="p-3 rounded-2xl bg-blue-500">
+            <div className="sticky top-0 z-20 shrink-0 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-5 sm:p-6 flex justify-between items-center rounded-t-2xl shadow-xs relative">
+              <div className="flex items-center gap-3.5">
+                <div className="p-2.5 sm:p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/60 shadow-xs">
                   <ShoppingCart className="h-6 w-6" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">New Purchase</h2>
-                  <p className="text-sm text-slate-400">Record inventory acquisition</p>
+                  <Dialog.Title className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                    New Purchase
+                  </Dialog.Title>
+                  <Dialog.Description className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-normal">
+                    Record inventory acquisition and supplier bill
+                  </Dialog.Description>
                 </div>
               </div>
               <Dialog.Close asChild>
-                <button className="p-2 rounded-lg hover:bg-white/10">
+                <button
+                  type="button"
+                  className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+                  aria-label="Close dialog"
+                >
                   <X className="h-5 w-5" />
                 </button>
               </Dialog.Close>
+              <div className="absolute -bottom-px left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500 to-transparent" />
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6 p-6">
-              <div className="space-y-2">
-                <Label htmlFor="provider" className="text-sm font-medium dark:text-slate-300">Select Provider *</Label>
-                <select
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
+              {/* Provider Selection */}
+              <div className="space-y-1.5">
+                <Label htmlFor="provider" className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Select Provider <span className="text-rose-500">*</span>
+                </Label>
+                <CustomSelect
                   id="provider"
-                  className="flex h-10 w-full rounded-lg border border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-slate-100"
                   value={formData.providerId}
                   onChange={(e) => setFormData({ ...formData, providerId: e.target.value })}
-                  required
-                >
-                  <option value="">Choose Provider</option>
-                  {providers.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="Choose Provider"
+                  options={providers.map((p) => ({ value: p.id, label: p.name }))}
+                />
               </div>
 
-              <div className="space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b dark:border-slate-800">
-                  <Label className="text-sm font-medium dark:text-slate-300">Products & Items *</Label>
+              {/* Items Section */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                      Purchase Items <span className="text-rose-500">*</span>
+                    </Label>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold">
+                      {formData.items.length}
+                    </span>
+                  </div>
                   <Button
                     type="button"
                     size="sm"
                     onClick={addItem}
-                    className="rounded-lg bg-blue-500 dark:bg-blue-500 text-white dark:text-white hover:bg-blue-600 dark:hover:bg-blue-600 transition-colors"
+                    className="h-8 sm:h-9 px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-xs shadow-sm shadow-emerald-500/10 transition-all cursor-pointer"
                   >
-                    <Plus className="mr-2 h-4 w-4" />
+                    <Plus className="mr-1.5 h-3.5 w-3.5" />
                     Add Item
                   </Button>
                 </div>
 
                 <div className="space-y-3">
                   {formData.items.map((item, index) => (
-                    <div key={index} className="grid gap-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-4 sm:grid-cols-12">
-                      <div className="sm:col-span-5">
-                        <Label className="text-xs font-medium mb-1 block dark:text-slate-400">Product</Label>
-                        <select
-                          className="flex h-10 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-slate-100"
-                          value={item.productId}
-                          onChange={(e) => updateItem(index, 'productId', e.target.value)}
-                          required
-                        >
-                          <option value="">Select Product</option>
-                          {products.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.name} ({p.unit})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="sm:col-span-3">
-                        <Label className="text-xs font-medium mb-1 block dark:text-slate-400">Quantity</Label>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          min="0"
-                          className="h-10 rounded-lg"
-                          value={item.quantity}
-                          placeholder="0.00"
-                          onChange={(e) => updateItem(index, 'quantity', e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="sm:col-span-3">
-                        <Label className="text-xs font-medium mb-1 block dark:text-slate-400">Unit Price (₹)</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          className="h-10 rounded-lg"
-                          value={item.unitPrice}
-                          placeholder="₹ 0.00"
-                          onChange={(e) => updateItem(index, 'unitPrice', e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="sm:col-span-1 flex items-end justify-center">
+                    <div
+                      key={index}
+                      className="rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/60 dark:bg-slate-900/40 p-3.5 sm:p-4 space-y-3 transition-colors hover:border-slate-300 dark:hover:border-slate-700"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                          Item #{index + 1}
+                        </span>
                         {formData.items.length > 1 && (
                           <Button
                             type="button"
                             variant="ghost"
-                            size="icon"
-                            className="h-11 w-11 rounded-xl text-rose-500 hover:bg-rose-50 hover:text-rose-600"
+                            size="sm"
+                            className="h-7 px-2.5 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg text-xs font-medium transition-colors cursor-pointer"
                             onClick={() => removeItem(index)}
                           >
-                            <Trash2 className="h-5 w-5" />
+                            <Trash2 className="h-3.5 w-3.5 mr-1" />
+                            Remove
                           </Button>
                         )}
                       </div>
+
+                      <div className="grid gap-3 sm:grid-cols-12">
+                        {/* Product */}
+                        <div className="sm:col-span-6 space-y-1">
+                          <Label className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Product</Label>
+                          <CustomSelect
+                            value={item.productId}
+                            onChange={(e) => updateItem(index, 'productId', e.target.value)}
+                            placeholder="Select Product"
+                            options={products.map((p) => ({ value: p.id, label: `${p.name} (${p.unit})` }))}
+                          />
+                        </div>
+
+                        {/* Quantity */}
+                        <div className="sm:col-span-3 space-y-1">
+                          <Label className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Quantity</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            className="h-11 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-medium text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                            value={item.quantity}
+                            placeholder="0.00"
+                            onChange={(e) => updateItem(index, 'quantity', e.target.value)}
+                            required
+                          />
+                        </div>
+
+                        {/* Unit Price */}
+                        <div className="sm:col-span-3 space-y-1">
+                          <Label className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Unit Cost (₹)</Label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">₹</span>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              className="h-11 pl-7 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-medium text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                              value={item.unitPrice}
+                              placeholder="0.00"
+                              onChange={(e) => updateItem(index, 'unitPrice', e.target.value)}
+                              required
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Subtotal row */}
                       {item.quantity && item.unitPrice && (
-                        <div className="sm:col-span-12 flex justify-end items-center">
-                          <div className="bg-white dark:bg-slate-900 px-3 py-1 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
-                            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mr-2">Subtotal:</span>
-                            <span className="text-sm font-black text-slate-900 dark:text-slate-100">₹{(parseFloat(item.quantity || 0) * parseFloat(item.unitPrice || 0)).toLocaleString('en-IN')}</span>
+                        <div className="flex justify-end pt-1">
+                          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Item Subtotal:</span>
+                            <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                              ₹{(parseFloat(item.quantity || 0) * parseFloat(item.unitPrice || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </span>
                           </div>
                         </div>
                       )}
@@ -824,36 +854,51 @@ export default function PurchasesPage() {
                 </div>
               </div>
 
-              <div className="grid gap-8 lg:grid-cols-2 lg:items-end">
-                <div className="space-y-3">
-                  <Label htmlFor="paidAmount" className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Initial Payment (₹)</Label>
-                  <Input
-                    id="paidAmount"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    className="h-14 rounded-2xl border-blue-200 dark:border-blue-800 text-xl font-black text-blue-600 dark:text-blue-500 px-6 bg-blue-50/30 dark:bg-blue-950/20 placeholder:text-blue-300 dark:placeholder:text-blue-500 shadow-inner focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                    placeholder="₹ 0.00"
-                    value={formData.paidAmount}
-                    onChange={(e) => setFormData({ ...formData, paidAmount: e.target.value })}
-                    required
-                  />
+              {/* Payment & Bill Summary */}
+              <div className="grid gap-4 sm:grid-cols-12 sm:items-stretch">
+                {/* Initial Payment Input */}
+                <div className="sm:col-span-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/40 p-4 sm:p-5 flex flex-col justify-between space-y-3">
+                  <div>
+                    <Label htmlFor="paidAmount" className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-1">
+                      Initial Advance Paid (₹) <span className="text-rose-500">*</span>
+                    </Label>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Amount paid upfront to provider at purchase
+                    </p>
+                  </div>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">₹</span>
+                    <Input
+                      id="paidAmount"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="h-11 sm:h-12 pl-8 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-base font-bold text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-xs transition-all"
+                      placeholder="0.00"
+                      value={formData.paidAmount}
+                      onChange={(e) => setFormData({ ...formData, paidAmount: e.target.value })}
+                      required
+                    />
+                  </div>
                 </div>
 
-                <div className="rounded-[2rem] bg-slate-900 dark:bg-slate-950 p-8 text-white space-y-4 shadow-xl border dark:border-slate-800">
-                  <div className="flex justify-between items-center text-slate-400 dark:text-slate-500">
-                    <span className="text-[10px] font-black uppercase tracking-widest">Gross Bill</span>
-                    <span className="font-bold">₹{totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                {/* Summary Card */}
+                <div className="sm:col-span-7 rounded-2xl bg-slate-900 dark:bg-slate-950 p-5 text-white space-y-3 border border-slate-800 shadow-xl flex flex-col justify-between">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center text-slate-400 text-xs font-medium">
+                      <span className="uppercase tracking-wider text-[10px] font-bold">Gross Bill</span>
+                      <span className="text-sm font-bold text-white">₹{totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-slate-400 text-xs font-medium pb-2.5 border-b border-slate-800">
+                      <span className="uppercase tracking-wider text-[10px] font-bold">Advance Paid</span>
+                      <span className="text-sm font-bold text-emerald-400">₹{paidAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center text-slate-400 pb-4 border-b border-white/10">
-                    <span className="text-[10px] font-black uppercase tracking-widest">Advance Paid</span>
-                    <span className="font-bold">₹{paidAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between items-center pt-2">
-                    <span className="text-sm font-black uppercase tracking-widest">Balance Payable</span>
+                  <div className="flex justify-between items-center pt-1">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-300">Balance Payable</span>
                     <span className={cn(
-                      "text-2xl font-black",
-                      dueAmount > 0 ? 'text-rose-400' : 'text-blue-500'
+                      "text-xl sm:text-2xl font-black",
+                      dueAmount > 0 ? 'text-amber-400' : 'text-emerald-400'
                     )}>
                       ₹{dueAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </span>
@@ -861,161 +906,143 @@ export default function PurchasesPage() {
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+              {/* Modal Actions */}
+              <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full sm:w-auto rounded-xl h-11 px-5 sm:px-6 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 font-semibold text-xs sm:text-sm transition-all cursor-pointer"
+                  onClick={() => setShowCreateModal(false)}
+                >
+                  Cancel
+                </Button>
                 <Button
                   type="submit"
                   disabled={submitting}
-                  className="h-14 rounded-2xl bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 font-black text-lg flex-1 transition-all border-none disabled:opacity-50"
+                  className="w-full sm:w-auto rounded-xl h-11 px-6 sm:px-7 font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-md shadow-emerald-500/20 text-xs sm:text-sm transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {submitting ? 'Recording Purchase...' : 'Confirm Purchase'}
-                </Button>
-                <Button
-                  type="button"
-                  size="lg"
-                  variant="outline"
-                  className="h-14 rounded-2xl px-8 font-black text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 uppercase tracking-widest text-[10px]"
-                  onClick={() => setShowCreateModal(false)}
-                >
-                  Discard Entry
                 </Button>
               </div>
             </form>
           </Dialog.Content>
-
         </Dialog.Portal>
       </Dialog.Root>
 
       {/* Edit Purchase Modal */}
       <Dialog.Root open={showEditModal} onOpenChange={setShowEditModal}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm" />
-          <Dialog.Content
-            className="fixed left-1/2 top-1/2 z-50 w-full max-w-md
-  -translate-x-1/2 -translate-y-1/2
-  rounded-2xl bg-white dark:bg-slate-950 shadow-xl border dark:border-slate-800 overflow-hidden"
-          >
-
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[95vw] sm:w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white dark:bg-slate-950 shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] flex flex-col overflow-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
             {/* Header */}
-            <div className="flex flex-col items-center bg-slate-900 text-white p-4 rounded-t-2xl text-center mb-8">
-
-              <div className="p-3 rounded-2xl bg-orange-500 text-white mb-2">
-                <Wallet className="h-6 w-6" />
+            <div className="sticky top-0 z-20 shrink-0 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-5 sm:p-6 flex justify-between items-center rounded-t-2xl shadow-xs relative">
+              <div className="flex items-center gap-3.5">
+                <div className="p-2.5 sm:p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/60 shadow-xs">
+                  <Wallet className="h-6 w-6" />
+                </div>
+                <div>
+                  <Dialog.Title className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                    Update Payment
+                  </Dialog.Title>
+                  <Dialog.Description className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-normal">
+                    Adjust procurement outlay & outstanding balance
+                  </Dialog.Description>
+                </div>
               </div>
-
-              <h2 className="text-xl font-bold">
-                Payment Update
-              </h2>
-
-              <p className="text-sm mt-1">
-                Adjust Collection Status
-              </p>
-
+              <Dialog.Close asChild>
+                <button
+                  type="button"
+                  className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+                  aria-label="Close dialog"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </Dialog.Close>
+              <div className="absolute -bottom-px left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500 to-transparent" />
             </div>
 
-            <form onSubmit={handleUpdatePurchase} className="space-y-6 p-8">
-
-              {/* Total */}
-              <div className="space-y-2">
-
-                <Label className="text-sm font-medium text-black dark:text-slate-300">
-                  Total Amount
+            <form onSubmit={handleUpdatePurchase} className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-5">
+              {/* Total Card */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Gross Purchase Bill
                 </Label>
-
-                <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-4 text-center">
-
-                  <p className="text-xs text-black dark:text-slate-400 mb-1">
-                    Bill Total
+                <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-4 text-center">
+                  <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
+                    Order Total
                   </p>
-
-                  <span className="text-2xl font-semibold text-black dark:text-white">
-                    ₹{editFormData.totalAmount.toLocaleString("en-IN")}
+                  <span className="text-2xl font-black text-slate-900 dark:text-white">
+                    ₹{Number(editFormData.totalAmount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                   </span>
-
                 </div>
-
               </div>
 
-              {/* Paid */}
-              <div className="space-y-2">
-
+              {/* Paid Input */}
+              <div className="space-y-1.5">
                 <Label
                   htmlFor="editPaidAmount"
-                  className="text-sm font-medium text-slate-600 dark:text-slate-400"
+                  className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider"
                 >
-                  Paid Amount (₹)
+                  Paid Amount (₹) <span className="text-rose-500">*</span>
                 </Label>
-
-                <Input
-                  id="editPaidAmount"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  className="h-11 rounded-xl border-slate-200 px-4 focus:ring-2 focus:ring-emerald-500"
-                  value={editFormData.paidAmount}
-                  onChange={(e) =>
-                    setEditFormData({
-                      ...editFormData,
-                      paidAmount: e.target.value,
-                    })
-                  }
-                  required
-                />
-
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">₹</span>
+                  <Input
+                    id="editPaidAmount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    className="h-11 sm:h-12 pl-8 rounded-xl border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 focus:bg-white dark:focus:bg-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:text-slate-100 font-bold text-base transition-all"
+                    value={editFormData.paidAmount}
+                    onChange={(e) =>
+                      setEditFormData({
+                        ...editFormData,
+                        paidAmount: e.target.value,
+                      })
+                    }
+                    required
+                  />
+                </div>
               </div>
 
-              {/* Balance */}
-              <div
-                className="rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800
-      p-4 flex justify-between items-center"
-              >
-
-                <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                  Balance Due
+              {/* Balance Card */}
+              <div className="rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 p-4 flex justify-between items-center">
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                  Balance Payable
                 </span>
-
                 <span
                   className={cn(
-                    "font-semibold",
-                    editFormData.totalAmount - editFormData.paidAmount > 0
-                      ? "text-rose-500 dark:text-rose-400"
-                      : "text-emerald-600 dark:text-emerald-500"
+                    "font-black text-base sm:text-lg",
+                    (Number(editFormData.totalAmount) - parseFloat(editFormData.paidAmount || 0)) > 0
+                      ? "text-rose-600 dark:text-rose-400"
+                      : "text-emerald-600 dark:text-emerald-400"
                   )}
                 >
-                  ₹{(
-                    editFormData.totalAmount -
-                    parseFloat(editFormData.paidAmount || 0)
-                  ).toLocaleString("en-IN")}
+                  ₹{Math.max(0, Number(editFormData.totalAmount) - parseFloat(editFormData.paidAmount || 0)).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </span>
-
               </div>
 
-              {/* Actions */}
-              <div className="flex flex-col gap-3 pt-4 border-t dark:border-slate-800">
-
-                <Button
-                  type="submit"
-                  disabled={submitting}
-                  className="h-12 rounded-xl font-semibold bg-slate-900 dark:bg-slate-100 dark:text-slate-950"
-                >
-                  {submitting ? "Updating..." : "Save Changes"}
-                </Button>
-
+              {/* Responsive Actions */}
+              <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setShowEditModal(false)}
-                  className="h-11 rounded-xl border-slate-200 dark:border-slate-800"
+                  className="w-full sm:w-auto rounded-xl h-11 px-5 sm:px-6 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 font-semibold text-xs sm:text-sm transition-all cursor-pointer"
                 >
                   Cancel
                 </Button>
-
+                <Button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full sm:w-auto rounded-xl h-11 px-6 sm:px-7 font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-md shadow-emerald-500/20 text-xs sm:text-sm transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  {submitting ? "Updating..." : "Save Payment"}
+                </Button>
               </div>
-
             </form>
-
           </Dialog.Content>
-
         </Dialog.Portal>
       </Dialog.Root>
 
@@ -1024,29 +1051,39 @@ export default function PurchasesPage() {
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm" />
           <Dialog.Content
-            className="fixed left-1/2 top-1/2 z-50 w-full max-w-2xl
-  -translate-x-1/2 -translate-y-1/2
-  rounded-2xl bg-white dark:bg-slate-950 shadow-xl overflow-hidden border dark:border-slate-800"
+            className="fixed left-1/2 top-1/2 z-50 w-[95vw] sm:w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white dark:bg-slate-950 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800"
           >
             {selectedPurchase && (
               <>
                 {/* Header */}
-                <div className="bg-slate-900 p-6 text-white flex justify-between items-start">
-                  <div>
-                    <h2 className="text-xl font-bold text-white">
-                      Purchase Invoice
-                    </h2>
-                    <p className="text-sm text-slate-400">
-                      Ref: {selectedPurchase.id.slice(-8).toUpperCase()}
-                    </p>
+                <div className="sticky top-0 z-20 shrink-0 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-5 sm:p-6 flex justify-between items-center rounded-t-2xl shadow-xs relative">
+                  <div className="flex items-center gap-3.5">
+                    <div className="p-2.5 sm:p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/60 shadow-xs">
+                      <ShoppingCart className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <Dialog.Title className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                        Purchase Invoice
+                      </Dialog.Title>
+                      <Dialog.Description className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-normal">
+                        Ref: {selectedPurchase.id.slice(-8).toUpperCase()}
+                      </Dialog.Description>
+                    </div>
                   </div>
-                  <Dialog.Close className="p-2 rounded-lg hover:bg-white/10">
-                    <X className="h-5 w-5" />
+                  <Dialog.Close asChild>
+                    <button
+                      type="button"
+                      className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+                      aria-label="Close dialog"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
                   </Dialog.Close>
+                  <div className="absolute -bottom-px left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500 to-transparent" />
                 </div>
 
                 {/* Body */}
-                <div className="p-6 space-y-6">
+                <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
 
                   {/* Meta */}
                   <div className="grid grid-cols-2 gap-6">
@@ -1200,20 +1237,20 @@ export default function PurchasesPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t dark:border-slate-800">
+                  <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
 
                     <Button
                       onClick={handlePrintBill}
-                      className="flex-1 h-14 rounded-2xl bg-slate-900 dark:bg-slate-100 dark:text-slate-950 hover:bg-slate-800 dark:hover:bg-slate-200 text-white font-black text-lg transition-all flex items-center justify-center gap-2 border-none"
+                      className="flex-1 h-11 sm:h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-sm shadow-md shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      <Printer className="h-5 w-5" />
+                      <Printer className="h-4 w-4" />
                       Print Statement
                     </Button>
 
                     <Dialog.Close asChild>
                       <Button
                         variant="outline"
-                        className="h-14 rounded-2xl px-8 font-black text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 uppercase tracking-widest text-[10px] transition-all"
+                        className="h-11 sm:h-12 rounded-xl px-6 font-semibold text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 text-xs sm:text-sm transition-all cursor-pointer"
                       >
                         Close
                       </Button>

@@ -167,21 +167,22 @@ export default function DashboardPage() {
         icon={LayoutDashboard}
         actionButton={
           <div className="flex flex-wrap items-center gap-2.5">
-            <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl px-3 h-10 shadow-sm">
-              <Calendar className="h-4 w-4 text-slate-400" />
-              <Select value={period} onValueChange={setPeriod}>
-                <SelectTrigger className="border-0 shadow-none p-0 h-auto text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-0 w-[120px]">
+            {/* Timeframe Selector */}
+            <Select value={period} onValueChange={setPeriod}>
+              <SelectTrigger className="h-10 w-[155px] rounded-xl px-3 border border-slate-200/80 dark:border-slate-800 text-xs font-bold bg-white dark:bg-slate-900 focus:bg-white dark:focus:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-slate-400 shrink-0" />
                   <SelectValue placeholder="Period" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl bg-white dark:bg-slate-900">
-                  <SelectItem value="today" className="text-xs font-semibold">Today</SelectItem>
-                  <SelectItem value="weekly" className="text-xs font-semibold">Last 7 Days</SelectItem>
-                  <SelectItem value="month" className="text-xs font-semibold">This Month</SelectItem>
-                  <SelectItem value="30" className="text-xs font-semibold">Last 30 Days</SelectItem>
-                  <SelectItem value="year" className="text-xs font-semibold">This Year</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                </div>
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl dark:bg-slate-900">
+                <SelectItem value="today" className="text-xs font-semibold">Today</SelectItem>
+                <SelectItem value="weekly" className="text-xs font-semibold">Last 7 Days</SelectItem>
+                <SelectItem value="month" className="text-xs font-semibold">This Month</SelectItem>
+                <SelectItem value="30" className="text-xs font-semibold">Last 30 Days</SelectItem>
+                <SelectItem value="year" className="text-xs font-semibold">This Year</SelectItem>
+              </SelectContent>
+            </Select>
 
             <Link href="/portal/reports">
               <Button

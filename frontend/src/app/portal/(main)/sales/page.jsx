@@ -19,13 +19,15 @@ import {
     Wallet,
     Eye,
     Pencil,
-    ArrowUpRight
+    ArrowUpRight,
+    ChevronDown
 } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { ConfirmModal } from '@/components/portal/ConfirmModal';
 import { PageHeader } from '@/components/portal/PageHeader';
+import { CustomSelect } from '@/components/ui/custom-select';
 
 export default function SalesPage() {
     const [sales, setSales] = useState([]);
@@ -791,56 +793,69 @@ export default function SalesPage() {
             {/* Create Sale Modal */}
             <Dialog.Root open={showCreateModal} onOpenChange={setShowCreateModal}>
                 <Dialog.Portal>
-                    <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm" />
-                    <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-4xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white dark:bg-slate-950 shadow-xl max-h-[90vh] overflow-y-auto border dark:border-slate-800">
+                    <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+                    <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[95vw] sm:w-full max-w-4xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white dark:bg-slate-950 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
 
                         {/* Header */}
-                        <div className="bg-slate-900 p-6 text-white flex justify-between items-center rounded-t-2xl">
-                            <div className="flex items-center gap-3">
-                                <div className="p-3 rounded-2xl bg-emerald-500">
+                        <div className="sticky top-0 z-20 shrink-0 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-5 sm:p-6 flex justify-between items-center rounded-t-2xl shadow-xs relative">
+                            <div className="flex items-center gap-3.5">
+                                <div className="p-2.5 sm:p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/60 shadow-xs">
                                     <BadgeDollarSign className="h-6 w-6" />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-bold">New Sale</h2>
-                                    <p className="text-sm text-slate-400">Create customer invoice</p>
+                                    <Dialog.Title className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                                        New Sale Invoice
+                                    </Dialog.Title>
+                                    <Dialog.Description className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-normal">
+                                        Issue customer sale invoice & track revenue
+                                    </Dialog.Description>
                                 </div>
                             </div>
                             <Dialog.Close asChild>
-                                <button className="p-2 rounded-lg hover:bg-white/10">
+                                <button
+                                    type="button"
+                                    className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+                                    aria-label="Close dialog"
+                                >
                                     <X className="h-5 w-5" />
                                 </button>
                             </Dialog.Close>
+                            <div className="absolute -bottom-px left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500 to-transparent" />
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-6 p-6">
-                            <div className="space-y-2">
-                                <Label htmlFor="customer" className="text-sm font-medium dark:text-slate-300">Select Customer *</Label>
-                                <select
+                        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
+                            {/* Customer Selection */}
+                            <div className="space-y-1.5">
+                                <Label htmlFor="customer" className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                                    Select Customer <span className="text-rose-500">*</span>
+                                </Label>
+                                <CustomSelect
                                     id="customer"
-                                    className="flex h-10 w-full rounded-lg border border-emerald-200 dark:border-emerald-900/50 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-900 dark:text-slate-100"
                                     value={formData.customerId}
                                     onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
-                                    required
-                                >
-                                    <option value="">Choose a Customer</option>
-                                    {customers.map((customer) => (
-                                        <option key={customer.id} value={customer.id}>
-                                            {customer.name}
-                                        </option>
-                                    ))}
-                                </select>
+                                    placeholder="Choose a Customer"
+                                    options={customers.map((c) => ({ value: c.id, label: c.name, sublabel: c.phone }))}
+                                />
                             </div>
 
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between pb-3 border-b dark:border-slate-800">
-                                    <Label className="text-sm font-medium dark:text-slate-300">Products & Items *</Label>
+                            {/* Items Section */}
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                                    <div className="flex items-center gap-2">
+                                        <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                                            Sale Items <span className="text-rose-500">*</span>
+                                        </Label>
+                                        <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold">
+                                            {formData.items.length}
+                                        </span>
+                                    </div>
                                     <Button
                                         type="button"
                                         size="sm"
                                         onClick={addItem}
-                                        className="rounded-lg bg-emerald-500 dark:bg-emerald-500 text-white dark:text-white hover:bg-emerald-600 dark:hover:bg-emerald-600 transition-colors"
+                                        className="h-8 sm:h-9 px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-xs shadow-sm shadow-emerald-500/10 transition-all cursor-pointer"
                                     >
-                                        <Plus className="mr-2 h-4 w-4" />
+                                        <Plus className="mr-1.5 h-3.5 w-3.5" />
                                         Add Item
                                     </Button>
                                 </div>
@@ -851,112 +866,113 @@ export default function SalesPage() {
                                         const product = products.find(p => p.id === item.productId);
 
                                         return (
-                                            <div key={index} className="grid gap-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-4 sm:grid-cols-12">
-                                                <div className="sm:col-span-3">
-                                                    <Label className="text-xs font-medium mb-1 block dark:text-slate-400">Product</Label>
-                                                    <select
-                                                        className="flex h-10 w-full rounded-lg border border-emerald-200 dark:border-emerald-900/50 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-900 dark:text-slate-100"
-                                                        value={item.productId}
-                                                        onChange={(e) => updateItem(index, 'productId', e.target.value)}
-                                                        required
-                                                    >
-                                                        <option value="">Select Item</option>
-                                                        {products.map((p) => (
-                                                            <option key={p.id} value={p.id}>
-                                                                {p.name} ({p.unit})
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                                <div className="sm:col-span-3">
-                                                    <Label className="text-xs font-medium mb-1 block dark:text-slate-400">Price/Batch</Label>
-                                                    <select
-                                                        className="flex h-10 w-full rounded-lg border border-emerald-200 dark:border-emerald-900/50 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-900 dark:text-slate-100 disabled:opacity-50"
-                                                        value={item.batchId}
-                                                        onChange={(e) => updateItem(index, 'batchId', e.target.value)}
-                                                        disabled={!item.productId || !product?.batches?.length}
-                                                    >
-                                                        <option value="">{product?.batches?.length ? 'FIFO (Oldest Stock)' : 'Standard Stock'}</option>
-                                                        {product?.batches?.map((b) => (
-                                                            <option key={b.id} value={b.id}>
-                                                                ₹{b.purchasePrice} (Qty: {b.quantity})
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                                <div className="sm:col-span-2">
-                                                    <Label className="text-xs font-medium mb-1 block">Quantity</Label>
-                                                    <Input
-                                                        type="number"
-                                                        step="0.01"
-                                                        min="0"
-                                                        className={cn(
-                                                            "h-10 rounded-lg border-emerald-200 dark:border-emerald-900/50 focus-visible:ring-emerald-500 focus-visible:border-emerald-500",
-                                                            stockError && "border-rose-500 focus:ring-rose-500"
-                                                        )}
-                                                        value={item.quantity}
-                                                        placeholder="0.00"
-                                                        onChange={(e) => updateItem(index, 'quantity', e.target.value)}
-                                                        required
-                                                    />
-                                                    {stockError && (
-                                                        <p className="text-xs text-rose-500 mt-1">{stockError}</p>
-                                                    )}
-                                                </div>
-                                                <div className="sm:col-span-3">
-                                                    <Label className="text-xs font-medium mb-1 block">Sale Price (₹)</Label>
-                                                    <Input
-                                                        type="number"
-                                                        step="0.01"
-                                                        min="0"
-                                                        className="h-10 rounded-lg border-emerald-200 dark:border-emerald-900/50 focus-visible:ring-emerald-500 focus-visible:border-emerald-500"
-                                                        value={item.salePrice}
-                                                        placeholder="₹ 0.00"
-                                                        onChange={(e) => updateItem(index, 'salePrice', e.target.value)}
-                                                        required
-                                                    />
-                                                </div>
-                                                <div className="sm:col-span-1 flex items-end justify-center">
+                                            <div
+                                                key={index}
+                                                className="rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/60 dark:bg-slate-900/40 p-3.5 sm:p-4 space-y-3 transition-colors hover:border-slate-300 dark:hover:border-slate-700"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                                        Item #{index + 1}
+                                                    </span>
                                                     {formData.items.length > 1 && (
                                                         <Button
                                                             type="button"
                                                             variant="ghost"
-                                                            size="icon"
-                                                            className="h-11 w-11 rounded-xl text-rose-500 hover:bg-rose-50 hover:text-rose-600"
+                                                            size="sm"
+                                                            className="h-7 px-2.5 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg text-xs font-medium transition-colors cursor-pointer"
                                                             onClick={() => removeItem(index)}
                                                         >
-                                                            <Trash2 className="h-5 w-5" />
+                                                            <Trash2 className="h-3.5 w-3.5 mr-1" />
+                                                            Remove
                                                         </Button>
                                                     )}
                                                 </div>
+
+                                                <div className="grid gap-3 sm:grid-cols-12">
+                                                    {/* Product */}
+                                                    <div className="sm:col-span-4 space-y-1">
+                                                        <Label className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Product</Label>
+                                                        <CustomSelect
+                                                            value={item.productId}
+                                                            onChange={(e) => updateItem(index, 'productId', e.target.value)}
+                                                            placeholder="Select Item"
+                                                            options={products.map((p) => ({ value: p.id, label: `${p.name} (${p.unit})` }))}
+                                                        />
+                                                    </div>
+
+                                                    {/* Batch */}
+                                                    <div className="sm:col-span-3 space-y-1">
+                                                        <Label className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Price / Batch</Label>
+                                                        <CustomSelect
+                                                            value={item.batchId}
+                                                            onChange={(e) => updateItem(index, 'batchId', e.target.value)}
+                                                            placeholder={product?.batches?.length ? 'FIFO (Oldest Stock)' : 'Standard Stock'}
+                                                            options={product?.batches?.map((b) => ({ value: b.id, label: `₹${b.purchasePrice} (Qty: ${b.quantity})` })) || []}
+                                                            disabled={!item.productId || !product?.batches?.length}
+                                                        />
+                                                    </div>
+
+                                                    {/* Quantity */}
+                                                    <div className="sm:col-span-2 space-y-1">
+                                                        <Label className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Quantity</Label>
+                                                        <Input
+                                                            type="number"
+                                                            step="0.01"
+                                                            min="0"
+                                                            className={cn(
+                                                                "h-11 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-medium text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all",
+                                                                stockError && "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20"
+                                                            )}
+                                                            value={item.quantity}
+                                                            placeholder="0.00"
+                                                            onChange={(e) => updateItem(index, 'quantity', e.target.value)}
+                                                            required
+                                                        />
+                                                        {stockError && (
+                                                            <p className="text-[10px] font-semibold text-rose-500 leading-tight">{stockError}</p>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Sale Price */}
+                                                    <div className="sm:col-span-3 space-y-1">
+                                                        <Label className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Sale Price (₹)</Label>
+                                                        <div className="relative">
+                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">₹</span>
+                                                            <Input
+                                                                type="number"
+                                                                step="0.01"
+                                                                min="0"
+                                                                className="h-11 pl-7 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-medium text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                                                                value={item.salePrice}
+                                                                placeholder="0.00"
+                                                                onChange={(e) => updateItem(index, 'salePrice', e.target.value)}
+                                                                required
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Subtotal & Profit/Loss row */}
                                                 {item.quantity && item.salePrice && (
-                                                    <div className="sm:col-span-12 flex justify-between items-center">
-                                                        <div className="bg-white dark:bg-slate-900 px-3 py-1 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
-                                                            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mr-2">Subtotal:</span>
-                                                            <span className="text-sm font-black text-slate-900 dark:text-slate-100">₹{(parseFloat(item.quantity || 0) * parseFloat(item.salePrice || 0)).toLocaleString('en-IN')}</span>
+                                                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                                                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+                                                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Item Subtotal:</span>
+                                                            <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                                                                ₹{(parseFloat(item.quantity || 0) * parseFloat(item.salePrice || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                            </span>
                                                         </div>
                                                         {item.costPrice > 0 && (
                                                             <div className={cn(
-                                                                "px-3 py-1 rounded-lg border shadow-sm",
+                                                                "inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border text-xs font-bold shadow-xs",
                                                                 (parseFloat(item.salePrice) - parseFloat(item.costPrice)) >= 0
-                                                                    ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-900/50"
-                                                                    : "bg-rose-50 dark:bg-rose-900/20 border-rose-100 dark:border-rose-900/50"
+                                                                    ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400"
+                                                                    : "bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-400"
                                                             )}>
-                                                                <span className={cn(
-                                                                    "text-[10px] font-black uppercase tracking-widest mr-2",
-                                                                    (parseFloat(item.salePrice) - parseFloat(item.costPrice)) >= 0
-                                                                        ? "text-emerald-400 dark:text-emerald-500"
-                                                                        : "text-rose-400 dark:text-rose-500"
-                                                                )}>
-                                                                    {(parseFloat(item.salePrice) - parseFloat(item.costPrice)) >= 0 ? "Profit:" : "Loss:"}
+                                                                <span className="text-[10px] uppercase tracking-wider opacity-75">
+                                                                    {(parseFloat(item.salePrice) - parseFloat(item.costPrice)) >= 0 ? "Margin:" : "Loss:"}
                                                                 </span>
-                                                                <span className={cn(
-                                                                    "text-sm font-black",
-                                                                    (parseFloat(item.salePrice) - parseFloat(item.costPrice)) >= 0
-                                                                        ? "text-emerald-700 dark:text-emerald-400"
-                                                                        : "text-rose-700 dark:text-rose-400"
-                                                                )}>
-                                                                    {parseFloat(item.salePrice) - parseFloat(item.costPrice) >= 0 ? "+" : "-"}₹{Math.abs(parseFloat(item.quantity) * (parseFloat(item.salePrice) - parseFloat(item.costPrice))).toLocaleString('en-IN')}
+                                                                <span>
+                                                                    {(parseFloat(item.salePrice) - parseFloat(item.costPrice)) >= 0 ? "+" : "-"}₹{Math.abs(parseFloat(item.quantity) * (parseFloat(item.salePrice) - parseFloat(item.costPrice))).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                                                 </span>
                                                             </div>
                                                         )}
@@ -968,74 +984,90 @@ export default function SalesPage() {
                                 </div>
                             </div>
 
-                            <div className="grid gap-8 lg:grid-cols-2 lg:items-end">
-                                <div className="space-y-3">
-                                    <Label htmlFor="paidAmount" className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Initial Payment (₹)</Label>
-                                    <Input
-                                        id="paidAmount"
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        autoFocus
-                                        className="h-14 rounded-2xl border-emerald-200 dark:border-emerald-800 text-xl font-black text-emerald-600 dark:text-emerald-500 px-6 bg-emerald-50/30 dark:bg-emerald-950/20 placeholder:text-emerald-300 dark:placeholder:text-emerald-700 shadow-inner focus-visible:ring-emerald-500 focus-visible:border-emerald-500"
-                                        placeholder="₹ 0.00"
-                                        value={formData.paidAmount}
-                                        onChange={(e) => setFormData({ ...formData, paidAmount: e.target.value })}
-                                        required
-                                    />
+                            {/* Payment & Summary Breakdown */}
+                            <div className="grid gap-4 sm:grid-cols-12 sm:items-stretch">
+                                {/* Initial Payment Input */}
+                                <div className="sm:col-span-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/40 p-4 sm:p-5 flex flex-col justify-between space-y-3">
+                                    <div>
+                                        <Label htmlFor="paidAmount" className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-1">
+                                            Initial Payment Received (₹) <span className="text-rose-500">*</span>
+                                        </Label>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                            Amount collected immediately from customer
+                                        </p>
+                                    </div>
+                                    <div className="relative">
+                                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">₹</span>
+                                        <Input
+                                            id="paidAmount"
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            className="h-11 sm:h-12 pl-8 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-base font-bold text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-xs transition-all"
+                                            placeholder="0.00"
+                                            value={formData.paidAmount}
+                                            onChange={(e) => setFormData({ ...formData, paidAmount: e.target.value })}
+                                            required
+                                        />
+                                    </div>
                                 </div>
 
-                                <div className="rounded-[2rem] bg-slate-900 dark:bg-slate-950 p-8 text-white space-y-4 shadow-xl border dark:border-slate-800">
-                                    <div className="flex justify-between items-center text-slate-400 dark:text-slate-500">
-                                        <span className="text-[10px] font-black uppercase tracking-widest">Gross Sale</span>
-                                        <span className="font-bold">₹{totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                {/* Summary Card */}
+                                <div className="sm:col-span-7 rounded-2xl bg-slate-900 dark:bg-slate-950 p-5 text-white space-y-3 border border-slate-800 shadow-xl flex flex-col justify-between">
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between items-center text-slate-400 text-xs font-medium">
+                                            <span className="uppercase tracking-wider text-[10px] font-bold">Gross Sale</span>
+                                            <span className="text-sm font-bold text-white">₹{totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-slate-400 text-xs font-medium pb-2 border-b border-slate-800">
+                                            <span className="uppercase tracking-wider text-[10px] font-bold">Collected</span>
+                                            <span className="text-sm font-bold text-emerald-400">₹{paidAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                        </div>
                                     </div>
-                                    <div className="flex justify-between items-center text-slate-400 pb-4 border-b border-white/10">
-                                        <span className="text-[10px] font-black uppercase tracking-widest">Collected</span>
-                                        <span className="font-bold">₹{paidAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center pb-4 border-b border-white/10">
-                                        <span className="text-sm font-black uppercase tracking-widest">Balance Due</span>
-                                        <span className={cn(
-                                            "text-2xl font-black",
-                                            dueAmount > 0 ? 'text-rose-400' : 'text-emerald-400'
-                                        )}>
-                                            ₹{dueAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className={cn(
-                                            "text-sm font-black uppercase tracking-widest",
-                                            estimatedProfit >= 0 ? "text-blue-400" : "text-rose-400"
-                                        )}>
-                                            {estimatedProfit >= 0 ? "Est. Profit" : "Est. Loss"}
-                                        </span>
-                                        <span className={cn(
-                                            "text-xl font-black",
-                                            estimatedProfit >= 0 ? "text-blue-400" : "text-rose-400"
-                                        )}>
-                                            {estimatedProfit >= 0 ? "+" : "-"}₹{Math.abs(estimatedProfit).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                                        </span>
+                                    <div className="space-y-2 pt-1">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs font-bold uppercase tracking-wider text-slate-300">Balance Due</span>
+                                            <span className={cn(
+                                                "text-xl sm:text-2xl font-black",
+                                                dueAmount > 0 ? 'text-amber-400' : 'text-emerald-400'
+                                            )}>
+                                                ₹{dueAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-center pt-2 border-t border-slate-800/80">
+                                            <span className={cn(
+                                                "text-[11px] font-bold uppercase tracking-wider",
+                                                estimatedProfit >= 0 ? "text-slate-400" : "text-rose-400"
+                                            )}>
+                                                {estimatedProfit >= 0 ? "Est. Net Profit" : "Est. Net Loss"}
+                                            </span>
+                                            <span className={cn(
+                                                "text-sm font-bold",
+                                                estimatedProfit >= 0 ? "text-emerald-400" : "text-rose-400"
+                                            )}>
+                                                {estimatedProfit >= 0 ? "+" : "-"}₹{Math.abs(estimatedProfit).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                            {/* Modal Actions */}
+                            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full sm:w-auto rounded-xl h-11 px-5 sm:px-6 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 font-semibold text-xs sm:text-sm transition-all cursor-pointer"
+                                    onClick={() => setShowCreateModal(false)}
+                                >
+                                    Cancel
+                                </Button>
                                 <Button
                                     type="submit"
                                     disabled={submitting}
-                                    className="h-14 rounded-2xl bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 font-black text-lg flex-1 transition-all border-none disabled:opacity-50"
+                                    className="w-full sm:w-auto rounded-xl h-11 px-6 sm:px-7 font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-md shadow-emerald-500/20 text-xs sm:text-sm transition-all disabled:opacity-50 cursor-pointer"
                                 >
                                     {submitting ? 'Recording Transaction...' : 'Confirm & Log Sale'}
-                                </Button>
-                                <Button
-                                    type="button"
-                                    size="lg"
-                                    variant="outline"
-                                    className="h-14 rounded-2xl px-8 font-black text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 uppercase tracking-widest text-[10px]"
-                                    onClick={() => setShowCreateModal(false)}
-                                >
-                                    Discard Entry
                                 </Button>
                             </div>
                         </form>
@@ -1046,136 +1078,117 @@ export default function SalesPage() {
             {/* Edit Payment Modal */}
             <Dialog.Root open={showEditModal} onOpenChange={setShowEditModal}>
                 <Dialog.Portal>
-                    <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm" />
-                    <Dialog.Content
-                        className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white dark:bg-slate-950 shadow-xl border dark:border-slate-800 overflow-hidden"
-                    >
-
+                    <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+                    <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[95vw] sm:w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white dark:bg-slate-950 shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] flex flex-col overflow-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
                         {/* Header */}
-                        <div className="flex flex-col items-center bg-slate-900 text-white p-4 rounded-t-2xl text-center mb-8">
-
-                            <div className="p-3 rounded-2xl bg-orange-500 text-white mb-2">
-                                <Wallet className="h-6 w-6" />
+                        <div className="sticky top-0 z-20 shrink-0 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-5 sm:p-6 flex justify-between items-center rounded-t-2xl shadow-xs relative">
+                            <div className="flex items-center gap-3.5">
+                                <div className="p-2.5 sm:p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/60 shadow-xs">
+                                    <Wallet className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <Dialog.Title className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                                        Update Payment
+                                    </Dialog.Title>
+                                    <Dialog.Description className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-normal">
+                                        Adjust collection receipt & outstanding balance
+                                    </Dialog.Description>
+                                </div>
                             </div>
-
-                            <h2 className="text-xl font-bold">
-                                Payment Update
-                            </h2>
-
-                            <p className="text-sm mt-1">
-                                Adjust Collection Status
-                            </p>
-
+                            <Dialog.Close asChild>
+                                <button
+                                    type="button"
+                                    className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+                                    aria-label="Close dialog"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </Dialog.Close>
+                            <div className="absolute -bottom-px left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500 to-transparent" />
                         </div>
 
                         {/* Form */}
-                        <form
-                            onSubmit={handleUpdateSale}
-                            className="space-y-6 p-8"
-                        >
-
-                            {/* Total */}
-                            <div className="space-y-2">
-
-                                <Label className="text-sm font-medium text-black dark:text-slate-300">
-                                    Total Amount
+                        <form onSubmit={handleUpdateSale} className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-5">
+                            {/* Total Card */}
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                                    Gross Invoice Value
                                 </Label>
-
-                                <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-4 text-center">
-
-                                    <p className="text-xs text-black dark:text-slate-400 mb-1">
+                                <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-4 text-center">
+                                    <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
                                         Invoice Total
                                     </p>
-
-                                    <span className="text-2xl font-semibold text-black dark:text-white">
-                                        ₹{editFormData.totalAmount.toLocaleString("en-IN")}
+                                    <span className="text-2xl font-black text-slate-900 dark:text-white">
+                                        ₹{Number(editFormData.totalAmount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                                     </span>
-
                                 </div>
-
                             </div>
 
-                            {/* Paid */}
-                            <div className="space-y-2">
-
+                            {/* Paid Input */}
+                            <div className="space-y-1.5">
                                 <Label
                                     htmlFor="editPaidAmount"
-                                    className="text-sm font-medium text-slate-600"
+                                    className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider"
                                 >
-                                    Paid Amount (₹)
+                                    Collected Amount (₹) <span className="text-rose-500">*</span>
                                 </Label>
-
-                                <Input
-                                    id="editPaidAmount"
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    placeholder="0.00"
-                                    className="h-11 rounded-xl border-slate-200 px-4 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-emerald-500"
-                                    value={editFormData.paidAmount}
-                                    onChange={(e) =>
-                                        setEditFormData({
-                                            ...editFormData,
-                                            paidAmount: e.target.value,
-                                        })
-                                    }
-                                    required
-                                />
-
+                                <div className="relative">
+                                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">₹</span>
+                                    <Input
+                                        id="editPaidAmount"
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="0.00"
+                                        className="h-11 sm:h-12 pl-8 rounded-xl border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 focus:bg-white dark:focus:bg-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:text-slate-100 font-bold text-base transition-all"
+                                        value={editFormData.paidAmount}
+                                        onChange={(e) =>
+                                            setEditFormData({
+                                                ...editFormData,
+                                                paidAmount: e.target.value,
+                                            })
+                                        }
+                                        required
+                                    />
+                                </div>
                             </div>
 
-                            {/* Balance */}
-                            <div
-                                className="rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800
-      p-4 flex justify-between items-center"
-                            >
-
-                                <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                            {/* Balance Card */}
+                            <div className="rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 p-4 flex justify-between items-center">
+                                <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
                                     Balance Due
                                 </span>
-
                                 <span
                                     className={cn(
-                                        "font-semibold",
-                                        editFormData.totalAmount -
-                                            parseFloat(editFormData.paidAmount || 0) >
-                                            0
-                                            ? "text-rose-500 dark:text-rose-400"
-                                            : "text-emerald-600 dark:text-emerald-500"
+                                        "font-black text-base sm:text-lg",
+                                        (Number(editFormData.totalAmount) - parseFloat(editFormData.paidAmount || 0)) > 0
+                                            ? "text-rose-600 dark:text-rose-400"
+                                            : "text-emerald-600 dark:text-emerald-400"
                                     )}
                                 >
-                                    ₹{(
-                                        editFormData.totalAmount -
-                                        parseFloat(editFormData.paidAmount || 0)
-                                    ).toLocaleString("en-IN")}
+                                    ₹{Math.max(0, Number(editFormData.totalAmount) - parseFloat(editFormData.paidAmount || 0)).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                                 </span>
-
                             </div>
 
                             {/* Actions */}
-                            <div className="flex flex-col gap-3 pt-4">
-
-                                <Button
-                                    type="submit"
-                                    disabled={submitting}
-                                    className="h-12 rounded-xl font-semibold"
-                                >
-                                    {submitting ? "Updating..." : "Save Changes"}
-                                </Button>
-
+                            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                                 <Button
                                     type="button"
                                     variant="outline"
                                     onClick={() => setShowEditModal(false)}
-                                    className="h-11 rounded-xl border-slate-200"
+                                    className="w-full sm:w-auto rounded-xl h-11 px-5 sm:px-6 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 font-semibold text-xs sm:text-sm transition-all cursor-pointer"
                                 >
                                     Cancel
                                 </Button>
-
+                                <Button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className="w-full sm:w-auto rounded-xl h-11 px-6 sm:px-7 font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-md shadow-emerald-500/20 text-xs sm:text-sm transition-all disabled:opacity-50 cursor-pointer"
+                                >
+                                    {submitting ? "Updating..." : "Save Payment"}
+                                </Button>
                             </div>
-
                         </form>
-
                     </Dialog.Content>
                 </Dialog.Portal>
             </Dialog.Root>
@@ -1185,22 +1198,38 @@ export default function SalesPage() {
             <Dialog.Root open={showViewModal} onOpenChange={setShowViewModal}>
                 <Dialog.Portal>
                     <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm" />
-                    <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white dark:bg-slate-950 shadow-xl overflow-hidden border dark:border-slate-800">
+                    <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[95vw] sm:w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white dark:bg-slate-950 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800">
                         {selectedSale && (
                             <>
                                 {/* Header */}
-                                <div className="bg-slate-900 p-6 text-white flex justify-between items-start">
-                                    <div>
-                                        <h2 className="text-xl font-bold">Sale Invoice</h2>
-                                        <p className="text-sm text-slate-400">Ref: {selectedSale.id.slice(-8).toUpperCase()}</p>
+                                <div className="sticky top-0 z-20 shrink-0 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-5 sm:p-6 flex justify-between items-center rounded-t-2xl shadow-xs relative">
+                                    <div className="flex items-center gap-3.5">
+                                        <div className="p-2.5 sm:p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/60 shadow-xs">
+                                            <BadgeDollarSign className="h-6 w-6" />
+                                        </div>
+                                        <div>
+                                            <Dialog.Title asChild>
+                                                <h2 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Sale Invoice</h2>
+                                            </Dialog.Title>
+                                            <Dialog.Description asChild>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-mono">Ref: {selectedSale.id.slice(-8).toUpperCase()}</p>
+                                            </Dialog.Description>
+                                        </div>
                                     </div>
-                                    <Dialog.Close className="p-2 rounded-lg hover:bg-white/10">
-                                        <X className="h-5 w-5" />
+                                    <Dialog.Close asChild>
+                                        <button
+                                            type="button"
+                                            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+                                            aria-label="Close dialog"
+                                        >
+                                            <X className="h-5 w-5" />
+                                        </button>
                                     </Dialog.Close>
+                                    <div className="absolute -bottom-px left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500 to-transparent" />
                                 </div>
 
                                 {/* Body */}
-                                <div className="p-6 space-y-6">
+                                <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
                                     {/* Meta */}
                                     <div className="grid grid-cols-2 gap-6">
                                         {/* Customer */}
@@ -1282,13 +1311,19 @@ export default function SalesPage() {
                                     </div>
 
                                     {/* Actions */}
-                                    <div className="flex gap-3 pt-4 border-t">
-                                        <Button onClick={handlePrintBill} className="flex-1 h-12 rounded-xl font-semibold">
-                                            <Printer className="mr-2 h-4 w-4" />
-                                            Print
+                                    <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                        <Button
+                                            onClick={handlePrintBill}
+                                            className="flex-1 h-11 sm:h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-sm shadow-md shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                        >
+                                            <Printer className="h-4 w-4" />
+                                            Print Statement
                                         </Button>
                                         <Dialog.Close asChild>
-                                            <Button variant="outline" className="h-12 rounded-xl border-slate-200">
+                                            <Button
+                                                variant="outline"
+                                                className="h-11 sm:h-12 rounded-xl px-6 font-semibold text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 text-xs sm:text-sm transition-all cursor-pointer"
+                                            >
                                                 Close
                                             </Button>
                                         </Dialog.Close>

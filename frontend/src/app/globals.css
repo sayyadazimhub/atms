@@ -88,5 +88,27 @@ body {
     --ring: 0 0% 3.9%;
   }
 
-  
+  select option {
+    background-color: #ffffff;
+    color: #0f172a;
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+
+  .dark select option {
+    background-color: #020617;
+    color: #f8fafc;
+  }
+
+  select option:checked {
+    background-color: #ecfdf5 !important;
+    color: #047857 !important;
+    font-weight: 600;
+  }
+
+  .dark select option:checked {
+    background-color: #064e3b !important;
+    color: #6ee7b7 !important;
+    font-weight: 600;
+  }
 }

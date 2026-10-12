@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Plus, Pencil, Trash2, Search, Eye, Filter, Users, Phone, MapPin, Truck } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Eye, Filter, Users, Phone, MapPin, Truck, X, Building2 } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
-// import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { ConfirmModal } from '@/components/portal/ConfirmModal';
 import { PageHeader } from '@/components/portal/PageHeader';
 
@@ -316,89 +316,128 @@ export default function ProvidersPage() {
       {/* View Details Dialog */}
       <Dialog.Root open={!!viewing} onOpenChange={(open) => !open && setViewing(null)}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm shadow-xl" />
-          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-3xl border-none bg-white dark:bg-slate-950 p-8 shadow-2xl dark:border dark:border-slate-800 overflow-y-auto max-h-[90vh]">
-            <Dialog.Title className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-2">
-              Provider profile: {viewing?.name}
-            </Dialog.Title>
-            <Dialog.Description className="text-slate-500 dark:text-slate-400 mb-6">
-              Complete transaction history and contact information
-            </Dialog.Description>
-
-            {loadingDetails ? (
-              <div className="flex justify-center py-12">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-              </div>
-            ) : viewData ? (
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-6 p-6 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
-                  <div>
-                    <Label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Phone Number</Label>
-                    <p className="font-bold text-slate-900 dark:text-slate-100">{viewData.phone || '—'}</p>
-                  </div>
-                  <div>
-                    <Label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Registered Address</Label>
-                    <p className="font-bold text-slate-900 dark:text-slate-100">{viewData.address || '—'}</p>
-                  </div>
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[95vw] sm:w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white dark:bg-slate-950 shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden max-h-[90vh] flex flex-col data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
+            {/* Header */}
+            <div className="sticky top-0 z-20 shrink-0 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-5 sm:p-6 flex justify-between items-center rounded-t-2xl shadow-xs relative">
+              <div className="flex items-center gap-3.5">
+                <div className="p-2.5 sm:p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/60 shadow-xs">
+                  <Truck className="h-6 w-6" />
                 </div>
-
                 <div>
-                  <h3 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest mb-4">Purchase History</h3>
-                  {viewData.purchases?.length > 0 ? (
-                    <div className="rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
-                      <div className="overflow-x-auto">
-                        <table className="w-full min-w-[600px] text-sm">
-                          <thead className="bg-slate-50 dark:bg-slate-900">
-                            <tr>
-                              <th className="p-3 text-left font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider">Date</th>
-                              <th className="p-3 text-left font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider">Items</th>
-                              <th className="p-3 text-right font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider">Unit Price</th>
-                              <th className="p-3 text-right font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider">Total Amount</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                            {viewData.purchases.map(purchase => (
-                              <tr key={purchase.id} className="dark:bg-slate-950">
-                                <td className="p-3 text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">
-                                  {new Date(purchase.createdAt).toLocaleDateString()}
-                                </td>
-                                <td className="p-3">
-                                  {purchase.items.map(item => (
-                                    <div key={item.id} className="text-slate-900 dark:text-slate-100 font-bold">
-                                      {item.product.name} <span className="text-slate-400 dark:text-slate-500 font-medium text-xs">x {item.quantity} {item.product.unit}</span>
-                                    </div>
-                                  ))}
-                                </td>
-                                <td className="p-3 text-right">
-                                  {purchase.items.map(item => (
-                                    <div key={item.id} className="text-slate-900 dark:text-slate-100 font-bold">
-                                      ₹{item.unitPrice.toLocaleString()} <span className="text-slate-400 dark:text-slate-500 font-medium text-[10px]">/{item.product.unit}</span>
-                                    </div>
-                                  ))}
-                                </td>
-                                <td className="p-3 text-right font-black text-slate-900 dark:text-slate-100">
-                                  ₹{purchase.totalAmount.toLocaleString()}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                  <Dialog.Title className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                    Provider: {viewing?.name}
+                  </Dialog.Title>
+                  <Dialog.Description className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-normal">
+                    Complete procurement history and supplier contact record
+                  </Dialog.Description>
+                </div>
+              </div>
+              <Dialog.Close asChild>
+                <button
+                  type="button"
+                  className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+                  aria-label="Close dialog"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </Dialog.Close>
+              <div className="absolute -bottom-px left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500 to-transparent" />
+            </div>
+
+            <div className="p-5 sm:p-7 overflow-y-auto space-y-6">
+              {loadingDetails ? (
+                <div className="flex justify-center py-12">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                </div>
+              ) : viewData ? (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 flex items-start gap-3">
+                      <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500 mt-0.5">
+                        <Phone className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-0.5">Phone Number</Label>
+                        <p className="font-bold text-sm text-slate-900 dark:text-slate-100">{viewData.phone || '—'}</p>
                       </div>
                     </div>
-                  ) : (
-                    <div className="text-center py-10 text-slate-400 bg-slate-50 rounded-2xl border border-slate-100 italic">
-                      No purchase records found for this provider
+                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 flex items-start gap-3">
+                      <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 mt-0.5">
+                        <MapPin className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-0.5">Registered Address</Label>
+                        <p className="font-bold text-sm text-slate-900 dark:text-slate-100">{viewData.address || '—'}</p>
+                      </div>
                     </div>
-                  )}
-                </div>
+                  </div>
 
-                <div className="flex justify-end pt-2">
-                  <Button variant="outline" onClick={() => setViewing(null)} className="rounded-xl px-8 border-slate-200 dark:border-slate-800 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900">
-                    Close Profile
-                  </Button>
+                  <div>
+                    <h3 className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 flex items-center justify-between">
+                      <span>Purchase History</span>
+                      <span className="text-[11px] text-slate-400 font-semibold">{viewData.purchases?.length || 0} Orders</span>
+                    </h3>
+                    {viewData.purchases?.length > 0 ? (
+                      <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+                        <div className="overflow-x-auto">
+                          <table className="w-full min-w-[550px] text-xs">
+                            <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+                              <tr>
+                                <th className="p-3 text-left font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Date</th>
+                                <th className="p-3 text-left font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Items</th>
+                                <th className="p-3 text-right font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Unit Price</th>
+                                <th className="p-3 text-right font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Amount</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                              {viewData.purchases.map(purchase => (
+                                <tr key={purchase.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition-colors">
+                                  <td className="p-3 text-slate-600 dark:text-slate-400 font-medium whitespace-nowrap">
+                                    {new Date(purchase.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                  </td>
+                                  <td className="p-3">
+                                    {purchase.items.map(item => (
+                                      <div key={item.id} className="text-slate-900 dark:text-slate-100 font-bold">
+                                        {item.product.name} <span className="text-slate-400 dark:text-slate-500 font-medium text-[11px]">x {item.quantity} {item.product.unit}</span>
+                                      </div>
+                                    ))}
+                                  </td>
+                                  <td className="p-3 text-right">
+                                    {purchase.items.map(item => (
+                                      <div key={item.id} className="text-slate-700 dark:text-slate-300 font-semibold">
+                                        ₹{item.unitPrice.toLocaleString('en-IN')} <span className="text-slate-400 text-[10px]">/{item.product.unit}</span>
+                                      </div>
+                                    ))}
+                                  </td>
+                                  <td className="p-3 text-right font-black text-slate-900 dark:text-slate-100">
+                                    ₹{purchase.totalAmount.toLocaleString('en-IN')}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-slate-400 bg-slate-50/50 dark:bg-slate-900/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-xs italic">
+                        No purchase records registered for this provider yet.
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
+
+            <div className="p-4 sm:p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 flex justify-end shrink-0">
+              <Button
+                variant="outline"
+                onClick={() => setViewing(null)}
+                className="rounded-xl px-6 h-11 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+              >
+                Close Profile
+              </Button>
+            </div>
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
@@ -406,53 +445,101 @@ export default function ProvidersPage() {
       {/* Add/Edit Dialog */}
       <Dialog.Root open={open} onOpenChange={setOpen}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm" />
-          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-3xl border-none bg-white dark:bg-slate-950 p-8 shadow-2xl dark:border dark:border-slate-800">
-            <div className="flex flex-col gap-1 mb-6">
-              <Dialog.Title className="text-2xl font-black text-slate-900 dark:text-slate-100">
-                {editing ? 'Update Provider' : 'Register Provider'}
-              </Dialog.Title>
-              <Dialog.Description className="text-slate-500 dark:text-slate-400">
-                Enter contact details to maintain supplier relations
-              </Dialog.Description>
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[95vw] sm:w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white dark:bg-slate-950 shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] flex flex-col overflow-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
+            {/* Modal Header */}
+            <div className="sticky top-0 z-20 shrink-0 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-5 sm:p-6 flex justify-between items-center rounded-t-2xl shadow-xs relative">
+              <div className="flex items-center gap-3.5">
+                <div className="p-2.5 sm:p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/60 shadow-xs">
+                  <Truck className="h-6 w-6" />
+                </div>
+                <div>
+                  <Dialog.Title className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                    {editing ? 'Update Provider' : 'Register Provider'}
+                  </Dialog.Title>
+                  <Dialog.Description className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-normal">
+                    {editing ? 'Modify supplier contact information and registry record' : 'Register a new farmer or agricultural goods supplier in directory'}
+                  </Dialog.Description>
+                </div>
+              </div>
+              <Dialog.Close asChild>
+                <button
+                  type="button"
+                  className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+                  aria-label="Close dialog"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </Dialog.Close>
+              <div className="absolute -bottom-px left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500 to-transparent" />
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-5">
               <div className="space-y-2">
-                <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Full Name / Entity Name</Label>
-                <Input
-                  value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  required
-                  autoFocus
-                  className="rounded-xl h-12 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus-visible:ring-blue-600 focus-visible:border-blue-600 dark:text-slate-100"
-                  placeholder="e.g. John Doe Farms"
-                />
+                <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Full Name / Entity Name <span className="text-rose-500">*</span>
+                </Label>
+                <div className="relative">
+                  <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input
+                    value={form.name}
+                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                    required
+                    autoFocus
+                    className="rounded-xl h-11 sm:h-12 pl-10 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 focus:bg-white dark:focus:bg-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:text-slate-100 font-medium text-sm transition-all"
+                    placeholder="e.g. Kisan Agro Farms, Rajesh Patel"
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Phone Number</Label>
-                <Input
-                  value={form.phone}
-                  onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                  className="rounded-xl h-12 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus-visible:ring-blue-600 focus-visible:border-blue-600 dark:text-slate-100"
-                  placeholder="+91 00000 00000"
-                />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Phone / Mobile
+                  </Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input
+                      value={form.phone}
+                      onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                      className="rounded-xl h-11 sm:h-12 pl-10 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 focus:bg-white dark:focus:bg-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:text-slate-100 font-medium text-sm transition-all"
+                      placeholder="+91 98765 43210"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Location / Address
+                  </Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input
+                      value={form.address}
+                      onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+                      className="rounded-xl h-11 sm:h-12 pl-10 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 focus:bg-white dark:focus:bg-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:text-slate-100 font-medium text-sm transition-all"
+                      placeholder="Village, Mandi, State"
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Registered Address</Label>
-                <Input
-                  value={form.address}
-                  onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-                  className="rounded-xl h-12 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus-visible:ring-blue-600 focus-visible:border-blue-600 dark:text-slate-100"
-                  placeholder="Village, District, State"
-                />
-              </div>
-              <div className="flex flex-col gap-3 pt-4">
-                <Button type="submit" disabled={submitting} className="flex-1 rounded-2xl h-12 font-bold bg-slate-900 dark:bg-slate-100 dark:text-slate-950 hover:bg-slate-800 dark:hover:bg-slate-200 shadow-xl transition-all">
-                  {submitting ? 'Saving…' : (editing ? 'Update Registry' : 'Save Provider')}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-2xl h-12 px-6 border-slate-200 dark:border-slate-800 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all">
+
+              {/* Responsive Action Buttons */}
+              <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                  className="w-full sm:w-auto rounded-xl h-11 px-5 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 font-semibold text-xs transition-all"
+                >
                   Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full sm:w-auto rounded-xl h-11 px-6 font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-md shadow-emerald-500/20 text-xs transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  {submitting ? 'Saving…' : (editing ? 'Update Provider' : 'Save Provider')}
                 </Button>
               </div>
             </form>

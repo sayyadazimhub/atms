@@ -7,11 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Plus, Pencil, Trash2, Search, Package } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Package, X, IndianRupee, ChevronDown, Check } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { cn } from '@/lib/utils';
 import { ConfirmModal } from '@/components/portal/ConfirmModal';
 import { PageHeader } from '@/components/portal/PageHeader';
+import { CustomSelect } from '@/components/ui/custom-select';
 
 const UNITS = ['KG', 'Quintal', 'Ton'];
 
@@ -29,10 +30,10 @@ export default function ProductsPage() {
   const fetchProducts = () => {
     setLoading(true);
     api
-      .get(`/api/user/products?page=${pagination.page}&search=${search}`)
+      .get(`/api/user/products?page=${pagination?.page || 1}&search=${search}`)
       .then((res) => {
-        setProducts(res.data.products);
-        setPagination(res.data.pagination);
+        setProducts(res.data?.products || []);
+        setPagination(res.data?.pagination || { page: 1, pages: 1 });
       })
       .catch(() => toast.error('Failed to load products'))
       .finally(() => setLoading(false));
@@ -40,7 +41,7 @@ export default function ProductsPage() {
 
   useEffect(() => {
     fetchProducts();
-  }, [pagination.page, search]);
+  }, [pagination?.page, search]);
 
   const handleOpen = (product = null) => {
     setEditing(product);
@@ -299,73 +300,137 @@ export default function ProductsPage() {
       <Dialog.Root open={open} onOpenChange={setOpen}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-3xl border-none bg-white dark:bg-slate-950 p-8 shadow-2xl dark:border dark:border-slate-800 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 sm:max-w-md">
-            <div className="flex flex-col gap-1 mb-6">
-              <Dialog.Title className="text-2xl font-black text-slate-900 dark:text-slate-100">
-                {editing ? 'Edit Product' : 'Register Product'}
-              </Dialog.Title>
-              <Dialog.Description className="text-slate-500 dark:text-slate-400">
-                Enter details to track this crop in your inventory
-              </Dialog.Description>
+          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[95vw] sm:w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white dark:bg-slate-950 shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] flex flex-col overflow-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
+            {/* Modal Header */}
+            <div className="sticky top-0 z-20 shrink-0 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-5 sm:p-6 flex justify-between items-center rounded-t-2xl shadow-xs relative">
+              <div className="flex items-center gap-3.5">
+                <div className="p-2.5 sm:p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/60 shadow-xs">
+                  <Package className="h-6 w-6" />
+                </div>
+                <div>
+                  <Dialog.Title className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                    {editing ? 'Edit Product' : 'Register Product'}
+                  </Dialog.Title>
+                  <Dialog.Description className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-normal">
+                    {editing ? 'Update commodity specifications & price limits' : 'Register a new crop or agricultural commodity in inventory'}
+                  </Dialog.Description>
+                </div>
+              </div>
+              <Dialog.Close asChild>
+                <button
+                  type="button"
+                  className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+                  aria-label="Close dialog"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </Dialog.Close>
+              <div className="absolute -bottom-px left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500 to-transparent" />
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-5">
               <div className="space-y-2">
-                <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Product Name</Label>
+                <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Product / Commodity Name <span className="text-rose-500">*</span>
+                </Label>
                 <Input
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   required
                   autoFocus
-                  className="rounded-xl h-12 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus-visible:ring-blue-600 focus-visible:border-blue-600 dark:text-slate-100"
+                  className="rounded-xl h-11 sm:h-12 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 focus:bg-white dark:focus:bg-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:text-slate-100 font-medium text-sm transition-all"
                   placeholder="e.g. Basmati Rice, Wheat (Grade A)"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Measurement Unit</Label>
-                <select
-                  className={cn(
-                    'flex h-12 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium ring-offset-background focus-visible:outline-none focus:ring-2 focus:ring-blue-600 appearance-none dark:text-slate-100'
-                  )}
+                <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Standard Measurement Unit <span className="text-rose-500">*</span>
+                </Label>
+                <CustomSelect
                   value={form.unit}
                   onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
-                >
-                  {UNITS.map((u) => (
-                    <option key={u} value={u} className="dark:bg-slate-900">{u}</option>
-                  ))}
-                </select>
-                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 font-medium italic uppercase tracking-widest underline decoration-blue-500/30">This unit will be fixed for all transactions</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Base Cost (₹)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={form.baseCostPrice}
-                  onChange={(e) => setForm((f) => ({ ...f, baseCostPrice: e.target.value }))}
-                  required
-                  className="rounded-xl h-12 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus-visible:ring-blue-600 focus-visible:border-blue-600 dark:text-slate-100"
-                  placeholder="e.g. 30"
+                  placeholder="Select Unit"
+                  options={UNITS.map((u) => ({ value: u, label: u }))}
                 />
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium">
+                  Standardized unit for all inventory batches, purchase orders, and sales vouchers.
+                </p>
               </div>
 
-              <div className="flex flex-col gap-3 pt-4">
-                <Button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex-1 rounded-2xl h-12 font-bold bg-slate-900 dark:bg-slate-100 dark:text-slate-950 hover:bg-slate-800 dark:hover:bg-slate-200 shadow-xl transition-all"
-                >
-                  {submitting ? 'Saving…' : (editing ? 'Update Registry' : 'Save Product')}
-                </Button>
+              {/* Pricing Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Base Cost Price (₹ / {form.unit || 'unit'}) <span className="text-rose-500">*</span>
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">₹</span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={form.baseCostPrice}
+                      onChange={(e) => setForm((f) => ({ ...f, baseCostPrice: e.target.value }))}
+                      required
+                      className="rounded-xl h-11 sm:h-12 pl-8 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 focus:bg-white dark:focus:bg-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:text-slate-100 font-semibold text-sm transition-all"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Base Sale Price (₹ / {form.unit || 'unit'})
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">₹</span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={form.baseSalePrice}
+                      onChange={(e) => setForm((f) => ({ ...f, baseSalePrice: e.target.value }))}
+                      className="rounded-xl h-11 sm:h-12 pl-8 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 focus:bg-white dark:focus:bg-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:text-slate-100 font-semibold text-sm transition-all"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Profit Margin Preview Helper */}
+              {Number(form.baseCostPrice) > 0 && Number(form.baseSalePrice) > 0 && (
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs font-medium">
+                  <span className="text-slate-500 dark:text-slate-400">Projected Margin:</span>
+                  <span className={cn(
+                    "font-bold",
+                    (Number(form.baseSalePrice) - Number(form.baseCostPrice)) >= 0
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-rose-600 dark:text-rose-400"
+                  )}>
+                    {(Number(form.baseSalePrice) - Number(form.baseCostPrice)) >= 0 ? '+' : ''}
+                    ₹{(Number(form.baseSalePrice) - Number(form.baseCostPrice)).toFixed(2)} / {form.unit}
+                    {' '}({(((Number(form.baseSalePrice) - Number(form.baseCostPrice)) / Number(form.baseCostPrice)) * 100).toFixed(1)}%)
+                  </span>
+                </div>
+              )}
+
+              {/* Responsive Action Buttons */}
+              <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setOpen(false)}
-                  className="rounded-2xl h-12 px-6 border-slate-200 dark:border-slate-800 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all"
+                  className="w-full sm:w-auto rounded-xl h-11 px-5 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 font-semibold text-xs transition-all"
                 >
                   Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full sm:w-auto rounded-xl h-11 px-6 font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-md shadow-emerald-500/20 text-xs transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  {submitting ? 'Saving…' : (editing ? 'Update Product' : 'Save Product')}
                 </Button>
               </div>
             </form>

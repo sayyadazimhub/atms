@@ -15,7 +15,8 @@ import {
   RefreshCw,
   FileText,
   Layers,
-  AlertCircle
+  AlertCircle,
+  Receipt
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/portal/PageHeader';
@@ -333,7 +334,7 @@ export default function ReportsPage() {
   ];
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto">
+    <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto pb-16">
       {/* Page Header */}
       <PageHeader
         title="Analytical Reports"
@@ -342,21 +343,21 @@ export default function ReportsPage() {
         actionButton={
           <div className="flex flex-wrap items-center gap-2.5">
             {/* Timeframe Selector */}
-            <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl px-3 h-10 shadow-sm">
-              <Calendar className="h-4 w-4 text-slate-400" />
-              <Select value={type} onValueChange={setType}>
-                <SelectTrigger className="border-0 shadow-none p-0 h-auto text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-0 w-[140px]">
+            <Select value={type} onValueChange={setType}>
+              <SelectTrigger className="h-10 w-[175px] rounded-xl px-3 border border-slate-200/80 dark:border-slate-800 text-xs font-bold bg-white dark:bg-slate-900 focus:bg-white dark:focus:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-slate-400 shrink-0" />
                   <SelectValue placeholder="Analytical Window" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl bg-white dark:bg-slate-900">
-                  <SelectItem value="today" className="text-xs font-semibold">Today&apos;s Activity</SelectItem>
-                  <SelectItem value="weekly" className="text-xs font-semibold">Last 7 Days</SelectItem>
-                  <SelectItem value="daily" className="text-xs font-semibold">Trailing 30 Days</SelectItem>
-                  <SelectItem value="monthly" className="text-xs font-semibold">Current Month</SelectItem>
-                  <SelectItem value="yearly" className="text-xs font-semibold">Fiscal Year</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                </div>
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl dark:bg-slate-900">
+                <SelectItem value="today" className="text-xs font-semibold">Today&apos;s Activity</SelectItem>
+                <SelectItem value="weekly" className="text-xs font-semibold">Last 7 Days</SelectItem>
+                <SelectItem value="daily" className="text-xs font-semibold">Trailing 30 Days</SelectItem>
+                <SelectItem value="monthly" className="text-xs font-semibold">Current Month</SelectItem>
+                <SelectItem value="yearly" className="text-xs font-semibold">Fiscal Year</SelectItem>
+              </SelectContent>
+            </Select>
 
             {/* Re-Sync Button */}
             <Button
@@ -500,8 +501,14 @@ export default function ReportsPage() {
                   </table>
                 </div>
               ) : (
-                <div className="py-14 text-center text-xs text-slate-400 dark:text-slate-500">
-                  No sales recorded for this period
+                <div className="p-8 sm:p-10 flex flex-col items-center justify-center text-center">
+                  <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 mb-2.5">
+                    <Receipt className="h-5 w-5" />
+                  </div>
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">No Sales Recorded</p>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+                    No sales transactions or invoices found for this timeframe.
+                  </p>
                 </div>
               )}
             </CardContent>
@@ -591,8 +598,14 @@ export default function ReportsPage() {
                   </table>
                 </div>
               ) : (
-                <div className="py-14 text-center text-xs text-slate-400 dark:text-slate-500">
-                  No purchases recorded for this period
+                <div className="p-8 sm:p-10 flex flex-col items-center justify-center text-center">
+                  <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 mb-2.5">
+                    <ShoppingBag className="h-5 w-5" />
+                  </div>
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">No Procurement Invoices</p>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+                    No supplier purchase records found for this timeframe.
+                  </p>
                 </div>
               )}
             </CardContent>
