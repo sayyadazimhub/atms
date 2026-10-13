@@ -26,14 +26,21 @@ export const saleService = {
   },
 
   async createSale(userId, data) {
-    const { customerId, items, paidAmount = 0 } = data;
+    const {
+      customerId,
+      items,
+      paidAmount = 0,
+      laborCharge = 0,
+      vehicleRent = 0,
+      otherCharges = 0,
+    } = data;
     if (!customerId || !Array.isArray(items) || items.length === 0) {
       throw new Error('Customer and at least one item are required');
     }
     const customer = await saleDal.findCustomerForUser(customerId, userId);
     if (!customer) throw new Error('Customer not found');
 
-    let totalAmount = 0;
+    let subtotal = 0;
     let totalProfit = 0;
     const lineItems = [];
 
@@ -61,7 +68,7 @@ export const saleService = {
 
       const salePrice = parseFloat(it.salePrice) || 0;
       const profit = (salePrice - costPrice) * qty;
-      totalAmount += salePrice * qty;
+      subtotal += salePrice * qty;
       totalProfit += profit;
 
       lineItems.push({
@@ -74,6 +81,11 @@ export const saleService = {
       });
     }
 
+    const parsedLabor = parseFloat(laborCharge) || 0;
+    const parsedRent = parseFloat(vehicleRent) || 0;
+    const parsedOther = parseFloat(otherCharges) || 0;
+    const totalAmount = subtotal + parsedLabor + parsedRent + parsedOther;
+
     const paid = parseFloat(paidAmount) || 0;
     if (paid > totalAmount) throw new Error('Paid amount cannot exceed total amount');
     const dueAmount = totalAmount - paid;
@@ -81,6 +93,10 @@ export const saleService = {
     return await saleDal.createSaleWithStock(
       userId,
       customerId,
+      subtotal,
+      parsedLabor,
+      parsedRent,
+      parsedOther,
       totalAmount,
       paid,
       dueAmount,

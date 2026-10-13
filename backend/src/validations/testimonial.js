@@ -11,6 +11,6 @@ export const editTestimonialSchema = createTestimonialSchema;
 
 export const updateTestimonialSchema = z.object({
   status: z.enum(['PENDING', 'APPROVED', 'REJECTED'], {
-    errorMap: () => ({ message: 'Status must be PENDING, APPROVED, or REJECTED.' })
+    errorMap: () => ({ message: 'Status must be PENDING, APPROVED, or REJECTED.' }),
   }),
 });

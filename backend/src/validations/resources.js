@@ -50,6 +50,9 @@ const purchaseItemSchema = z.object({
 export const purchaseSchema = z.object({
   providerId: objectIdSchema,
   items: z.array(purchaseItemSchema).min(1).max(100),
+  laborCharge: nonNegativeNumber.optional().default(0),
+  vehicleRent: nonNegativeNumber.optional().default(0),
+  otherCharges: nonNegativeNumber.optional().default(0),
   paidAmount: nonNegativeNumber.optional(),
 });
 
@@ -64,6 +67,9 @@ const saleItemSchema = z.object({
 export const saleSchema = z.object({
   customerId: objectIdSchema,
   items: z.array(saleItemSchema).min(1).max(100),
+  laborCharge: nonNegativeNumber.optional().default(0),
+  vehicleRent: nonNegativeNumber.optional().default(0),
+  otherCharges: nonNegativeNumber.optional().default(0),
   paidAmount: nonNegativeNumber.optional(),
 });
 

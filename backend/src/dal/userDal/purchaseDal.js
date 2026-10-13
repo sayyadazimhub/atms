@@ -41,10 +41,33 @@ export const purchaseDal = {
     return Purchase.findOne({ _id: id, userId });
   },
 
-  async createPurchaseWithStock(userId, providerId, totalAmount, paidAmount, dueAmount, lineItems) {
+  async createPurchaseWithStock(
+    userId,
+    providerId,
+    subtotal,
+    laborCharge,
+    vehicleRent,
+    otherCharges,
+    totalAmount,
+    paidAmount,
+    dueAmount,
+    lineItems,
+  ) {
     return withTransaction(async (session) => {
       const [purchase] = await Purchase.create(
-        [{ providerId, userId, totalAmount, paidAmount, dueAmount }],
+        [
+          {
+            providerId,
+            userId,
+            subtotal,
+            laborCharge,
+            vehicleRent,
+            otherCharges,
+            totalAmount,
+            paidAmount,
+            dueAmount,
+          },
+        ],
         { session },
       );
       await PurchaseItem.create(

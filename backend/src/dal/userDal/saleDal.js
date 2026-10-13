@@ -49,6 +49,10 @@ export const saleDal = {
   async createSaleWithStock(
     userId,
     customerId,
+    subtotal,
+    laborCharge,
+    vehicleRent,
+    otherCharges,
     totalAmount,
     paidAmount,
     dueAmount,
@@ -57,7 +61,20 @@ export const saleDal = {
   ) {
     return withTransaction(async (session) => {
       const [sale] = await Sale.create(
-        [{ customerId, userId, totalAmount, paidAmount, dueAmount, totalProfit }],
+        [
+          {
+            customerId,
+            userId,
+            subtotal,
+            laborCharge,
+            vehicleRent,
+            otherCharges,
+            totalAmount,
+            paidAmount,
+            dueAmount,
+            totalProfit,
+          },
+        ],
         { session },
       );
       await SaleItem.create(

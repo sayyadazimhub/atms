@@ -82,6 +82,10 @@ const CustomerSchema = createSchema({
 const PurchaseSchema = createSchema({
   providerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Provider', required: true },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  subtotal: { type: Number, default: 0 },
+  laborCharge: { type: Number, default: 0 },
+  vehicleRent: { type: Number, default: 0 },
+  otherCharges: { type: Number, default: 0 },
   totalAmount: { type: Number, required: true },
   paidAmount: { type: Number, default: 0 },
   dueAmount: { type: Number, default: 0 },
@@ -99,6 +103,10 @@ const PurchaseItemSchema = createSchema({
 const SaleSchema = createSchema({
   customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  subtotal: { type: Number, default: 0 },
+  laborCharge: { type: Number, default: 0 },
+  vehicleRent: { type: Number, default: 0 },
+  otherCharges: { type: Number, default: 0 },
   totalAmount: { type: Number, required: true },
   paidAmount: { type: Number, default: 0 },
   dueAmount: { type: Number, default: 0 },
@@ -183,5 +191,7 @@ export const Sale = mongoose.models.Sale || mongoose.model('Sale', SaleSchema);
 export const SaleItem = mongoose.models.SaleItem || mongoose.model('SaleItem', SaleItemSchema);
 export const SystemSetting =
   mongoose.models.SystemSetting || mongoose.model('SystemSetting', SystemSettingSchema);
-export const ContactMessage = mongoose.models.ContactMessage || mongoose.model('ContactMessage', ContactMessageSchema);
-export const Testimonial = mongoose.models.Testimonial || mongoose.model('Testimonial', TestimonialSchema);
+export const ContactMessage =
+  mongoose.models.ContactMessage || mongoose.model('ContactMessage', ContactMessageSchema);
+export const Testimonial =
+  mongoose.models.Testimonial || mongoose.model('Testimonial', TestimonialSchema);

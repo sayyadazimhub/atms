@@ -48,7 +48,7 @@ export async function sendOtpEmail(to, otp, purpose = 'verification') {
     purpose === 'reset'
       ? `Use this OTP to reset your password: <strong>${otp}</strong>. It expires in 10 minutes.`
       : `Your email verification OTP is: <strong>${otp}</strong>. It expires in 10 minutes.`;
-      
+
   const info = await getTransporter().sendMail({
     from: `"ATMS" <${getFromEmail()}>`,
     to,

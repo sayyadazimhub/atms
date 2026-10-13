@@ -5,13 +5,10 @@ import { validateRequest } from '../../../middleware/validateRequest.js';
 import { adminSearchQuerySchema, idQuerySchema } from '../../../validations/queries.js';
 import { adminCreateSchema, adminUpdateSchema } from '../../../validations/resources.js';
 
-
-
 const router = Router({ mergeParams: true });
 
 async function handleGet(req, res) {
   try {
-
     const { search = '' } = req.query;
 
     const admins = await authDal.findMany(String(search));
@@ -24,7 +21,6 @@ async function handleGet(req, res) {
 
 async function handlePost(req, res) {
   try {
-
     const body = req.body;
     const { name, email, password, phone } = body;
 

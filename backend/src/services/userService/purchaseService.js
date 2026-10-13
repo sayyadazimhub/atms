@@ -26,7 +26,14 @@ export const purchaseService = {
   },
 
   async createPurchase(userId, data) {
-    const { providerId, items, paidAmount = 0 } = data;
+    const {
+      providerId,
+      items,
+      paidAmount = 0,
+      laborCharge = 0,
+      vehicleRent = 0,
+      otherCharges = 0,
+    } = data;
     if (!providerId || !Array.isArray(items) || items.length === 0) {
       throw new Error('Provider and at least one item are required');
     }
@@ -44,12 +51,12 @@ export const purchaseService = {
       throw new Error('One or more products were not found');
     }
 
-    let totalAmount = 0;
+    let subtotal = 0;
     const lineItems = items.map((it) => {
       const qty = parseFloat(it.quantity) || 0;
       const price = parseFloat(it.unitPrice) || 0;
       const total = qty * price;
-      totalAmount += total;
+      subtotal += total;
       return {
         productId: it.productId,
         quantity: qty,
@@ -59,6 +66,11 @@ export const purchaseService = {
       };
     });
 
+    const parsedLabor = parseFloat(laborCharge) || 0;
+    const parsedRent = parseFloat(vehicleRent) || 0;
+    const parsedOther = parseFloat(otherCharges) || 0;
+    const totalAmount = subtotal + parsedLabor + parsedRent + parsedOther;
+
     const paid = parseFloat(paidAmount) || 0;
     if (paid > totalAmount) throw new Error('Paid amount cannot exceed total amount');
     const dueAmount = totalAmount - paid;
@@ -66,6 +78,10 @@ export const purchaseService = {
     return await purchaseDal.createPurchaseWithStock(
       userId,
       providerId,
+      subtotal,
+      parsedLabor,
+      parsedRent,
+      parsedOther,
       totalAmount,
       paid,
       dueAmount,

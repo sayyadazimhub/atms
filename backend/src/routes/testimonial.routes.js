@@ -1,6 +1,9 @@
 import express from 'express';
 import testimonialService from '../services/testimonial.service.js';
-import { createTestimonialSchema, updateTestimonialSchema } from '../validations/testimonial.validation.js';
+import {
+  createTestimonialSchema,
+  updateTestimonialSchema,
+} from '../validations/testimonial.validation.js';
 import { authenticate, authorizeRoles } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
@@ -23,7 +26,12 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ message: error.details[0].message });
     }
     const newTestimonial = await testimonialService.createTestimonial(value);
-    res.status(201).json({ message: 'Testimonial submitted successfully. It will be reviewed by an admin.', data: newTestimonial });
+    res
+      .status(201)
+      .json({
+        message: 'Testimonial submitted successfully. It will be reviewed by an admin.',
+        data: newTestimonial,
+      });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -49,7 +57,9 @@ router.patch('/:id/status', authenticate, authorizeRoles('ADMIN'), async (req, r
     const updated = await testimonialService.updateTestimonialStatus(req.params.id, value.status);
     res.json({ message: 'Testimonial status updated successfully', data: updated });
   } catch (error) {
-    res.status(error.message === 'Testimonial not found' ? 404 : 500).json({ message: error.message });
+    res
+      .status(error.message === 'Testimonial not found' ? 404 : 500)
+      .json({ message: error.message });
   }
 });
 
@@ -59,7 +69,9 @@ router.delete('/:id', authenticate, authorizeRoles('ADMIN'), async (req, res) =>
     await testimonialService.deleteTestimonial(req.params.id);
     res.json({ message: 'Testimonial deleted successfully' });
   } catch (error) {
-    res.status(error.message === 'Testimonial not found' ? 404 : 500).json({ message: error.message });
+    res
+      .status(error.message === 'Testimonial not found' ? 404 : 500)
+      .json({ message: error.message });
   }
 });
 

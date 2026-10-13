@@ -20,6 +20,9 @@ import {
     Eye,
     Pencil,
     ArrowUpRight,
+    Truck,
+    Users,
+    Receipt,
     ChevronDown
 } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
@@ -44,6 +47,9 @@ export default function SalesPage() {
     const [formData, setFormData] = useState({
         customerId: '',
         paidAmount: '',
+        laborCharge: '',
+        vehicleRent: '',
+        otherCharges: '',
         items: [{ productId: '', batchId: '', quantity: '', salePrice: '', costPrice: '' }],
     });
     const [editFormData, setEditFormData] = useState({
@@ -348,16 +354,35 @@ export default function SalesPage() {
         <div class="totals-container">
           <div class="totals-box">
             <div class="total-item">
-              <span>Gross Total</span>
-              <span style="color: white">₹${selectedSale.totalAmount.toLocaleString('en-IN')}</span>
+              <span>Items Subtotal</span>
+              <span style="color: white">₹${Number(selectedSale.subtotal || selectedSale.items?.reduce((s, it) => s + (it.salePrice * it.quantity || 0), 0) || 0).toLocaleString('en-IN')}</span>
+            </div>
+            ${(Number(selectedSale.laborCharge) > 0) ? `
+            <div class="total-item">
+              <span>Labour Charge</span>
+              <span style="color: white">+ ₹${Number(selectedSale.laborCharge).toLocaleString('en-IN')}</span>
+            </div>` : ''}
+            ${(Number(selectedSale.vehicleRent) > 0) ? `
+            <div class="total-item">
+              <span>Vehicle Rent</span>
+              <span style="color: white">+ ₹${Number(selectedSale.vehicleRent).toLocaleString('en-IN')}</span>
+            </div>` : ''}
+            ${(Number(selectedSale.otherCharges) > 0) ? `
+            <div class="total-item">
+              <span>Other Charges</span>
+              <span style="color: white">+ ₹${Number(selectedSale.otherCharges).toLocaleString('en-IN')}</span>
+            </div>` : ''}
+            <div class="total-item" style="border-top: 1px dashed #334155; padding-top: 6px; margin-top: 6px;">
+              <span style="color: #cbd5e1">Gross Total</span>
+              <span style="color: white; font-weight: 900;">₹${Number(selectedSale.totalAmount).toLocaleString('en-IN')}</span>
             </div>
             <div class="total-item">
               <span>Amount Received</span>
-              <span style="color: #10b981">₹${(selectedSale.paidAmount || 0).toLocaleString('en-IN')}</span>
+              <span style="color: #10b981">₹${Number(selectedSale.paidAmount || 0).toLocaleString('en-IN')}</span>
             </div>
             <div class="total-main">
               <span style="font-size: 12px; color: #94a3b8; display: flex; align-items: center;">BALANCE DUE</span>
-              <span>₹${(selectedSale.dueAmount || 0).toLocaleString('en-IN')}</span>
+              <span>₹${Number(selectedSale.dueAmount || 0).toLocaleString('en-IN')}</span>
             </div>
           </div>
         </div>
@@ -457,12 +482,20 @@ export default function SalesPage() {
         });
     };
 
-    const calculateTotal = () => {
+    const calculateSubtotal = () => {
         return formData.items.reduce((sum, item) => {
             const qty = parseFloat(item.quantity) || 0;
             const price = parseFloat(item.salePrice) || 0;
             return sum + qty * price;
         }, 0);
+    };
+
+    const calculateTotal = () => {
+        const subtotal = calculateSubtotal();
+        const labor = parseFloat(formData.laborCharge) || 0;
+        const rent = parseFloat(formData.vehicleRent) || 0;
+        const other = parseFloat(formData.otherCharges) || 0;
+        return subtotal + labor + rent + other;
     };
 
     const calculateProfit = () => {
@@ -490,6 +523,9 @@ export default function SalesPage() {
                 body: JSON.stringify({
                     customerId: formData.customerId,
                     paidAmount: parseFloat(formData.paidAmount) || 0,
+                    laborCharge: parseFloat(formData.laborCharge) || 0,
+                    vehicleRent: parseFloat(formData.vehicleRent) || 0,
+                    otherCharges: parseFloat(formData.otherCharges) || 0,
                     items: formData.items.map(it => ({
                         productId: it.productId,
                         batchId: it.batchId || null,
@@ -506,6 +542,9 @@ export default function SalesPage() {
                 setFormData({
                     customerId: '',
                     paidAmount: '',
+                    laborCharge: '',
+                    vehicleRent: '',
+                    otherCharges: '',
                     items: [{ productId: '', batchId: '', quantity: '', salePrice: '', costPrice: 0 }],
                 });
                 fetchSales();
@@ -521,6 +560,7 @@ export default function SalesPage() {
         }
     };
 
+    const subtotalAmount = calculateSubtotal();
     const totalAmount = calculateTotal();
     const paidAmount = parseFloat(formData.paidAmount) || 0;
     const dueAmount = totalAmount - paidAmount;
@@ -984,6 +1024,81 @@ export default function SalesPage() {
                                 </div>
                             </div>
 
+                            {/* Logistics & Delivery Charges Section */}
+                            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/40 p-4 sm:p-5 space-y-3">
+                                <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+                                    <div className="flex items-center gap-2">
+                                        <Truck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                        <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                                            Logistics & Delivery Charges
+                                        </Label>
+                                    </div>
+                                    <span className="text-[11px] font-medium text-slate-400">Optional</span>
+                                </div>
+
+                                <div className="grid gap-3 sm:grid-cols-3">
+                                    {/* Labour Charge */}
+                                    <div className="space-y-1">
+                                        <Label htmlFor="laborCharge" className="text-[11px] font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                                            <Users className="h-3.5 w-3.5 text-slate-400" /> Labour / Loading (₹)
+                                        </Label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">₹</span>
+                                            <Input
+                                                id="laborCharge"
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                className="h-10 pl-7 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-medium text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                                                placeholder="0.00"
+                                                value={formData.laborCharge}
+                                                onChange={(e) => setFormData({ ...formData, laborCharge: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Vehicle Rent */}
+                                    <div className="space-y-1">
+                                        <Label htmlFor="vehicleRent" className="text-[11px] font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                                            <Truck className="h-3.5 w-3.5 text-slate-400" /> Vehicle Rent / Freight (₹)
+                                        </Label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">₹</span>
+                                            <Input
+                                                id="vehicleRent"
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                className="h-10 pl-7 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-medium text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                                                placeholder="0.00"
+                                                value={formData.vehicleRent}
+                                                onChange={(e) => setFormData({ ...formData, vehicleRent: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Other Charges */}
+                                    <div className="space-y-1">
+                                        <Label htmlFor="otherCharges" className="text-[11px] font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                                            <Receipt className="h-3.5 w-3.5 text-slate-400" /> Other Charges (₹)
+                                        </Label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">₹</span>
+                                            <Input
+                                                id="otherCharges"
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                className="h-10 pl-7 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-medium text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                                                placeholder="0.00"
+                                                value={formData.otherCharges}
+                                                onChange={(e) => setFormData({ ...formData, otherCharges: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             {/* Payment & Summary Breakdown */}
                             <div className="grid gap-4 sm:grid-cols-12 sm:items-stretch">
                                 {/* Initial Payment Input */}
@@ -1016,6 +1131,32 @@ export default function SalesPage() {
                                 <div className="sm:col-span-7 rounded-2xl bg-slate-900 dark:bg-slate-950 p-5 text-white space-y-3 border border-slate-800 shadow-xl flex flex-col justify-between">
                                     <div className="space-y-2">
                                         <div className="flex justify-between items-center text-slate-400 text-xs font-medium">
+                                            <span className="uppercase tracking-wider text-[10px] font-bold">Items Subtotal</span>
+                                            <span className="text-sm font-bold text-white">₹{subtotalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                        </div>
+                                        {(parseFloat(formData.laborCharge) > 0 || parseFloat(formData.vehicleRent) > 0 || parseFloat(formData.otherCharges) > 0) && (
+                                            <div className="space-y-1 py-1.5 border-t border-slate-800 text-[11px] text-slate-400">
+                                                {parseFloat(formData.laborCharge) > 0 && (
+                                                    <div className="flex justify-between">
+                                                        <span>+ Labour Charge</span>
+                                                        <span className="text-slate-300">₹{parseFloat(formData.laborCharge).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                                    </div>
+                                                )}
+                                                {parseFloat(formData.vehicleRent) > 0 && (
+                                                    <div className="flex justify-between">
+                                                        <span>+ Vehicle Rent</span>
+                                                        <span className="text-slate-300">₹{parseFloat(formData.vehicleRent).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                                    </div>
+                                                )}
+                                                {parseFloat(formData.otherCharges) > 0 && (
+                                                    <div className="flex justify-between">
+                                                        <span>+ Other Charges</span>
+                                                        <span className="text-slate-300">₹{parseFloat(formData.otherCharges).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between items-center text-slate-400 text-xs font-medium pt-1 border-t border-slate-800">
                                             <span className="uppercase tracking-wider text-[10px] font-bold">Gross Sale</span>
                                             <span className="text-sm font-bold text-white">₹{totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                                         </div>
@@ -1293,18 +1434,54 @@ export default function SalesPage() {
 
                                     {/* Summary */}
                                     <div className="space-y-2 text-sm">
-                                        <div className="flex justify-end gap-6">
-                                            <span className="text-slate-500 dark:text-slate-400">Total</span>
-                                            <span className="font-semibold w-24 text-right dark:text-slate-100">₹{selectedSale.totalAmount.toLocaleString()}</span>
+                                        <div className="flex justify-end gap-6 text-slate-600 dark:text-slate-400">
+                                            <span>Items Subtotal</span>
+                                            <span className="font-semibold w-28 text-right dark:text-slate-100 italic">
+                                                ₹{Number(selectedSale.subtotal || selectedSale.items?.reduce((s, it) => s + (it.salePrice * it.quantity || 0), 0) || 0).toLocaleString()}
+                                            </span>
                                         </div>
-                                        <div className="flex justify-end gap-6">
-                                            <span className="text-slate-500 dark:text-slate-400">Paid</span>
-                                            <span className="font-semibold text-emerald-600 dark:text-emerald-400 w-24 text-right">₹{(selectedSale.paidAmount || 0).toLocaleString()}</span>
+
+                                        {Number(selectedSale.laborCharge) > 0 && (
+                                            <div className="flex justify-end gap-6 text-slate-600 dark:text-slate-400">
+                                                <span>Labour Charge</span>
+                                                <span className="font-semibold w-28 text-right dark:text-slate-100 italic">
+                                                    + ₹{Number(selectedSale.laborCharge).toLocaleString()}
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {Number(selectedSale.vehicleRent) > 0 && (
+                                            <div className="flex justify-end gap-6 text-slate-600 dark:text-slate-400">
+                                                <span>Vehicle Rent</span>
+                                                <span className="font-semibold w-28 text-right dark:text-slate-100 italic">
+                                                    + ₹{Number(selectedSale.vehicleRent).toLocaleString()}
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {Number(selectedSale.otherCharges) > 0 && (
+                                            <div className="flex justify-end gap-6 text-slate-600 dark:text-slate-400">
+                                                <span>Other Charges</span>
+                                                <span className="font-semibold w-28 text-right dark:text-slate-100 italic">
+                                                    + ₹{Number(selectedSale.otherCharges).toLocaleString()}
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        <div className="flex justify-end gap-6 text-slate-900 dark:text-slate-100 font-bold pt-1 border-t dark:border-slate-800">
+                                            <span>Total Gross Sale</span>
+                                            <span className="w-28 text-right italic font-black">₹{selectedSale.totalAmount.toLocaleString()}</span>
                                         </div>
-                                        <div className="flex justify-end gap-6 pt-2 border-t dark:border-slate-800">
-                                            <span className="font-medium dark:text-slate-300">Balance</span>
+
+                                        <div className="flex justify-end gap-6 text-slate-600 dark:text-slate-400 border-b dark:border-slate-800 pb-2">
+                                            <span>Amount Collected</span>
+                                            <span className="font-semibold text-emerald-600 dark:text-emerald-400 w-28 text-right italic">₹{(selectedSale.paidAmount || 0).toLocaleString()}</span>
+                                        </div>
+
+                                        <div className="flex justify-end gap-6 pt-2 border-t dark:border-slate-0">
+                                            <span className="font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest text-[10px] mt-1">Balance Due</span>
                                             <span className={cn(
-                                                "font-semibold text-lg w-24 text-right",
+                                                "text-2xl font-black italic tracking-tighter",
                                                 (selectedSale.dueAmount || 0) > 0 ? "text-rose-500 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-500"
                                             )}>₹{(selectedSale.dueAmount || 0).toLocaleString()}</span>
                                         </div>
