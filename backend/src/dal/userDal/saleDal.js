@@ -34,6 +34,11 @@ export const saleDal = {
     return StockBatch.findOne({ _id: batchId, productId, userId });
   },
 
+  async findActiveBatchesForProduct(productId, userId) {
+    await connectDB();
+    return StockBatch.find({ productId, userId, quantity: { $gt: 0 } }).sort({ createdAt: 1 });
+  },
+
   async findById(id, userId) {
     await connectDB();
     return Sale.findOne({ _id: id, userId })
@@ -85,7 +90,19 @@ export const saleDal = {
       for (const item of lineItems) {
         const deductQty = item.baseQuantity !== undefined ? item.baseQuantity : item.quantity;
 
-        if (item.batchId) {
+        if (item.batchAllocations && item.batchAllocations.length > 0) {
+          for (const alloc of item.batchAllocations) {
+            const allocDeduct = parseFloat(alloc.quantity) || 0;
+            const batchUpdate = await StockBatch.updateOne(
+              { _id: alloc.batchId, userId, quantity: { $gte: allocDeduct } },
+              { $inc: { quantity: -allocDeduct } },
+              { session },
+            );
+            if (!batchUpdate.matchedCount) {
+              throw new Error('Insufficient stock in one of the selected batches');
+            }
+          }
+        } else if (item.batchId) {
           const batchUpdate = await StockBatch.updateOne(
             { _id: item.batchId, userId, quantity: { $gte: deductQty } },
             { $inc: { quantity: -deductQty } },

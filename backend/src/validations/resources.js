@@ -57,13 +57,27 @@ export const purchaseSchema = z.object({
   paidAmount: nonNegativeNumber.optional(),
 });
 
+const batchAllocationSchema = z.object({
+  batchId: objectIdSchema,
+  quantity: positiveNumber,
+});
+
 const saleItemSchema = z.object({
   productId: objectIdSchema,
-  batchId: objectIdSchema.or(z.literal('FIFO')).optional().nullable(),
+  batchId: objectIdSchema.or(z.literal('FIFO')).or(z.literal('COMBINED')).optional().nullable(),
+  batchAllocations: z.array(batchAllocationSchema).optional().nullable(),
   quantity: positiveNumber,
   unit: z.string().trim().max(30).optional(),
   costPrice: nonNegativeNumber.optional(),
   salePrice: nonNegativeNumber,
+});
+
+export const combineBatchesSchema = z.object({
+  batchAllocations: z.array(z.object({
+    batchId: objectIdSchema,
+    quantity: positiveNumber,
+  })).min(2, 'At least 2 batches are required to combine'),
+  mergedBatchNumber: z.string().trim().max(50).optional(),
 });
 
 export const saleSchema = z.object({

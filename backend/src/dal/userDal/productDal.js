@@ -76,4 +76,87 @@ export const productDal = {
     await connectDB();
     return Product.findOneAndDelete({ _id: id, userId });
   },
+
+  async combineBatches(productId, userId, batchAllocations, customBatchNumber) {
+    await connectDB();
+    return withTransaction(async (session) => {
+      const product = await Product.findOne({ _id: productId, userId }).session(session);
+      if (!product) throw new Error('Product not found');
+
+      let totalMergedQty = 0;
+      let totalMergedCost = 0;
+
+      for (const alloc of batchAllocations) {
+        const allocQty = parseFloat(alloc.quantity) || 0;
+        if (allocQty <= 0) continue;
+
+        const batch = await StockBatch.findOne({ _id: alloc.batchId, productId, userId }).session(session);
+        if (!batch) throw new Error(`Batch ${alloc.batchId} not found`);
+        if (batch.quantity < allocQty) {
+          throw new Error(`Insufficient stock in batch ${batch.batchNumber || batch._id}. Available: ${batch.quantity}`);
+        }
+
+        // Deduct from source batch
+        await StockBatch.updateOne(
+          { _id: batch._id, userId },
+          { $inc: { quantity: -allocQty } },
+          { session }
+        );
+
+        totalMergedQty += allocQty;
+        totalMergedCost += allocQty * (batch.purchasePrice || 0);
+      }
+
+      if (totalMergedQty <= 0) {
+        throw new Error('Total combined quantity must be greater than 0');
+      }
+
+      const weightedAvgPrice = totalMergedCost / totalMergedQty;
+
+      // Determine new batch number
+      let batchNumber = customBatchNumber?.trim();
+      if (!batchNumber) {
+        const totalBatches = await StockBatch.countDocuments({ userId }).session(session);
+        batchNumber = `BCH-${1001 + totalBatches}-COMBINED`;
+      }
+
+      // Create new combined batch
+      const [newBatch] = await StockBatch.create(
+        [
+          {
+            productId,
+            userId,
+            batchNumber,
+            purchasePrice: parseFloat(weightedAvgPrice.toFixed(2)),
+            quantity: parseFloat(totalMergedQty.toFixed(2)),
+          },
+        ],
+        { session }
+      );
+
+      // Re-calculate weighted average cost for product across all active batches
+      const allActiveBatches = await StockBatch.find({ productId, userId, quantity: { $gt: 0 } }).session(session);
+      let overallQty = 0;
+      let overallCost = 0;
+      for (const b of allActiveBatches) {
+        overallQty += b.quantity;
+        overallCost += b.quantity * b.purchasePrice;
+      }
+      if (overallQty > 0) {
+        const newProductBaseCost = overallCost / overallQty;
+        await Product.updateOne(
+          { _id: productId, userId },
+          { baseCostPrice: parseFloat(newProductBaseCost.toFixed(2)) },
+          { session }
+        );
+      }
+
+      return {
+        message: 'Batches combined successfully',
+        mergedBatch: newBatch,
+        weightedAvgPrice: parseFloat(weightedAvgPrice.toFixed(2)),
+        totalMergedQty: parseFloat(totalMergedQty.toFixed(2)),
+      };
+    });
+  },
 };

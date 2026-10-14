@@ -74,4 +74,12 @@ export const productService = {
   async deleteProduct(id, userId) {
     return await productDal.delete(id, userId);
   },
+
+  async combineBatches(productId, userId, data) {
+    const { batchAllocations, mergedBatchNumber } = data;
+    if (!Array.isArray(batchAllocations) || batchAllocations.length < 2) {
+      throw new Error('At least 2 batches are required to combine');
+    }
+    return await productDal.combineBatches(productId, userId, batchAllocations, mergedBatchNumber);
+  },
 };

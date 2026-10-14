@@ -56,7 +56,21 @@ export const saleService = {
 
       let costPrice = parseFloat(it.costPrice) || 0;
 
-      if (it.batchId && it.batchId !== 'FIFO') {
+      if (it.batchAllocations && it.batchAllocations.length > 0) {
+        let totalAllocBaseQty = 0;
+        let totalAllocCost = 0;
+        for (const alloc of it.batchAllocations) {
+          const batch = await saleDal.findStockBatchForUser(alloc.batchId, it.productId, userId);
+          if (!batch) throw new Error(`Selected batch ${alloc.batchId} not found`);
+          const allocQty = parseFloat(alloc.quantity) || 0;
+          if (batch.quantity < allocQty) {
+            throw new Error(`Insufficient stock in batch ${batch.batchNumber || batch._id}. Available: ${batch.quantity} ${product.unit}`);
+          }
+          totalAllocBaseQty += allocQty;
+          totalAllocCost += allocQty * (batch.purchasePrice ?? product.baseCostPrice ?? 0);
+        }
+        costPrice = totalAllocBaseQty > 0 ? totalAllocCost / totalAllocBaseQty : (product.baseCostPrice || 0);
+      } else if (it.batchId && it.batchId !== 'FIFO' && it.batchId !== 'COMBINED') {
         const batch = await saleDal.findStockBatchForUser(it.batchId, it.productId, userId);
         if (!batch) throw new Error(`Batch ${it.batchId} not found`);
         if (batch.quantity < baseQty) {
@@ -69,9 +83,25 @@ export const saleService = {
             `Insufficient stock for ${product.name}. Available: ${product.currentStock} ${product.unit}`,
           );
         }
-        if (!costPrice && product.baseCostPrice) {
-          costPrice = product.baseCostPrice;
+        const activeBatches = await saleDal.findActiveBatchesForProduct(it.productId, userId);
+        let remaining = baseQty;
+        let totalCost = 0;
+        let consumed = 0;
+
+        for (const b of activeBatches) {
+          if (remaining <= 0) break;
+          const take = Math.min(b.quantity, remaining);
+          totalCost += take * (b.purchasePrice ?? product.baseCostPrice ?? 0);
+          consumed += take;
+          remaining -= take;
         }
+
+        if (remaining > 0) {
+          totalCost += remaining * (product.baseCostPrice || 0);
+          consumed += remaining;
+        }
+
+        costPrice = consumed > 0 ? totalCost / consumed : product.baseCostPrice || 0;
       }
 
       const salePrice = parseFloat(it.salePrice) || 0;
@@ -84,7 +114,8 @@ export const saleService = {
 
       lineItems.push({
         productId: it.productId,
-        batchId: it.batchId && it.batchId !== 'FIFO' ? it.batchId : null,
+        batchId: it.batchId && it.batchId !== 'FIFO' && it.batchId !== 'COMBINED' ? it.batchId : null,
+        batchAllocations: it.batchAllocations && it.batchAllocations.length > 0 ? it.batchAllocations : undefined,
         quantity: qty,
         unit: itemUnit,
         baseQuantity: baseQty,

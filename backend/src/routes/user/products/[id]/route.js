@@ -4,7 +4,7 @@ import { productService } from '../../../../services/userService/productService.
 import { requireUserSession } from '../../../../middleware/requireUserSession.js';
 import { validateRequest } from '../../../../middleware/validateRequest.js';
 import { idParamsSchema } from '../../../../validations/common.js';
-import { productUpdateSchema } from '../../../../validations/resources.js';
+import { productUpdateSchema, combineBatchesSchema } from '../../../../validations/resources.js';
 
 const router = Router({ mergeParams: true });
 router.use(requireUserSession, validateRequest(idParamsSchema, 'params'));
@@ -47,8 +47,20 @@ async function handleDelete(req, res) {
   }
 }
 
+async function handleCombineBatches(req, res) {
+  try {
+    const { id } = req.params;
+    const result = await productService.combineBatches(id, req.auth.id, req.body);
+    return res.status(200).json(result);
+  } catch (err) {
+    console.error('Combine batches error:', err);
+    return res.status(400).json({ error: err.message || 'Failed to combine batches' });
+  }
+}
+
 router.get('/', handleGet);
 router.put('/', validateRequest(productUpdateSchema), handlePut);
 router.delete('/', handleDelete);
+router.post('/combine-batches', validateRequest(combineBatchesSchema), handleCombineBatches);
 
 export default router;

@@ -121,6 +121,10 @@ const SaleItemSchema = createSchema({
   saleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Sale', required: true },
   productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
   batchId: { type: mongoose.Schema.Types.ObjectId, ref: 'StockBatch' },
+  batchAllocations: [{
+    batchId: { type: mongoose.Schema.Types.ObjectId, ref: 'StockBatch' },
+    quantity: { type: Number },
+  }],
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   quantity: { type: Number, required: true },
   unit: { type: String, trim: true },

@@ -1,3 +1,4 @@
+import { DomSafetyPatch } from '@/components/DomSafetyPatch';
 import { Toaster } from 'react-hot-toast';
 import './globals.css';
 
@@ -52,8 +53,9 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen antialiased bg-background text-foreground">
+    <html lang="en" translate="no" className="notranslate" suppressHydrationWarning>
+      <body className="notranslate min-h-screen antialiased bg-background text-foreground">
+        <DomSafetyPatch />
         <div className="max-w-[1700px] mx-auto min-h-screen relative">
           {children}
           <Toaster position="top-right" toastOptions={{ duration: 4000 }} />

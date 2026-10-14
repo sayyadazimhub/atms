@@ -53,17 +53,18 @@ export function CustomSelect({
     >
       <SelectTrigger
         id={id}
+        translate="no"
         className={cn(
-          'w-full transition-all',
+          'w-full transition-all notranslate',
           !safeValue && (placeholderClassName || 'text-slate-400 dark:text-slate-500 font-normal data-[placeholder]:text-slate-400 dark:data-[placeholder]:text-slate-500'),
           className
         )}
       >
         <SelectValue placeholder={placeholder}>
-          {selectedLabel || undefined}
+          {selectedLabel ? <span className="truncate">{selectedLabel}</span> : undefined}
         </SelectValue>
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent translate="no" className="notranslate">
         {placeholder && allowClear && !hasMatchingOption && (
           <SelectItem
             value="__CLEAR__"

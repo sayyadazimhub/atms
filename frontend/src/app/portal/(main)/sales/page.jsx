@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,7 +24,14 @@ import {
     Truck,
     Users,
     Receipt,
-    ChevronDown
+    ChevronDown,
+    ChevronUp,
+    Sparkles,
+    Scissors,
+    Layers,
+    Check,
+    Table,
+    Boxes
 } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { cn } from '@/lib/utils';
@@ -33,7 +41,8 @@ import { PageHeader } from '@/components/portal/PageHeader';
 import { CustomSelect } from '@/components/ui/custom-select';
 import { getCompatibleUnits, getConversionFactor } from '@/lib/units';
 
-export default function SalesPage() {
+function SalesPageContent() {
+    const searchParams = useSearchParams();
     const [sales, setSales] = useState([]);
     const [pagination, setPagination] = useState({ page: 1, pages: 1 });
     const [loading, setLoading] = useState(true);
@@ -41,17 +50,21 @@ export default function SalesPage() {
     const [showViewModal, setShowViewModal] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
+    const [activeBatchPickerRow, setActiveBatchPickerRow] = useState(null);
+    const [cachedCombineRow, setCachedCombineRow] = useState(null);
+    const [multiBatchQtys, setMultiBatchQtys] = useState({});
 
     // Form state
     const [customers, setCustomers] = useState([]);
     const [products, setProducts] = useState([]);
+    const [customerError, setCustomerError] = useState(false);
     const [formData, setFormData] = useState({
         customerId: '',
         paidAmount: '',
         laborCharge: '',
         vehicleRent: '',
         otherCharges: '',
-        items: [{ productId: '', batchId: '', quantity: '', salePrice: '', costPrice: '' }],
+        items: [{ _key: 'init-0', productId: '', batchId: '', quantity: '', salePrice: '', costPrice: '' }],
     });
     const [editFormData, setEditFormData] = useState({
         id: '',
@@ -91,11 +104,147 @@ export default function SalesPage() {
             ]);
             const customersData = await customersRes.json();
             const productsData = await productsRes.json();
+            const loadedProducts = productsData.products || [];
             setCustomers(customersData.customers || []);
-            setProducts(productsData.products || []);
+            setProducts(loadedProducts);
+            return loadedProducts;
         } catch (err) {
             console.error('Failed to load customers/products:', err);
+            return [];
         }
+    };
+
+    // Handle deep links from stock table (e.g. /portal/sales?product=123&batch=456&create=true)
+    useEffect(() => {
+        const prodParam = searchParams.get('product');
+        const batchParam = searchParams.get('batch');
+        const createParam = searchParams.get('create');
+
+        if (prodParam || createParam === 'true') {
+            setShowCreateModal(true);
+            fetchCustomersAndProducts().then((loadedProducts) => {
+                if (prodParam && loadedProducts.length > 0) {
+                    const prod = loadedProducts.find(p => String(p.id || p._id) === String(prodParam));
+                    if (prod) {
+                        const availableBatches = prod.batches?.filter(b => Number(b.quantity || 0) > 0) || [];
+                        const firstBatch = availableBatches[0];
+                        const batchVal = batchParam || (firstBatch ? String(firstBatch.id || firstBatch._id) : '');
+                        let cost = Number(prod.baseCostPrice || 0);
+                        if (batchVal) {
+                            const b = prod.batches?.find(batch => String(batch.id || batch._id) === String(batchVal));
+                            if (b) cost = Number(b.purchasePrice ?? prod.baseCostPrice ?? 0);
+                        }
+                        setFormData(prev => ({
+                            ...prev,
+                            items: [{
+                                productId: prodParam,
+                                batchId: batchVal,
+                                quantity: '',
+                                unit: prod.unit || 'KG',
+                                salePrice: prod.baseSalePrice || '',
+                                costPrice: cost,
+                            }]
+                        }));
+                    }
+                }
+            });
+        }
+    }, [searchParams]);
+
+    useEffect(() => {
+        if (activeBatchPickerRow !== null) {
+            setCachedCombineRow(activeBatchPickerRow);
+            const item = formData.items[activeBatchPickerRow];
+            if (item && item.batchId === 'COMBINED' && item.batchAllocations?.length > 0) {
+                const initialQtys = {};
+                item.batchAllocations.forEach(a => {
+                    initialQtys[String(a.batchId)] = String(a.quantity);
+                });
+                setMultiBatchQtys(initialQtys);
+            } else {
+                setMultiBatchQtys({});
+            }
+        }
+    }, [activeBatchPickerRow]);
+
+    const effectiveCombineRow = activeBatchPickerRow !== null ? activeBatchPickerRow : cachedCombineRow;
+    const activeCombineItem = effectiveCombineRow !== null && formData.items ? formData.items[effectiveCombineRow] : null;
+    const activeCombineProduct = activeCombineItem ? products.find(p => String(p.id || p._id) === String(activeCombineItem.productId)) : null;
+    const activeCombineBatches = (activeCombineProduct?.batches || []).filter(b => Number(b.quantity || 0) > 0);
+
+    let combineTotalQty = 0;
+    let combineTotalVal = 0;
+    let combineSelectedCount = 0;
+    let combineHasExceeded = false;
+
+    activeCombineBatches.forEach(b => {
+        const bId = String(b.id || b._id);
+        const q = parseFloat(multiBatchQtys[bId]) || 0;
+        const avail = Number(b.quantity || 0);
+        if (q > avail) combineHasExceeded = true;
+        if (q > 0) {
+            combineSelectedCount += 1;
+            const rate = Number(b.purchasePrice ?? (activeCombineProduct?.baseCostPrice || 0));
+            combineTotalQty += q;
+            combineTotalVal += q * rate;
+        }
+    });
+
+    const combineBlendedAvgCost = combineTotalQty > 0 ? (combineTotalVal / combineTotalQty) : 0;
+
+    const handleCombineIntoSingleSaleItem = () => {
+        const targetRow = activeBatchPickerRow !== null ? activeBatchPickerRow : cachedCombineRow;
+        if (targetRow === null) return;
+        const baseItem = formData.items[targetRow];
+        const product = products.find(p => String(p.id || p._id) === String(baseItem?.productId));
+        if (!product) return;
+
+        const chosenBatches = Object.entries(multiBatchQtys)
+            .filter(([_, qty]) => parseFloat(qty) > 0)
+            .map(([batchId, qty]) => {
+                const b = product.batches?.find(batch => String(batch.id || batch._id) === String(batchId));
+                return {
+                    batchId,
+                    batchNumber: b?.batchNumber || `Batch`,
+                    quantity: parseFloat(qty),
+                    purchasePrice: Number(b?.purchasePrice ?? (product.baseCostPrice || 0)),
+                };
+            });
+
+        if (chosenBatches.length === 0) {
+            toast.error('Please enter quantity for at least one batch');
+            return;
+        }
+
+        for (const alloc of chosenBatches) {
+            const b = product.batches?.find(batch => String(batch.id || batch._id) === String(alloc.batchId));
+            const avail = Number(b?.quantity || 0);
+            if (alloc.quantity > avail) {
+                toast.error(`Quantity for lot ${alloc.batchNumber} cannot exceed available stock (${avail} ${product.unit || 'KG'})`);
+                return;
+            }
+        }
+
+        const totalQty = chosenBatches.reduce((sum, b) => sum + b.quantity, 0);
+        const totalCostVal = chosenBatches.reduce((sum, b) => sum + (b.quantity * b.purchasePrice), 0);
+        const blendedCost = totalQty > 0 ? (totalCostVal / totalQty) : (product.baseCostPrice || 0);
+
+        const newItems = [...formData.items];
+        newItems[targetRow] = {
+            productId: baseItem.productId,
+            batchId: 'COMBINED',
+            batchAllocations: chosenBatches,
+            quantity: String(parseFloat(totalQty.toFixed(2))),
+            unit: baseItem.unit || product.unit || 'KG',
+            salePrice: baseItem.salePrice || product.baseSalePrice || '',
+            costPrice: parseFloat(blendedCost.toFixed(2)),
+            combinedDescription: chosenBatches.map(b => `${b.batchNumber}: ${b.quantity} ${product.unit || 'KG'}`).join(' + '),
+        };
+
+        setFormData({ ...formData, items: newItems });
+        setActiveBatchPickerRow(null);
+        setMultiBatchQtys({});
+        toast.success(`Combined ${chosenBatches.length} lots into 1 sale item! Weighted average cost: ₹${blendedCost.toFixed(2)}/${product.unit || 'KG'}`);
     };
 
     const handleViewBill = async (saleId) => {
@@ -405,7 +554,9 @@ export default function SalesPage() {
             iframe.contentWindow.focus();
             iframe.contentWindow.print();
             setTimeout(() => {
-                document.body.removeChild(iframe);
+                if (iframe?.parentNode) {
+                    iframe.parentNode.removeChild(iframe);
+                }
             }, 1000);
         }, 500);
     };
@@ -413,7 +564,7 @@ export default function SalesPage() {
     const addItem = () => {
         setFormData({
             ...formData,
-            items: [...formData.items, { productId: '', batchId: '', quantity: '', unit: '', salePrice: '', costPrice: '' }],
+            items: [...formData.items, { _key: `item-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, productId: '', batchId: '', quantity: '', unit: '', salePrice: '', costPrice: '' }],
         });
     };
 
@@ -437,35 +588,45 @@ export default function SalesPage() {
                     newItems[index].salePrice = '';
                     newItems[index].costPrice = '';
                     newItems[index].batchId = '';
+                    delete newItems[index].batchAllocations;
+                    delete newItems[index].combinedDescription;
                 } else {
                     const availableBatches = product.batches?.filter(b => Number(b.quantity || 0) > 0) || [];
-                    const oldestBatch = availableBatches[0];
-                    newItems[index].costPrice = oldestBatch?.purchasePrice ?? product.baseCostPrice ?? '';
                     newItems[index].salePrice = product.baseSalePrice || '';
-                    newItems[index].batchId = availableBatches.length > 0 ? 'FIFO' : ''; // Default to FIFO allocation
+                    const firstBatch = availableBatches[0];
+                    if (firstBatch) {
+                        // Default to the oldest batch (FIFO)
+                        newItems[index].batchId = String(firstBatch.id || firstBatch._id);
+                        newItems[index].costPrice = Number(firstBatch.purchasePrice ?? product.baseCostPrice ?? 0);
+                    } else {
+                        newItems[index].batchId = '';
+                        newItems[index].costPrice = Number(product.baseCostPrice || 0);
+                    }
+                    delete newItems[index].batchAllocations;
+                    delete newItems[index].combinedDescription;
                 }
             } else {
                 newItems[index].unit = '';
                 newItems[index].costPrice = '';
                 newItems[index].salePrice = '';
                 newItems[index].batchId = '';
+                delete newItems[index].batchAllocations;
+                delete newItems[index].combinedDescription;
             }
         }
 
         // Update cost price and check stock when batch is selected
         if (field === 'batchId') {
+            if (value !== 'COMBINED') {
+                delete newItems[index].batchAllocations;
+                delete newItems[index].combinedDescription;
+            }
             const product = products.find(p => String(p.id || p._id) === String(newItems[index].productId));
-            if (value === 'FIFO' || !value) {
-                const availableBatches = product?.batches?.filter(b => Number(b.quantity || 0) > 0) || [];
-                const oldestBatch = availableBatches[0];
-                newItems[index].costPrice = oldestBatch?.purchasePrice ?? product?.baseCostPrice ?? 0;
-            } else {
-                const batch = product?.batches?.find(b => String(b.id || b._id) === String(value));
-                if (batch) {
-                    newItems[index].costPrice = batch.purchasePrice;
-                } else if (product) {
-                    newItems[index].costPrice = product.baseCostPrice || 0;
-                }
+            const batch = product?.batches?.find(b => String(b.id || b._id) === String(value));
+            if (batch) {
+                newItems[index].costPrice = Number(batch.purchasePrice ?? product?.baseCostPrice ?? 0);
+            } else if (product) {
+                newItems[index].costPrice = Number(product.baseCostPrice || 0);
             }
         }
 
@@ -492,24 +653,64 @@ export default function SalesPage() {
         const factor = getConversionFactor(selectedUnit, product.unit);
         const baseQty = qty * factor;
 
-        if (item.batchId && item.batchId !== 'FIFO') {
-            const batch = product.batches?.find(b => String(b.id || b._id) === String(item.batchId));
-            if (batch && baseQty > (batch.quantity || 0)) {
-                return `Exceeds batch stock! (Need: ${baseQty} ${product.unit}, Max: ${batch.quantity} ${product.unit})`;
+        // Combined batch check
+        if (item.batchId === 'COMBINED' && item.batchAllocations?.length > 0) {
+            for (const alloc of item.batchAllocations) {
+                const batch = product.batches?.find(b => String(b.id || b._id) === String(alloc.batchId));
+                const batchStock = Number(batch?.quantity || 0);
+                if (alloc.quantity > batchStock) {
+                    return `Lot ${batch?.batchNumber || 'Batch'} stock exceeded! (Need: ${alloc.quantity} ${product.unit}, Available: ${batchStock} ${product.unit})`;
+                }
             }
-        } else if (baseQty > currentStock) {
+        } else if (item.batchId && item.batchId !== 'FIFO') {
+            const batch = product.batches?.find(b => String(b.id || b._id) === String(item.batchId));
+            const batchStock = Number(batch?.quantity || 0);
+
+            let totalBatchDemand = 0;
+            formData.items.forEach((it) => {
+                if (String(it.productId) === String(item.productId) && String(it.batchId) === String(item.batchId)) {
+                    const itFactor = getConversionFactor(it.unit || product.unit, product.unit);
+                    totalBatchDemand += (parseFloat(it.quantity) || 0) * itFactor;
+                }
+            });
+
+            if (baseQty > batchStock) {
+                return `Exceeds Lot ${batch?.batchNumber || ''} stock! (Need: ${baseQty} ${product.unit}, Available: ${batchStock} ${product.unit})`;
+            }
+            if (totalBatchDemand > batchStock) {
+                return `Combined rows exceed Lot ${batch?.batchNumber || ''} stock! (Total Need: ${totalBatchDemand} ${product.unit}, Available: ${batchStock} ${product.unit})`;
+            }
+        }
+
+        // Global product stock check across all rows for this product
+        let totalProductDemand = 0;
+        formData.items.forEach((it) => {
+            if (String(it.productId) === String(item.productId)) {
+                const itFactor = getConversionFactor(it.unit || product.unit, product.unit);
+                totalProductDemand += (parseFloat(it.quantity) || 0) * itFactor;
+            }
+        });
+
+        if (baseQty > currentStock) {
             return `Exceeds total stock! (Need: ${baseQty} ${product.unit}, Max: ${currentStock} ${product.unit})`;
         }
+        if (totalProductDemand > currentStock) {
+            return `Combined rows exceed total stock! (Total Need: ${totalProductDemand} ${product.unit}, Max: ${currentStock} ${product.unit})`;
+        }
+
         return null;
     };
 
     const isFormValid = () => {
         if (!formData.customerId) return false;
-        if (formData.items.length === 0) return false;
+        if (!formData.items || formData.items.length === 0) return false;
 
         return formData.items.every(item => {
-            if (!item.productId || !item.quantity || !item.salePrice) return false;
-            // Strict stock check - no item with stock error can be valid
+            if (!item.productId) return false;
+            const qty = parseFloat(item.quantity);
+            if (!item.quantity || isNaN(qty) || qty <= 0) return false;
+            const price = parseFloat(item.salePrice);
+            if (item.salePrice === '' || isNaN(price) || price < 0) return false;
             return !getStockError(item);
         });
     };
@@ -540,7 +741,17 @@ export default function SalesPage() {
             const factor = getConversionFactor(item.unit || product?.unit, product?.unit);
             const baseQty = qty * factor;
             const salePrice = parseFloat(item.salePrice) || 0;
-            const costPrice = parseFloat(item.costPrice) || 0;
+
+            let costPrice = 0;
+            if (item.batchId === 'COMBINED' && item.costPrice) {
+                costPrice = parseFloat(item.costPrice);
+            } else if (item.batchId) {
+                const b = product?.batches?.find(batch => String(batch.id || batch._id) === String(item.batchId));
+                costPrice = Number(b?.purchasePrice ?? product?.baseCostPrice ?? 0);
+            } else {
+                costPrice = Number(product?.baseCostPrice || 0);
+            }
+
             return sum + baseQty * (salePrice - costPrice);
         }, 0);
     };
@@ -548,13 +759,74 @@ export default function SalesPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!isFormValid() || hasStockErrors) {
-            toast.error('Please resolve stock errors before submitting');
+        // 1. Customer validation
+        if (!formData.customerId) {
+            setCustomerError(true);
+            toast.error('Please select a customer before submitting');
+            const customerEl = document.getElementById('customer');
+            if (customerEl) {
+                customerEl.focus();
+                customerEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return;
+        }
+        setCustomerError(false);
+
+        // 2. Items presence validation
+        if (!formData.items || formData.items.length === 0) {
+            toast.error('Please add at least one item to the sale invoice');
             return;
         }
 
-        if (parseFloat(formData.paidAmount) > totalAmount) {
-            toast.error('Paid amount cannot exceed total sale amount');
+        // 3. Item-by-item row validation
+        for (let i = 0; i < formData.items.length; i++) {
+            const it = formData.items[i];
+            const rowNum = i + 1;
+            const prod = products.find(p => String(p.id || p._id) === String(it.productId));
+            const prodName = prod ? prod.name : `Item #${rowNum}`;
+
+            if (!it.productId) {
+                toast.error(`Item #${rowNum}: Please select a product/commodity`);
+                return;
+            }
+
+            const qty = parseFloat(it.quantity);
+            if (!it.quantity || isNaN(qty) || qty <= 0) {
+                toast.error(`Item #${rowNum} (${prodName}): Please enter a valid quantity greater than 0`);
+                return;
+            }
+
+            const price = parseFloat(it.salePrice);
+            if (it.salePrice === '' || isNaN(price) || price < 0) {
+                toast.error(`Item #${rowNum} (${prodName}): Please enter a valid selling rate`);
+                return;
+            }
+
+            // Check actual stock errors for this item
+            const stockErr = getStockError(it);
+            if (stockErr) {
+                toast.error(`Item #${rowNum} (${prodName}): ${stockErr}`);
+                return;
+            }
+        }
+
+        // 4. Logistics & delivery charges validation
+        const labor = parseFloat(formData.laborCharge) || 0;
+        const rent = parseFloat(formData.vehicleRent) || 0;
+        const other = parseFloat(formData.otherCharges) || 0;
+        if (labor < 0 || rent < 0 || other < 0) {
+            toast.error('Logistics and delivery charges cannot be negative numbers');
+            return;
+        }
+
+        // 5. Payment amount validation
+        const paid = parseFloat(formData.paidAmount) || 0;
+        if (paid < 0) {
+            toast.error('Payment received cannot be negative');
+            return;
+        }
+        if (paid > totalAmount) {
+            toast.error('Payment received cannot exceed total sale amount');
             return;
         }
 
@@ -571,13 +843,24 @@ export default function SalesPage() {
                     otherCharges: parseFloat(formData.otherCharges) || 0,
                     items: formData.items.map(it => {
                         const prod = products.find(p => String(p.id || p._id) === String(it.productId));
+                        const factor = getConversionFactor(it.unit || prod?.unit, prod?.unit);
+                        const isCombined = it.batchId === 'COMBINED' && it.batchAllocations?.length > 0;
+                        const selectedBatch = isCombined ? null : prod?.batches?.find(b => String(b.id || b._id) === String(it.batchId));
+                        const effectiveCost = isCombined
+                            ? (parseFloat(it.costPrice) || 0)
+                            : (selectedBatch?.purchasePrice ?? (Number(prod?.baseCostPrice) || 0));
+
                         return {
                             productId: it.productId,
-                            batchId: (it.batchId && it.batchId !== 'FIFO') ? it.batchId : null,
+                            batchId: isCombined ? null : (it.batchId || null),
+                            batchAllocations: isCombined ? it.batchAllocations.map(a => ({
+                                batchId: a.batchId,
+                                quantity: parseFloat(a.quantity) || 0,
+                            })) : undefined,
                             quantity: parseFloat(it.quantity) || 0,
                             unit: it.unit || prod?.unit || 'KG',
                             salePrice: parseFloat(it.salePrice) || 0,
-                            costPrice: parseFloat(it.costPrice) || 0
+                            costPrice: effectiveCost,
                         };
                     }),
                 }),
@@ -586,13 +869,14 @@ export default function SalesPage() {
             if (res.ok) {
                 toast.success('Sale created successfully!');
                 setShowCreateModal(false);
+                setCustomerError(false);
                 setFormData({
                     customerId: '',
                     paidAmount: '',
                     laborCharge: '',
                     vehicleRent: '',
                     otherCharges: '',
-                    items: [{ productId: '', batchId: '', quantity: '', salePrice: '', costPrice: 0 }],
+                    items: [{ _key: `item-${Date.now()}`, productId: '', batchId: '', quantity: '', salePrice: '', costPrice: '' }],
                 });
                 fetchSales();
             } else {
@@ -897,10 +1181,13 @@ export default function SalesPage() {
             </Card>
 
             {/* Create Sale Modal */}
-            <Dialog.Root open={showCreateModal} onOpenChange={setShowCreateModal}>
+            <Dialog.Root open={showCreateModal} onOpenChange={(open) => {
+                setShowCreateModal(open);
+                if (!open) setCustomerError(false);
+            }}>
                 <Dialog.Portal>
                     <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-                    <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[95vw] sm:w-full max-w-4xl lg:max-w-5xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white dark:bg-slate-950 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
+                    <Dialog.Content translate="no" className="notranslate fixed left-1/2 top-1/2 z-50 w-[95vw] sm:w-full max-w-4xl lg:max-w-5xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white dark:bg-slate-950 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
 
                         {/* Header */}
                         <div className="sticky top-0 z-20 shrink-0 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-5 sm:p-6 flex justify-between items-center rounded-t-2xl shadow-xs relative">
@@ -932,15 +1219,29 @@ export default function SalesPage() {
                         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
                             {/* Customer Selection */}
                             <div className="space-y-1.5">
-                                <Label htmlFor="customer" className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                                    Select Customer <span className="text-rose-500">*</span>
-                                </Label>
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="customer" className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                                        Select Customer <span className="text-rose-500">*</span>
+                                    </Label>
+                                    {customerError && (
+                                        <span className="text-[11px] font-semibold text-rose-500 flex items-center gap-1">
+                                            <AlertCircle className="h-3.5 w-3.5" />
+                                            Customer is required
+                                        </span>
+                                    )}
+                                </div>
                                 <CustomSelect
                                     id="customer"
                                     value={formData.customerId}
-                                    onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, customerId: e.target.value });
+                                        if (customerError) setCustomerError(false);
+                                    }}
                                     placeholder="Choose a Customer"
                                     options={customers.map((c) => ({ value: String(c.id || c._id), label: c.name, sublabel: c.phone }))}
+                                    className={cn(
+                                        customerError && "!border-rose-500 !ring-2 !ring-rose-500/20 bg-rose-50/20"
+                                    )}
                                 />
                             </div>
 
@@ -986,25 +1287,48 @@ export default function SalesPage() {
                                             const availableBatches = product?.batches?.filter(b => Number(b.quantity || 0) > 0) || [];
                                             const itemQty = parseFloat(item.quantity) || 0;
                                             const itemPrice = parseFloat(item.salePrice) || 0;
-                                            const itemCost = parseFloat(item.costPrice) || 0;
 
                                             const selectedUnit = item.unit || product?.unit || 'KG';
                                             const unitOptions = getCompatibleUnits(product?.unit);
                                             const factor = getConversionFactor(selectedUnit, product?.unit);
                                             const baseQty = itemQty * factor;
+
+                                            const isCombined = item.batchId === 'COMBINED' && item.batchAllocations?.length > 0;
+                                            const selectedBatch = isCombined ? null : availableBatches.find(b => String(b.id || b._id) === String(item.batchId));
+                                            const itemCost = isCombined
+                                                ? (parseFloat(item.costPrice) || 0)
+                                                : (selectedBatch?.purchasePrice ?? (Number(product?.baseCostPrice) || 0));
+
                                             const lineTotal = baseQty * itemPrice;
                                             const lineProfit = baseQty * (itemPrice - itemCost);
                                             const hasProfit = lineProfit >= 0;
 
-                                            const availableStock = item.batchId && item.batchId !== 'FIFO'
-                                                ? (product?.batches?.find(b => String(b.id || b._id) === String(item.batchId))?.quantity || 0)
-                                                : (product?.currentStock || 0);
+                                            const availableStock = isCombined
+                                                ? item.batchAllocations.reduce((s, a) => s + (parseFloat(a.quantity) || 0), 0)
+                                                : (selectedBatch ? Number(selectedBatch.quantity || 0) : Number(product?.currentStock || 0));
                                             const isOutOfStock = Boolean(product && availableStock <= 0);
+
+                                            const batchOptions = availableBatches.map((b, idx) => {
+                                                const bQty = Number(b.quantity || 0);
+                                                const bPrice = Number(b.purchasePrice ?? (product?.baseCostPrice || 0));
+                                                const isOldest = idx === 0;
+                                                return {
+                                                    value: String(b.id || b._id),
+                                                    label: `${b.batchNumber || `Batch #${idx + 1}`}${isOldest ? ' (FIFO Oldest)' : ''}`,
+                                                    sublabel: `Avail: ${bQty} ${product?.unit || 'KG'} • ₹${bPrice}/${product?.unit || 'KG'}`,
+                                                    sublabelClass: cn(
+                                                        "font-bold px-1.5 py-0.5 rounded text-[10px] border",
+                                                        isOldest
+                                                            ? "text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800"
+                                                            : "text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                                                    )
+                                                };
+                                            });
 
                                             return (
                                                 <div
-                                                    key={index}
-                                                    className="p-3.5 sm:px-4 sm:py-3 transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-900/40"
+                                                    key={item._key || index}
+                                                    className="p-3.5 sm:px-4 sm:py-3.5 transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-900/40"
                                                 >
                                                     {/* Desktop Row View */}
                                                     <div className="hidden sm:grid sm:grid-cols-12 gap-2.5 items-start">
@@ -1024,35 +1348,72 @@ export default function SalesPage() {
 
                                                         {/* Batch */}
                                                         <div className="sm:col-span-2 min-w-0">
-                                                            <CustomSelect
-                                                                value={item.batchId || (availableBatches.length > 0 ? 'FIFO' : '')}
-                                                                onChange={(e) => updateItem(index, 'batchId', e.target.value)}
-                                                                placeholder={availableBatches.length > 0 ? '⚡ Auto FIFO (Oldest Batch)' : 'Select Batch'}
-                                                                placeholderClassName={availableBatches.length > 0 ? 'text-slate-900 dark:text-slate-100 font-semibold' : undefined}
-                                                                className="h-10 text-xs sm:text-sm rounded-xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-2xs font-semibold text-slate-900 dark:text-slate-100"
-                                                                allowClear={false}
-                                                                options={[
-                                                                    ...(availableBatches.length > 0 ? [{
-                                                                        value: 'FIFO',
-                                                                        label: '⚡ Auto FIFO (Oldest Batch)',
-                                                                        sublabel: 'Auto Allocation',
-                                                                        sublabelClass: 'text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200/80 dark:border-emerald-900/60 px-1.5 py-0.5 rounded text-[10px]'
-                                                                    }] : []),
-                                                                    ...availableBatches.map((b, idx) => ({
-                                                                        value: String(b.id || b._id),
-                                                                        label: `${b.batchNumber || `BCH-${1000 + (idx + 1)}`} (₹${b.purchasePrice})`,
-                                                                        sublabelClass: 'text-slate-600 dark:text-slate-400 font-semibold bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 px-1.5 py-0.5 rounded text-[10px]'
-                                                                    }))
-                                                                ]}
-                                                                disabled={!item.productId || availableBatches.length === 0}
-                                                            />
-                                                            <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 mt-1 pl-1 truncate h-4">
-                                                                {item.batchId && item.batchId !== 'FIFO'
-                                                                    ? `Selected: ${availableBatches.find(b => String(b.id || b._id) === String(item.batchId))?.batchNumber || `Batch #${availableBatches.findIndex(b => String(b.id || b._id) === String(item.batchId)) + 1}`}`
-                                                                    : availableBatches.length > 0
-                                                                        ? '⚡ FIFO allocation'
-                                                                        : '\u00A0'}
-                                                            </p>
+                                                            {isCombined ? (
+                                                                <div className="h-10 px-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex items-center justify-between gap-1.5 shadow-2xs">
+                                                                    <div className="min-w-0">
+                                                                        <span className="text-[11px] font-black text-indigo-700 dark:text-indigo-300 truncate block">
+                                                                            ⚡ Combined ({item.batchAllocations?.length} Lots)
+                                                                        </span>
+                                                                        <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-mono font-bold block truncate">
+                                                                            Avg ₹{itemCost.toFixed(2)}/{product?.unit || 'KG'}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-1 shrink-0">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setActiveBatchPickerRow(index)}
+                                                                            className="p-1 rounded-md text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors cursor-pointer"
+                                                                            title="Edit combined batch quantities"
+                                                                        >
+                                                                            <Pencil className="h-3 w-3" />
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                const firstBatch = availableBatches[0];
+                                                                                const newItems = [...formData.items];
+                                                                                newItems[index] = {
+                                                                                    ...newItems[index],
+                                                                                    batchId: firstBatch ? String(firstBatch.id || firstBatch._id) : '',
+                                                                                    costPrice: firstBatch ? Number(firstBatch.purchasePrice ?? product?.baseCostPrice ?? 0) : Number(product?.baseCostPrice || 0),
+                                                                                    batchAllocations: undefined,
+                                                                                    combinedDescription: undefined,
+                                                                                };
+                                                                                setFormData({ ...formData, items: newItems });
+                                                                            }}
+                                                                            className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                                                                            title="Remove combination & select single batch"
+                                                                        >
+                                                                            <X className="h-3 w-3" />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <>
+                                                                    <CustomSelect
+                                                                        value={item.batchId}
+                                                                        onChange={(e) => updateItem(index, 'batchId', e.target.value)}
+                                                                        placeholder={availableBatches.length > 0 ? 'Select Batch' : 'No Batches'}
+                                                                        className="h-10 text-xs sm:text-sm rounded-xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-2xs font-semibold text-slate-900 dark:text-slate-100"
+                                                                        allowClear={false}
+                                                                        options={batchOptions}
+                                                                        disabled={!item.productId || availableBatches.length === 0}
+                                                                    />
+                                                                    {availableBatches.length >= 2 && (
+                                                                        <div className="mt-1 pl-0.5">
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => setActiveBatchPickerRow(index)}
+                                                                                className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
+                                                                                title="Combine portions from 2 or more batches"
+                                                                            >
+                                                                                <Layers className="h-2.5 w-2.5" />
+                                                                                Combine Batches...
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
+                                                                </>
+                                                            )}
                                                         </div>
 
                                                         {/* Quantity & Unit */}
@@ -1124,11 +1485,18 @@ export default function SalesPage() {
                                                             {selectedUnit !== product?.unit && itemPrice > 0 ? (
                                                                 <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-1 pl-1 truncate h-4">
                                                                     = ₹{(itemPrice * factor).toLocaleString('en-IN', { maximumFractionDigits: 2 })}/{selectedUnit}
-                                                                    {itemCost > 0 && !isOutOfStock ? ` • Cost: ₹${itemCost}/${product?.unit || 'KG'}` : ''}
+                                                                    {itemCost > 0 && !isOutOfStock ? (
+                                                                        ` • Cost: ₹${itemCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/${product?.unit || 'KG'}${isCombined ? ` (Avg of ${item.batchAllocations.length} lots)` : ''}`
+                                                                    ) : ''}
                                                                 </p>
                                                             ) : itemCost > 0 && !isOutOfStock ? (
                                                                 <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 mt-1 pl-1 truncate h-4">
-                                                                    Cost: ₹{itemCost}/{product?.unit || 'KG'}
+                                                                    Cost: ₹{itemCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/${product?.unit || 'KG'}
+                                                                    {isCombined && (
+                                                                        <span className="text-indigo-600 dark:text-indigo-400 font-bold ml-1">
+                                                                            (Weighted avg of {item.batchAllocations.length} lots)
+                                                                        </span>
+                                                                    )}
                                                                 </p>
                                                             ) : (
                                                                 <div className="h-4 mt-1" />
@@ -1223,32 +1591,85 @@ export default function SalesPage() {
                                                             )}
                                                         </div>
 
+                                                        {/* Mobile Batch Selection */}
                                                         <div className="space-y-1.5">
-                                                            <Label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                                                                Batch
-                                                            </Label>
-                                                            <CustomSelect
-                                                                value={item.batchId || (availableBatches.length > 0 ? 'FIFO' : '')}
-                                                                onChange={(e) => updateItem(index, 'batchId', e.target.value)}
-                                                                placeholder={availableBatches.length > 0 ? '⚡ Auto FIFO (Oldest Batch)' : 'Select Batch'}
-                                                                placeholderClassName={availableBatches.length > 0 ? 'text-slate-900 dark:text-slate-100 font-semibold' : undefined}
-                                                                className="h-10 text-xs sm:text-sm rounded-xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 font-semibold text-slate-900 dark:text-slate-100"
-                                                                allowClear={false}
-                                                                options={[
-                                                                    ...(availableBatches.length > 0 ? [{
-                                                                        value: 'FIFO',
-                                                                        label: '⚡ Auto FIFO (Oldest Batch)',
-                                                                        sublabel: 'Auto Allocation',
-                                                                        sublabelClass: 'text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200/80 dark:border-emerald-900/60 px-1.5 py-0.5 rounded text-[10px]'
-                                                                    }] : []),
-                                                                    ...availableBatches.map((b, idx) => ({
-                                                                        value: String(b.id || b._id),
-                                                                        label: `${b.batchNumber || `BCH-${1000 + (idx + 1)}`} (₹${b.purchasePrice})`,
-                                                                        sublabelClass: 'text-slate-600 dark:text-slate-400 font-semibold bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 px-1.5 py-0.5 rounded text-[10px]'
-                                                                    }))
-                                                                ]}
-                                                                disabled={!item.productId || availableBatches.length === 0}
-                                                            />
+                                                            <div className="flex items-center justify-between">
+                                                                <Label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                                                                    Batch / Lot
+                                                                </Label>
+                                                                {availableBatches.length >= 2 && !isCombined && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setActiveBatchPickerRow(index)}
+                                                                        className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
+                                                                    >
+                                                                        <Layers className="h-3 w-3" />
+                                                                        Combine Batches...
+                                                                    </button>
+                                                                )}
+                                                            </div>
+
+                                                            {isCombined ? (
+                                                                <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex items-center justify-between gap-2 shadow-2xs">
+                                                                    <div className="min-w-0">
+                                                                        <span className="text-xs font-black text-indigo-700 dark:text-indigo-300 truncate block">
+                                                                            ⚡ Combined ({item.batchAllocations?.length} Lots)
+                                                                        </span>
+                                                                        <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-mono font-bold block truncate">
+                                                                            Blended Cost: ₹{itemCost.toFixed(2)}/{product?.unit || 'KG'}
+                                                                        </span>
+                                                                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block truncate mt-0.5">
+                                                                            {item.combinedDescription}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-1.5 shrink-0">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setActiveBatchPickerRow(index)}
+                                                                            className="p-1.5 rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors cursor-pointer"
+                                                                            title="Edit combined batch quantities"
+                                                                        >
+                                                                            <Pencil className="h-3.5 w-3.5" />
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                const firstBatch = availableBatches[0];
+                                                                                const newItems = [...formData.items];
+                                                                                newItems[index] = {
+                                                                                    ...newItems[index],
+                                                                                    batchId: firstBatch ? String(firstBatch.id || firstBatch._id) : '',
+                                                                                    costPrice: firstBatch ? Number(firstBatch.purchasePrice ?? product?.baseCostPrice ?? 0) : Number(product?.baseCostPrice || 0),
+                                                                                    batchAllocations: undefined,
+                                                                                    combinedDescription: undefined,
+                                                                                };
+                                                                                setFormData({ ...formData, items: newItems });
+                                                                            }}
+                                                                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                                                                            title="Reset to single batch"
+                                                                        >
+                                                                            <X className="h-3.5 w-3.5" />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <>
+                                                                    <CustomSelect
+                                                                        value={item.batchId}
+                                                                        onChange={(e) => updateItem(index, 'batchId', e.target.value)}
+                                                                        placeholder={availableBatches.length > 0 ? 'Select Batch' : 'No Batches'}
+                                                                        className="h-10 text-xs sm:text-sm rounded-xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 font-semibold text-slate-900 dark:text-slate-100"
+                                                                        allowClear={false}
+                                                                        options={batchOptions}
+                                                                        disabled={!item.productId || availableBatches.length === 0}
+                                                                    />
+                                                                    {selectedBatch && (
+                                                                        <p className="text-[10px] text-slate-500 dark:text-slate-400 pl-0.5">
+                                                                            Available in this batch: <strong>{Number(selectedBatch.quantity || 0)} {product?.unit}</strong> • Cost: <strong>₹{selectedBatch.purchasePrice || 0}/{product?.unit}</strong>
+                                                                        </p>
+                                                                    )}
+                                                                </>
+                                                            )}
                                                         </div>
 
                                                         <div className="grid grid-cols-2 gap-2.5">
@@ -1339,7 +1760,12 @@ export default function SalesPage() {
                                                             )}
                                                             {itemCost > 0 && !isOutOfStock && (
                                                                 <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium pl-0.5">
-                                                                    Cost: ₹{itemCost} / {product?.unit || 'KG'}
+                                                                    Cost: ₹{itemCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / {product?.unit || 'KG'}
+                                                                    {isCombined && (
+                                                                        <span className="text-indigo-600 dark:text-indigo-400 font-bold ml-1">
+                                                                            (Weighted avg of {item.batchAllocations.length} lots)
+                                                                        </span>
+                                                                    )}
                                                                 </p>
                                                             )}
                                                         </div>
@@ -1561,7 +1987,12 @@ export default function SalesPage() {
                                 {hasStockErrors ? (
                                     <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-900/60 text-rose-700 dark:text-rose-400 text-xs font-semibold">
                                         <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
-                                        <span>Cannot submit: One or more items have stock errors</span>
+                                        <span>Cannot submit: Stock limit exceeded in one or more items</span>
+                                    </div>
+                                ) : !formData.customerId ? (
+                                    <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/60 text-amber-700 dark:text-amber-400 text-xs font-medium">
+                                        <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                                        <span>Please select a customer above</span>
                                     </div>
                                 ) : (
                                     <div />
@@ -1593,7 +2024,7 @@ export default function SalesPage() {
             <Dialog.Root open={showEditModal} onOpenChange={setShowEditModal}>
                 <Dialog.Portal>
                     <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-                    <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[95vw] sm:w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white dark:bg-slate-950 shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] flex flex-col overflow-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
+                    <Dialog.Content translate="no" className="notranslate fixed left-1/2 top-1/2 z-50 w-[95vw] sm:w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white dark:bg-slate-950 shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] flex flex-col overflow-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
                         {/* Header */}
                         <div className="sticky top-0 z-20 shrink-0 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-5 sm:p-6 flex justify-between items-center rounded-t-2xl shadow-xs relative">
                             <div className="flex items-center gap-3.5">
@@ -1712,7 +2143,7 @@ export default function SalesPage() {
             <Dialog.Root open={showViewModal} onOpenChange={setShowViewModal}>
                 <Dialog.Portal>
                     <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm" />
-                    <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[95vw] sm:w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white dark:bg-slate-950 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800">
+                    <Dialog.Content translate="no" className="notranslate fixed left-1/2 top-1/2 z-50 w-[95vw] sm:w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white dark:bg-slate-950 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800">
                         {selectedSale && (
                             <>
                                 {/* Header */}
@@ -1884,6 +2315,292 @@ export default function SalesPage() {
                     </Dialog.Content>
                 </Dialog.Portal>
             </Dialog.Root>
+
+            {/* Combine Batches for Sale Modal */}
+            <Dialog.Root open={activeBatchPickerRow !== null} onOpenChange={(open) => { if (!open) { setActiveBatchPickerRow(null); setMultiBatchQtys({}); } }}>
+                <Dialog.Portal>
+                    <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+                    <Dialog.Content translate="no" className="notranslate fixed left-1/2 top-1/2 z-50 w-[95vw] sm:w-full max-w-3xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white dark:bg-slate-950 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
+                        {/* Header */}
+                        <div className="sticky top-0 z-20 shrink-0 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-4 sm:p-5 flex justify-between items-center rounded-t-2xl shadow-xs relative">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/60 shadow-xs">
+                                    <Layers className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <Dialog.Title asChild>
+                                        <h2 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                                            Combine Batches for Sale
+                                            {effectiveCombineRow !== null && (
+                                                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                                                    Row #{effectiveCombineRow + 1}
+                                                </span>
+                                            )}
+                                        </h2>
+                                    </Dialog.Title>
+                                    <Dialog.Description asChild>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                            Product: <strong className="text-slate-800 dark:text-slate-200">{activeCombineProduct?.name || 'Item'}</strong> • Available Stock: <strong className="text-emerald-600 dark:text-emerald-400">{activeCombineProduct?.currentStock || 0} {activeCombineProduct?.unit || 'KG'}</strong>
+                                        </p>
+                                    </Dialog.Description>
+                                </div>
+                            </div>
+                            <Dialog.Close asChild>
+                                <button
+                                    type="button"
+                                    className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors cursor-pointer"
+                                    aria-label="Close dialog"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </Dialog.Close>
+                            <div className="absolute -bottom-px left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-indigo-500 to-transparent" />
+                        </div>
+
+                        {/* Scrollable Body */}
+                        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+                            {/* Explanatory banner */}
+                            <div className="p-3.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40 text-xs text-indigo-900 dark:text-indigo-200 leading-relaxed flex items-start gap-2.5">
+                                <Sparkles className="h-4 w-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="font-semibold">
+                                        Combine portions from multiple batches to sell in 1 consolidated invoice item.
+                                    </p>
+                                    <p className="text-[11px] text-indigo-700 dark:text-indigo-300 mt-0.5 font-mono">
+                                        Blended Cost Rate = Total Merged Valuation ÷ Total Combined Quantity
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Batches Table / List */}
+                            <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-2xs">
+                                <div className="bg-slate-50 dark:bg-slate-900/80 px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                                    <span>Active Lots ({activeCombineBatches.length})</span>
+                                    <div className="flex items-center gap-2 text-[11px] font-medium lowercase">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const all = {};
+                                                activeCombineBatches.forEach(b => {
+                                                    all[String(b.id || b._id)] = String(Number(b.quantity || 0));
+                                                });
+                                                setMultiBatchQtys(all);
+                                            }}
+                                            className="text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer font-bold capitalize"
+                                        >
+                                            ⚡ Select All (Max)
+                                        </button>
+                                        <span className="text-slate-300 dark:text-slate-600">•</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setMultiBatchQtys({})}
+                                            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer capitalize"
+                                        >
+                                            Clear All
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="divide-y divide-slate-100 dark:divide-slate-800/80 max-h-[300px] overflow-y-auto">
+                                    {activeCombineBatches.length > 0 ? (
+                                        activeCombineBatches.map((b, idx) => {
+                                            const bId = String(b.id || b._id);
+                                            const avail = Number(b.quantity || 0);
+                                            const cost = Number(b.purchasePrice ?? (activeCombineProduct?.baseCostPrice || 0));
+                                            const currentQty = multiBatchQtys[bId] ?? '';
+                                            const numQty = parseFloat(currentQty) || 0;
+                                            const isSelected = numQty > 0;
+                                            const isOverLimit = numQty > avail;
+                                            const subtotalVal = numQty * cost;
+                                            const isOldest = idx === 0;
+
+                                            return (
+                                                <div
+                                                    key={bId}
+                                                    className={cn(
+                                                        "p-3 sm:px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors",
+                                                        isSelected ? "bg-indigo-50/30 dark:bg-indigo-950/20" : "bg-white dark:bg-slate-950",
+                                                        isOverLimit && "bg-rose-50/50 dark:bg-rose-950/20"
+                                                    )}
+                                                >
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <span className="font-mono font-bold text-xs text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                                                                {b.batchNumber || `BCH-${1000 + (idx + 1)}`}
+                                                            </span>
+                                                            {isOldest && (
+                                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                                                    FIFO (Oldest)
+                                                                </span>
+                                                            )}
+                                                            <span className="text-xs font-semibold text-slate-500">
+                                                                Avail: <strong className="text-slate-800 dark:text-slate-200">{avail.toLocaleString()} {activeCombineProduct?.unit || 'KG'}</strong>
+                                                            </span>
+                                                            <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                                                                @ ₹{cost.toLocaleString('en-IN')}/{activeCombineProduct?.unit || 'KG'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-3">
+                                                            <span>Inward: {b.createdAt ? new Date(b.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Stock Batch'}</span>
+                                                            {isSelected && !isOverLimit && (
+                                                                <span className="text-indigo-600 dark:text-indigo-400 font-semibold font-mono">
+                                                                    Contrib: ₹{subtotalVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                </span>
+                                                            )}
+                                                            {isOverLimit && (
+                                                                <span className="text-rose-600 dark:text-rose-400 font-bold">
+                                                                    Exceeds lot stock ({avail} {activeCombineProduct?.unit || 'KG'})
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2 shrink-0">
+                                                        <div className="relative">
+                                                            <Input
+                                                                type="number"
+                                                                min="0"
+                                                                max={avail}
+                                                                step="any"
+                                                                placeholder="0"
+                                                                value={currentQty}
+                                                                onChange={(e) => {
+                                                                    const val = e.target.value;
+                                                                    setMultiBatchQtys(prev => ({ ...prev, [bId]: val }));
+                                                                }}
+                                                                className={cn(
+                                                                    "w-28 h-9 text-right font-mono font-bold text-xs rounded-lg pr-7",
+                                                                    isOverLimit
+                                                                        ? "border-rose-400 focus:ring-rose-400"
+                                                                        : isSelected
+                                                                        ? "border-indigo-400 focus:ring-indigo-400"
+                                                                        : ""
+                                                                )}
+                                                            />
+                                                            <span className="absolute right-2 top-2 text-[10px] text-slate-400 font-bold uppercase pointer-events-none">
+                                                                {activeCombineProduct?.unit || 'KG'}
+                                                            </span>
+                                                        </div>
+                                                        <Button
+                                                            type="button"
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() => setMultiBatchQtys(prev => ({ ...prev, [bId]: String(avail) }))}
+                                                            className="h-9 px-2 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 rounded-lg cursor-pointer"
+                                                            title="Take entire lot quantity"
+                                                        >
+                                                            Max
+                                                        </Button>
+                                                        {isSelected && (
+                                                            <Button
+                                                                type="button"
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                onClick={() => setMultiBatchQtys(prev => ({ ...prev, [bId]: '' }))}
+                                                                className="h-9 w-8 p-0 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer"
+                                                                title="Clear quantity"
+                                                            >
+                                                                <X className="h-3.5 w-3.5" />
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <div className="py-8 text-center text-slate-400 text-xs">
+                                            No active batches available for this product.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Consolidation Live Preview Summary */}
+                            <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-50/70 via-white to-purple-50/50 dark:from-indigo-950/30 dark:via-slate-900 dark:to-purple-950/30 border border-indigo-200/80 dark:border-indigo-800/60 shadow-xs space-y-3">
+                                <div className="flex items-center justify-between pb-2 border-b border-indigo-100 dark:border-indigo-900/50">
+                                    <span className="text-xs font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5 uppercase tracking-wider">
+                                        <Sparkles className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                                        Consolidation Live Preview
+                                    </span>
+                                    <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                                        {combineSelectedCount} {combineSelectedCount === 1 ? 'Lot' : 'Lots'} Selected
+                                    </span>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                                    <div className="bg-white/80 dark:bg-slate-900/80 p-3 rounded-lg border border-slate-200/60 dark:border-slate-800">
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Combined Total Qty</div>
+                                        <div className="text-base font-black text-slate-900 dark:text-slate-100 font-mono mt-0.5">
+                                            {combineTotalQty.toLocaleString()} {activeCombineProduct?.unit || 'KG'}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white/80 dark:bg-slate-900/80 p-3 rounded-lg border border-slate-200/60 dark:border-slate-800">
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Merged Valuation</div>
+                                        <div className="text-base font-black text-slate-900 dark:text-slate-100 font-mono mt-0.5">
+                                            ₹{combineTotalVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-indigo-600 text-white p-3 rounded-lg shadow-xs">
+                                        <div className="text-[10px] font-bold text-indigo-200 uppercase tracking-wider">Weighted Avg Cost Rate</div>
+                                        <div className="text-lg font-black font-mono mt-0.5 flex items-baseline gap-1">
+                                            ₹{combineBlendedAvgCost.toFixed(2)}
+                                            <span className="text-xs font-normal text-indigo-200">/{activeCombineProduct?.unit || 'KG'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {combineSelectedCount >= 2 && combineTotalQty > 0 && (
+                                    <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono bg-white/60 dark:bg-slate-900/60 p-2 rounded border border-slate-200/50 dark:border-slate-800 flex items-center justify-between">
+                                        <span>Weighted Avg Formula:</span>
+                                        <span className="font-bold text-indigo-700 dark:text-indigo-300">
+                                            ₹{combineTotalVal.toFixed(2)} ÷ {combineTotalQty} {activeCombineProduct?.unit || 'KG'} = ₹{combineBlendedAvgCost.toFixed(2)}/{activeCombineProduct?.unit || 'KG'}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="sticky bottom-0 z-20 shrink-0 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 p-4 sm:px-6 flex items-center justify-between gap-3 rounded-b-2xl">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => { setActiveBatchPickerRow(null); setMultiBatchQtys({}); }}
+                                className="rounded-xl px-4 text-xs font-bold cursor-pointer"
+                            >
+                                Cancel
+                            </Button>
+
+                            <Button
+                                type="button"
+                                onClick={handleCombineIntoSingleSaleItem}
+                                disabled={combineSelectedCount < 1 || combineTotalQty <= 0 || combineHasExceeded}
+                                className="rounded-xl px-5 text-xs font-black bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white flex items-center gap-2 shadow-md cursor-pointer disabled:opacity-50 transition-all"
+                            >
+                                <Layers className="h-4 w-4" />
+                                Apply Combined Batches to Sale {combineBlendedAvgCost > 0 ? `(Avg: ₹${combineBlendedAvgCost.toFixed(2)}/${activeCombineProduct?.unit || 'KG'})` : ''}
+                            </Button>
+                        </div>
+                    </Dialog.Content>
+                </Dialog.Portal>
+            </Dialog.Root>
         </div>
+    );
+}
+
+export default function SalesPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-[60vh] flex flex-col items-center justify-center p-8 text-center">
+                <div className="h-10 w-10 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent mb-4" />
+                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                    Loading Sales Terminal...
+                </p>
+            </div>
+        }>
+            <SalesPageContent />
+        </Suspense>
     );
 }
