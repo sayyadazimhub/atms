@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Fragment } from 'react';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/portal/PageHeader';
+import { formatStockSecondaryUnits } from '@/lib/units';
 import Link from 'next/link';
 
 export default function StockMonitorPage() {
@@ -195,8 +196,8 @@ export default function StockMonitorPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {filteredProducts.map((p) => (
-                    <>
-                      <tr key={p.id} className="hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors group cursor-pointer" onClick={() => toggleExpand(p.id)}>
+                    <Fragment key={p.id || p._id}>
+                      <tr key={`row-${p.id || p._id}`} className="hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors group cursor-pointer" onClick={() => toggleExpand(p.id)}>
                         <td className="p-4">
                           <div className="flex items-center gap-3">
                             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold border border-blue-100 dark:border-blue-900/50">
@@ -230,6 +231,11 @@ export default function StockMonitorPage() {
                                 {p.currentStock.toLocaleString()}
                               </span>
                               <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tighter">{p.unit} total</span>
+                              {formatStockSecondaryUnits(p.currentStock, p.unit) && (
+                                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold tracking-tight mt-0.5">
+                                  {formatStockSecondaryUnits(p.currentStock, p.unit)}
+                                </span>
+                              )}
                             </div>
                             {expandedProducts.has(p.id) ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
                           </div>
@@ -240,17 +246,17 @@ export default function StockMonitorPage() {
                           <td colSpan={3} className="p-0 border-b dark:border-slate-800">
                             <div className="p-4 pl-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                               {p.batches && p.batches.length > 0 ? p.batches.map((batch, idx) => (
-                                <div key={batch.id} className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center justify-between">
+                                <div key={batch.id || batch._id || idx} className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center justify-between">
                                   <div className="flex items-center gap-3">
                                     <div className="h-8 w-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 flex items-center justify-center">
                                       <History className="h-4 w-4" />
                                     </div>
                                     <div>
                                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                        Batch {idx + 1}
+                                        {batch.batchNumber || `BCH-${1000 + (idx + 1)}`}
                                       </p>
                                       <p className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                                        Price: ₹{batch.purchasePrice}
+                                        Rate: ₹{batch.purchasePrice} / {p.unit}
                                       </p>
                                     </div>
                                   </div>
@@ -266,7 +272,7 @@ export default function StockMonitorPage() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   ))}
                   {filteredProducts.length === 0 && (
                     <tr>

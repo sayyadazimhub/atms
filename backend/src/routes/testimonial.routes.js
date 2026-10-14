@@ -26,12 +26,10 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ message: error.details[0].message });
     }
     const newTestimonial = await testimonialService.createTestimonial(value);
-    res
-      .status(201)
-      .json({
-        message: 'Testimonial submitted successfully. It will be reviewed by an admin.',
-        data: newTestimonial,
-      });
+    res.status(201).json({
+      message: 'Testimonial submitted successfully. It will be reviewed by an admin.',
+      data: newTestimonial,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

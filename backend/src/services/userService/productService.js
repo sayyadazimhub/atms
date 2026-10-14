@@ -33,21 +33,27 @@ export const productService = {
   },
 
   async createProduct(userId, data) {
-    const { name, unit, baseCostPrice } = data;
+    const { name, unit, baseCostPrice, baseSalePrice, openingStock = 0 } = data;
     if (!name || !unit || baseCostPrice === undefined || baseCostPrice === null) {
       throw new Error('Name, unit and base cost price are required');
     }
 
     const cost = parseFloat(baseCostPrice);
     if (isNaN(cost)) throw new Error('Invalid base cost price');
+    const sale = baseSalePrice !== undefined && baseSalePrice !== null ? parseFloat(baseSalePrice) || 0 : 0;
+    const initialQty = parseFloat(openingStock) || 0;
 
-    return await productDal.create({
-      name,
-      unit,
-      currentStock: 0,
-      baseCostPrice: cost,
-      userId,
-    });
+    return await productDal.createWithStock(
+      {
+        name,
+        unit,
+        baseCostPrice: cost,
+        baseSalePrice: sale,
+        userId,
+      },
+      initialQty,
+      cost,
+    );
   },
 
   async updateProduct(id, userId, data) {

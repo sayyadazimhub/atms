@@ -1,4 +1,5 @@
 import { saleDal } from '../../dal/userDal/saleDal.js';
+import { getConversionFactor } from '../../utils/unitConverter.js';
 
 export const saleService = {
   async getSales(userId, page = 1, limit = 20) {
@@ -49,32 +50,44 @@ export const saleService = {
       if (!product) throw new Error(`Product ${it.productId} not found`);
 
       const qty = parseFloat(it.quantity) || 0;
+      const itemUnit = it.unit || product.unit || 'KG';
+      const factor = getConversionFactor(itemUnit, product.unit);
+      const baseQty = qty * factor;
+
       let costPrice = parseFloat(it.costPrice) || 0;
 
-      if (it.batchId) {
+      if (it.batchId && it.batchId !== 'FIFO') {
         const batch = await saleDal.findStockBatchForUser(it.batchId, it.productId, userId);
         if (!batch) throw new Error(`Batch ${it.batchId} not found`);
-        if (batch.quantity < qty) {
-          throw new Error(`Insufficient stock in selected batch. Available: ${batch.quantity}`);
+        if (batch.quantity < baseQty) {
+          throw new Error(`Insufficient stock in selected batch. Available: ${batch.quantity} ${product.unit}`);
         }
         costPrice = batch.purchasePrice;
       } else {
-        if (product.currentStock < qty) {
+        if (product.currentStock < baseQty) {
           throw new Error(
-            `Insufficient stock for ${product.name}. Available: ${product.currentStock}`,
+            `Insufficient stock for ${product.name}. Available: ${product.currentStock} ${product.unit}`,
           );
+        }
+        if (!costPrice && product.baseCostPrice) {
+          costPrice = product.baseCostPrice;
         }
       }
 
       const salePrice = parseFloat(it.salePrice) || 0;
-      const profit = (salePrice - costPrice) * qty;
-      subtotal += salePrice * qty;
+      const lineRevenue = baseQty * salePrice;
+      const lineCost = costPrice * baseQty;
+      const profit = lineRevenue - lineCost;
+
+      subtotal += lineRevenue;
       totalProfit += profit;
 
       lineItems.push({
         productId: it.productId,
-        batchId: it.batchId,
+        batchId: it.batchId && it.batchId !== 'FIFO' ? it.batchId : null,
         quantity: qty,
+        unit: itemUnit,
+        baseQuantity: baseQty,
         costPrice,
         salePrice,
         profit,

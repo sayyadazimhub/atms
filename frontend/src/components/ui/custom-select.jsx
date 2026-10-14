@@ -17,10 +17,12 @@ export function CustomSelect({
   options = [],
   disabled = false,
   className,
+  placeholderClassName,
+  allowClear = true,
   id,
 }) {
-  // Ensure safe string value and handle empty string / null without crashing Radix Select
-  const safeValue = value !== undefined && value !== null && value !== '' ? String(value) : undefined;
+  // Always use controlled string value; default to '' so Radix stays controlled and renders placeholder
+  const safeValue = value !== undefined && value !== null ? String(value) : '';
 
   const handleValueChange = (newVal) => {
     const resolvedValue = newVal === '__CLEAR__' ? '' : newVal;
@@ -29,6 +31,19 @@ export function CustomSelect({
       onChange({ target: { value: resolvedValue } });
     }
   };
+
+  const selectedOpt = options.find((opt) => {
+    const optValue = typeof opt === 'object' ? String(opt.value ?? opt.id ?? opt._id ?? '') : String(opt);
+    return safeValue !== '' && optValue === safeValue;
+  });
+  const selectedLabel = selectedOpt
+    ? (typeof selectedOpt === 'object' ? (selectedOpt.label ?? selectedOpt.name) : selectedOpt)
+    : null;
+
+  const hasMatchingOption = options.some((opt) => {
+    const optLabel = typeof opt === 'object' ? (opt.label ?? opt.name) : opt;
+    return optLabel === placeholder;
+  });
 
   return (
     <Select
@@ -40,14 +55,16 @@ export function CustomSelect({
         id={id}
         className={cn(
           'w-full transition-all',
-          !safeValue && 'text-slate-400 dark:text-slate-500 font-normal',
+          !safeValue && (placeholderClassName || 'text-slate-400 dark:text-slate-500 font-normal data-[placeholder]:text-slate-400 dark:data-[placeholder]:text-slate-500'),
           className
         )}
       >
-        <SelectValue placeholder={placeholder} />
+        <SelectValue placeholder={placeholder}>
+          {selectedLabel || undefined}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
-        {placeholder && (
+        {placeholder && allowClear && !hasMatchingOption && (
           <SelectItem
             value="__CLEAR__"
             className="text-slate-400 dark:text-slate-500 italic py-2"
@@ -56,16 +73,20 @@ export function CustomSelect({
           </SelectItem>
         )}
         {options.map((opt) => {
-          const optValue = typeof opt === 'object' ? String(opt.value ?? opt.id) : String(opt);
+          const optValue = typeof opt === 'object' ? String(opt.value ?? opt.id ?? opt._id ?? '') : String(opt);
           const optLabel = typeof opt === 'object' ? (opt.label ?? opt.name) : opt;
           const optSub = typeof opt === 'object' ? opt.sublabel : null;
+          const optDisabled = typeof opt === 'object' ? Boolean(opt.disabled) : false;
+          const optSubClass = typeof opt === 'object' ? opt.sublabelClass : null;
 
           return (
-            <SelectItem key={optValue} value={optValue}>
+            <SelectItem key={optValue} value={optValue} disabled={optDisabled}>
               <div className="flex items-center justify-between gap-2.5 w-full min-w-0">
-                <span className="truncate flex-1 text-left">{optLabel}</span>
+                <span className={cn("truncate flex-1 text-left", optDisabled && "opacity-60")}>
+                  {optLabel}
+                </span>
                 {optSub && (
-                  <span className="text-[11px] text-slate-400 dark:text-slate-500 shrink-0 font-normal">
+                  <span className={cn("text-[11px] shrink-0 font-medium", optSubClass || "text-slate-400 dark:text-slate-500")}>
                     {optSub}
                   </span>
                 )}

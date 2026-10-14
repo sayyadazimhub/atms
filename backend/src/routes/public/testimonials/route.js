@@ -17,12 +17,10 @@ router.get('/', async (req, res) => {
 router.post('/', validateRequest(createTestimonialSchema, 'body'), async (req, res) => {
   try {
     const testimonial = await testimonialService.createTestimonial(req.body);
-    return res
-      .status(201)
-      .json({
-        message: 'Testimonial submitted successfully. It will be reviewed by an admin.',
-        data: testimonial,
-      });
+    return res.status(201).json({
+      message: 'Testimonial submitted successfully. It will be reviewed by an admin.',
+      data: testimonial,
+    });
   } catch (error) {
     return res.status(500).json({ error: error.message || 'Internal Server Error' });
   }

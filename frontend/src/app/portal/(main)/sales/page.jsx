@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +31,7 @@ import toast from 'react-hot-toast';
 import { ConfirmModal } from '@/components/portal/ConfirmModal';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { CustomSelect } from '@/components/ui/custom-select';
+import { getCompatibleUnits, getConversionFactor } from '@/lib/units';
 
 export default function SalesPage() {
     const [sales, setSales] = useState([]);
@@ -412,7 +413,7 @@ export default function SalesPage() {
     const addItem = () => {
         setFormData({
             ...formData,
-            items: [...formData.items, { productId: '', batchId: '', quantity: '', salePrice: '', costPrice: '' }],
+            items: [...formData.items, { productId: '', batchId: '', quantity: '', unit: '', salePrice: '', costPrice: '' }],
         });
     };
 
@@ -425,14 +426,26 @@ export default function SalesPage() {
         const newItems = [...formData.items];
         newItems[index][field] = value;
 
-        // Auto-fill cost price when product is selected
+        // Auto-fill cost price and unit when product is selected
         if (field === 'productId') {
-            const product = products.find(p => p.id === value);
+            const product = products.find(p => String(p.id || p._id) === String(value));
             if (product) {
-                newItems[index].costPrice = product.baseCostPrice || '';
-                newItems[index].salePrice = product.baseSalePrice || '';
-                newItems[index].batchId = ''; // Reset batch when product changes
+                newItems[index].unit = product.unit || 'KG';
+                const stock = Number(product.currentStock || 0);
+                if (stock <= 0) {
+                    newItems[index].quantity = '';
+                    newItems[index].salePrice = '';
+                    newItems[index].costPrice = '';
+                    newItems[index].batchId = '';
+                } else {
+                    const availableBatches = product.batches?.filter(b => Number(b.quantity || 0) > 0) || [];
+                    const oldestBatch = availableBatches[0];
+                    newItems[index].costPrice = oldestBatch?.purchasePrice ?? product.baseCostPrice ?? '';
+                    newItems[index].salePrice = product.baseSalePrice || '';
+                    newItems[index].batchId = availableBatches.length > 0 ? 'FIFO' : ''; // Default to FIFO allocation
+                }
             } else {
+                newItems[index].unit = '';
                 newItems[index].costPrice = '';
                 newItems[index].salePrice = '';
                 newItems[index].batchId = '';
@@ -441,12 +454,18 @@ export default function SalesPage() {
 
         // Update cost price and check stock when batch is selected
         if (field === 'batchId') {
-            const product = products.find(p => p.id === newItems[index].productId);
-            const batch = product?.batches?.find(b => b.id === value);
-            if (batch) {
-                newItems[index].costPrice = batch.purchasePrice;
-            } else if (product) {
-                newItems[index].costPrice = product.baseCostPrice || 0;
+            const product = products.find(p => String(p.id || p._id) === String(newItems[index].productId));
+            if (value === 'FIFO' || !value) {
+                const availableBatches = product?.batches?.filter(b => Number(b.quantity || 0) > 0) || [];
+                const oldestBatch = availableBatches[0];
+                newItems[index].costPrice = oldestBatch?.purchasePrice ?? product?.baseCostPrice ?? 0;
+            } else {
+                const batch = product?.batches?.find(b => String(b.id || b._id) === String(value));
+                if (batch) {
+                    newItems[index].costPrice = batch.purchasePrice;
+                } else if (product) {
+                    newItems[index].costPrice = product.baseCostPrice || 0;
+                }
             }
         }
 
@@ -454,19 +473,32 @@ export default function SalesPage() {
     };
 
     const getStockError = (item) => {
-        if (!item.productId || !item.quantity) return null;
-        const product = products.find(p => p.id === item.productId);
+        if (!item.productId) return null;
+        const product = products.find(p => String(p.id || p._id) === String(item.productId));
         if (!product) return null;
 
-        const qty = parseFloat(item.quantity);
+        const currentStock = Number(product.currentStock || 0);
+        if (currentStock <= 0) {
+            return `Out of Stock! (0 ${product.unit} available in inventory)`;
+        }
 
-        if (item.batchId) {
-            const batch = product.batches?.find(b => b.id === item.batchId);
-            if (batch && qty > batch.quantity) {
-                return `Exceeds batch stock! (Available: ${batch.quantity} ${product.unit})`;
+        if (!item.quantity) return null;
+        const qty = parseFloat(item.quantity);
+        if (qty <= 0) {
+            return `Quantity must be greater than 0`;
+        }
+
+        const selectedUnit = item.unit || product.unit || 'KG';
+        const factor = getConversionFactor(selectedUnit, product.unit);
+        const baseQty = qty * factor;
+
+        if (item.batchId && item.batchId !== 'FIFO') {
+            const batch = product.batches?.find(b => String(b.id || b._id) === String(item.batchId));
+            if (batch && baseQty > (batch.quantity || 0)) {
+                return `Exceeds batch stock! (Need: ${baseQty} ${product.unit}, Max: ${batch.quantity} ${product.unit})`;
             }
-        } else if (qty > product.currentStock) {
-            return `Exceeds total stock! (Available: ${product.currentStock} ${product.unit})`;
+        } else if (baseQty > currentStock) {
+            return `Exceeds total stock! (Need: ${baseQty} ${product.unit}, Max: ${currentStock} ${product.unit})`;
         }
         return null;
     };
@@ -477,16 +509,19 @@ export default function SalesPage() {
 
         return formData.items.every(item => {
             if (!item.productId || !item.quantity || !item.salePrice) return false;
-            // Removed strict batch selection requirement to allow FIFO fallback
+            // Strict stock check - no item with stock error can be valid
             return !getStockError(item);
         });
     };
 
     const calculateSubtotal = () => {
         return formData.items.reduce((sum, item) => {
+            const product = products.find(p => String(p.id || p._id) === String(item.productId));
             const qty = parseFloat(item.quantity) || 0;
+            const factor = getConversionFactor(item.unit || product?.unit, product?.unit);
+            const baseQty = qty * factor;
             const price = parseFloat(item.salePrice) || 0;
-            return sum + qty * price;
+            return sum + baseQty * price;
         }, 0);
     };
 
@@ -500,18 +535,26 @@ export default function SalesPage() {
 
     const calculateProfit = () => {
         return formData.items.reduce((sum, item) => {
+            const product = products.find(p => String(p.id || p._id) === String(item.productId));
             const qty = parseFloat(item.quantity) || 0;
+            const factor = getConversionFactor(item.unit || product?.unit, product?.unit);
+            const baseQty = qty * factor;
             const salePrice = parseFloat(item.salePrice) || 0;
             const costPrice = parseFloat(item.costPrice) || 0;
-            return sum + qty * (salePrice - costPrice);
+            return sum + baseQty * (salePrice - costPrice);
         }, 0);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!isFormValid()) {
-            toast.error('Please fix validation errors');
+        if (!isFormValid() || hasStockErrors) {
+            toast.error('Please resolve stock errors before submitting');
+            return;
+        }
+
+        if (parseFloat(formData.paidAmount) > totalAmount) {
+            toast.error('Paid amount cannot exceed total sale amount');
             return;
         }
 
@@ -526,13 +569,17 @@ export default function SalesPage() {
                     laborCharge: parseFloat(formData.laborCharge) || 0,
                     vehicleRent: parseFloat(formData.vehicleRent) || 0,
                     otherCharges: parseFloat(formData.otherCharges) || 0,
-                    items: formData.items.map(it => ({
-                        productId: it.productId,
-                        batchId: it.batchId || null,
-                        quantity: parseFloat(it.quantity) || 0,
-                        salePrice: parseFloat(it.salePrice) || 0,
-                        costPrice: parseFloat(it.costPrice) || 0
-                    })),
+                    items: formData.items.map(it => {
+                        const prod = products.find(p => String(p.id || p._id) === String(it.productId));
+                        return {
+                            productId: it.productId,
+                            batchId: (it.batchId && it.batchId !== 'FIFO') ? it.batchId : null,
+                            quantity: parseFloat(it.quantity) || 0,
+                            unit: it.unit || prod?.unit || 'KG',
+                            salePrice: parseFloat(it.salePrice) || 0,
+                            costPrice: parseFloat(it.costPrice) || 0
+                        };
+                    }),
                 }),
             });
 
@@ -565,6 +612,7 @@ export default function SalesPage() {
     const paidAmount = parseFloat(formData.paidAmount) || 0;
     const dueAmount = totalAmount - paidAmount;
     const estimatedProfit = calculateProfit();
+    const hasStockErrors = formData.items.some(item => Boolean(getStockError(item)));
 
     const totalReceivables = sales.reduce((sum, s) => sum + (s.dueAmount || 0), 0);
     const totalSalesToday = sales
@@ -573,6 +621,24 @@ export default function SalesPage() {
     const totalProfitToday = sales
         .filter(s => new Date(s.createdAt).toDateString() === new Date().toDateString())
         .reduce((sum, s) => sum + (s.totalProfit || 0), 0);
+
+    const productOptions = useMemo(() => {
+        return products.map((p) => {
+            const stock = Number(p.currentStock || 0);
+            const isOutOfStock = stock <= 0;
+            return {
+                value: String(p.id || p._id),
+                label: `${p.name} (${p.unit})`,
+                sublabel: isOutOfStock ? `Out of Stock (0 ${p.unit})` : `Stock: ${stock} ${p.unit}`,
+                sublabelClass: isOutOfStock
+                    ? 'text-rose-700 dark:text-rose-400 font-bold bg-rose-50 dark:bg-rose-950/70 border border-rose-200/80 dark:border-rose-900/60 px-2 py-0.5 rounded-md text-[10px]'
+                    : 'text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200/80 dark:border-emerald-900/60 px-2 py-0.5 rounded-md text-[10px]',
+                disabled: false,
+                isOutOfStock,
+                stock,
+            };
+        });
+    }, [products]);
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
@@ -834,7 +900,7 @@ export default function SalesPage() {
             <Dialog.Root open={showCreateModal} onOpenChange={setShowCreateModal}>
                 <Dialog.Portal>
                     <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-                    <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[95vw] sm:w-full max-w-4xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white dark:bg-slate-950 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
+                    <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[95vw] sm:w-full max-w-4xl lg:max-w-5xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white dark:bg-slate-950 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
 
                         {/* Header */}
                         <div className="sticky top-0 z-20 shrink-0 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-5 sm:p-6 flex justify-between items-center rounded-t-2xl shadow-xs relative">
@@ -874,153 +940,465 @@ export default function SalesPage() {
                                     value={formData.customerId}
                                     onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
                                     placeholder="Choose a Customer"
-                                    options={customers.map((c) => ({ value: c.id, label: c.name, sublabel: c.phone }))}
+                                    options={customers.map((c) => ({ value: String(c.id || c._id), label: c.name, sublabel: c.phone }))}
                                 />
                             </div>
 
                             {/* Items Section */}
                             <div className="space-y-3">
-                                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                                <div className="flex items-center justify-between pb-1">
                                     <div className="flex items-center gap-2">
                                         <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                                             Sale Items <span className="text-rose-500">*</span>
                                         </Label>
-                                        <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold">
-                                            {formData.items.length}
+                                        <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-200/60 dark:border-emerald-800/60">
+                                            {formData.items.length} {formData.items.length === 1 ? 'item' : 'items'}
                                         </span>
                                     </div>
                                     <Button
                                         type="button"
                                         size="sm"
                                         onClick={addItem}
-                                        className="h-8 sm:h-9 px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-xs shadow-sm shadow-emerald-500/10 transition-all cursor-pointer"
+                                        className="h-8 sm:h-8.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-xs shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
                                     >
-                                        <Plus className="mr-1.5 h-3.5 w-3.5" />
+                                        <Plus className="h-3.5 w-3.5" />
                                         Add Item
                                     </Button>
                                 </div>
 
-                                <div className="space-y-3">
-                                    {formData.items.map((item, index) => {
-                                        const stockError = getStockError(item);
-                                        const product = products.find(p => p.id === item.productId);
+                                {/* Items Sheet / Table */}
+                                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 shadow-xs overflow-hidden">
+                                    {/* Table Header (Desktop) */}
+                                    <div className="hidden sm:grid sm:grid-cols-12 gap-2.5 px-4 py-2.5 bg-slate-50 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                        <div className="sm:col-span-3">Product / Commodity</div>
+                                        <div className="sm:col-span-2">Batch</div>
+                                        <div className="sm:col-span-2">Quantity</div>
+                                        <div className="sm:col-span-2">Rate (₹/Base Unit)</div>
+                                        <div className="sm:col-span-2 text-right pr-2">Line Total</div>
+                                        <div className="sm:col-span-1 text-center">Action</div>
+                                    </div>
 
-                                        return (
-                                            <div
-                                                key={index}
-                                                className="rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/60 dark:bg-slate-900/40 p-3.5 sm:p-4 space-y-3 transition-colors hover:border-slate-300 dark:hover:border-slate-700"
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                                        Item #{index + 1}
-                                                    </span>
-                                                    {formData.items.length > 1 && (
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="h-7 px-2.5 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg text-xs font-medium transition-colors cursor-pointer"
-                                                            onClick={() => removeItem(index)}
-                                                        >
-                                                            <Trash2 className="h-3.5 w-3.5 mr-1" />
-                                                            Remove
-                                                        </Button>
-                                                    )}
-                                                </div>
+                                    {/* Rows List */}
+                                    <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                                        {formData.items.map((item, index) => {
+                                            const stockError = getStockError(item);
+                                            const product = products.find(p => String(p.id || p._id) === String(item.productId));
+                                            const availableBatches = product?.batches?.filter(b => Number(b.quantity || 0) > 0) || [];
+                                            const itemQty = parseFloat(item.quantity) || 0;
+                                            const itemPrice = parseFloat(item.salePrice) || 0;
+                                            const itemCost = parseFloat(item.costPrice) || 0;
 
-                                                <div className="grid gap-3 sm:grid-cols-12">
-                                                    {/* Product */}
-                                                    <div className="sm:col-span-4 space-y-1">
-                                                        <Label className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Product</Label>
-                                                        <CustomSelect
-                                                            value={item.productId}
-                                                            onChange={(e) => updateItem(index, 'productId', e.target.value)}
-                                                            placeholder="Select Item"
-                                                            options={products.map((p) => ({ value: p.id, label: `${p.name} (${p.unit})` }))}
-                                                        />
-                                                    </div>
+                                            const selectedUnit = item.unit || product?.unit || 'KG';
+                                            const unitOptions = getCompatibleUnits(product?.unit);
+                                            const factor = getConversionFactor(selectedUnit, product?.unit);
+                                            const baseQty = itemQty * factor;
+                                            const lineTotal = baseQty * itemPrice;
+                                            const lineProfit = baseQty * (itemPrice - itemCost);
+                                            const hasProfit = lineProfit >= 0;
 
-                                                    {/* Batch */}
-                                                    <div className="sm:col-span-3 space-y-1">
-                                                        <Label className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Price / Batch</Label>
-                                                        <CustomSelect
-                                                            value={item.batchId}
-                                                            onChange={(e) => updateItem(index, 'batchId', e.target.value)}
-                                                            placeholder={product?.batches?.length ? 'FIFO (Oldest Stock)' : 'Standard Stock'}
-                                                            options={product?.batches?.map((b) => ({ value: b.id, label: `₹${b.purchasePrice} (Qty: ${b.quantity})` })) || []}
-                                                            disabled={!item.productId || !product?.batches?.length}
-                                                        />
-                                                    </div>
+                                            const availableStock = item.batchId && item.batchId !== 'FIFO'
+                                                ? (product?.batches?.find(b => String(b.id || b._id) === String(item.batchId))?.quantity || 0)
+                                                : (product?.currentStock || 0);
+                                            const isOutOfStock = Boolean(product && availableStock <= 0);
 
-                                                    {/* Quantity */}
-                                                    <div className="sm:col-span-2 space-y-1">
-                                                        <Label className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Quantity</Label>
-                                                        <Input
-                                                            type="number"
-                                                            step="0.01"
-                                                            min="0"
-                                                            className={cn(
-                                                                "h-11 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-medium text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all",
-                                                                stockError && "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20"
-                                                            )}
-                                                            value={item.quantity}
-                                                            placeholder="0.00"
-                                                            onChange={(e) => updateItem(index, 'quantity', e.target.value)}
-                                                            required
-                                                        />
-                                                        {stockError && (
-                                                            <p className="text-[10px] font-semibold text-rose-500 leading-tight">{stockError}</p>
-                                                        )}
-                                                    </div>
-
-                                                    {/* Sale Price */}
-                                                    <div className="sm:col-span-3 space-y-1">
-                                                        <Label className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Sale Price (₹)</Label>
-                                                        <div className="relative">
-                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">₹</span>
-                                                            <Input
-                                                                type="number"
-                                                                step="0.01"
-                                                                min="0"
-                                                                className="h-11 pl-7 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-medium text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                                                                value={item.salePrice}
-                                                                placeholder="0.00"
-                                                                onChange={(e) => updateItem(index, 'salePrice', e.target.value)}
-                                                                required
+                                            return (
+                                                <div
+                                                    key={index}
+                                                    className="p-3.5 sm:px-4 sm:py-3 transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-900/40"
+                                                >
+                                                    {/* Desktop Row View */}
+                                                    <div className="hidden sm:grid sm:grid-cols-12 gap-2.5 items-start">
+                                                        {/* Product */}
+                                                        <div className="sm:col-span-3 min-w-0">
+                                                            <CustomSelect
+                                                                value={item.productId}
+                                                                onChange={(e) => updateItem(index, 'productId', e.target.value)}
+                                                                placeholder="Select Item"
+                                                                className="h-10 text-xs sm:text-sm rounded-xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-2xs"
+                                                                options={productOptions}
                                                             />
+                                                            <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 mt-1 pl-1 truncate h-4">
+                                                                {product ? `Base: ${product.unit} • Current: ${product.currentStock || 0} ${product.unit}` : '\u00A0'}
+                                                            </p>
                                                         </div>
-                                                    </div>
-                                                </div>
 
-                                                {/* Subtotal & Profit/Loss row */}
-                                                {item.quantity && item.salePrice && (
-                                                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                                                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-                                                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Item Subtotal:</span>
-                                                            <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                                                                ₹{(parseFloat(item.quantity || 0) * parseFloat(item.salePrice || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                                                            </span>
+                                                        {/* Batch */}
+                                                        <div className="sm:col-span-2 min-w-0">
+                                                            <CustomSelect
+                                                                value={item.batchId || (availableBatches.length > 0 ? 'FIFO' : '')}
+                                                                onChange={(e) => updateItem(index, 'batchId', e.target.value)}
+                                                                placeholder={availableBatches.length > 0 ? '⚡ Auto FIFO (Oldest Batch)' : 'Select Batch'}
+                                                                placeholderClassName={availableBatches.length > 0 ? 'text-slate-900 dark:text-slate-100 font-semibold' : undefined}
+                                                                className="h-10 text-xs sm:text-sm rounded-xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-2xs font-semibold text-slate-900 dark:text-slate-100"
+                                                                allowClear={false}
+                                                                options={[
+                                                                    ...(availableBatches.length > 0 ? [{
+                                                                        value: 'FIFO',
+                                                                        label: '⚡ Auto FIFO (Oldest Batch)',
+                                                                        sublabel: 'Auto Allocation',
+                                                                        sublabelClass: 'text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200/80 dark:border-emerald-900/60 px-1.5 py-0.5 rounded text-[10px]'
+                                                                    }] : []),
+                                                                    ...availableBatches.map((b, idx) => ({
+                                                                        value: String(b.id || b._id),
+                                                                        label: `${b.batchNumber || `BCH-${1000 + (idx + 1)}`} (₹${b.purchasePrice})`,
+                                                                        sublabelClass: 'text-slate-600 dark:text-slate-400 font-semibold bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 px-1.5 py-0.5 rounded text-[10px]'
+                                                                    }))
+                                                                ]}
+                                                                disabled={!item.productId || availableBatches.length === 0}
+                                                            />
+                                                            <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 mt-1 pl-1 truncate h-4">
+                                                                {item.batchId && item.batchId !== 'FIFO'
+                                                                    ? `Selected: ${availableBatches.find(b => String(b.id || b._id) === String(item.batchId))?.batchNumber || `Batch #${availableBatches.findIndex(b => String(b.id || b._id) === String(item.batchId)) + 1}`}`
+                                                                    : availableBatches.length > 0
+                                                                        ? '⚡ FIFO allocation'
+                                                                        : '\u00A0'}
+                                                            </p>
                                                         </div>
-                                                        {item.costPrice > 0 && (
-                                                            <div className={cn(
-                                                                "inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border text-xs font-bold shadow-xs",
-                                                                (parseFloat(item.salePrice) - parseFloat(item.costPrice)) >= 0
-                                                                    ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400"
-                                                                    : "bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-400"
+
+                                                        {/* Quantity & Unit */}
+                                                        <div className="sm:col-span-2 min-w-0">
+                                                            <div className="flex gap-1.5 items-center">
+                                                                <Input
+                                                                    type="number"
+                                                                    step="0.01"
+                                                                    min="0"
+                                                                    disabled={isOutOfStock}
+                                                                    className={cn(
+                                                                        "h-10 flex-1 min-w-0 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-colors",
+                                                                        stockError && "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20 bg-rose-50/20",
+                                                                        isOutOfStock && "bg-slate-100/80 dark:bg-slate-800/60 cursor-not-allowed opacity-60 text-slate-400 border-slate-200/60 dark:border-slate-800/60"
+                                                                    )}
+                                                                    value={isOutOfStock ? '' : item.quantity}
+                                                                    placeholder='0.00'
+                                                                    onChange={(e) => updateItem(index, 'quantity', e.target.value)}
+                                                                    required={!isOutOfStock}
+                                                                />
+                                                                <div className="w-24 shrink-0">
+                                                                    <CustomSelect
+                                                                        value={selectedUnit}
+                                                                        onChange={(e) => updateItem(index, 'unit', e.target.value)}
+                                                                        options={unitOptions}
+                                                                        disabled={isOutOfStock || !product}
+                                                                        allowClear={false}
+                                                                        placeholder="Unit"
+                                                                        className="h-10 text-xs font-bold rounded-xl bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700"
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                            <p className={cn(
+                                                                "text-[10px] mt-1 pl-1 truncate h-4 font-medium",
+                                                                stockError || isOutOfStock ? "text-rose-500 font-semibold" : "text-slate-400 dark:text-slate-500"
                                                             )}>
-                                                                <span className="text-[10px] uppercase tracking-wider opacity-75">
-                                                                    {(parseFloat(item.salePrice) - parseFloat(item.costPrice)) >= 0 ? "Margin:" : "Loss:"}
-                                                                </span>
-                                                                <span>
-                                                                    {(parseFloat(item.salePrice) - parseFloat(item.costPrice)) >= 0 ? "+" : "-"}₹{Math.abs(parseFloat(item.quantity) * (parseFloat(item.salePrice) - parseFloat(item.costPrice))).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                                {stockError || (product ? (isOutOfStock ? `Out of Stock (0 ${product.unit})` : `Avail: ${availableStock} ${product.unit}${selectedUnit !== product.unit && item.quantity ? ` (= ${baseQty} ${product.unit})` : ''}`) : '\u00A0')}
+                                                            </p>
+                                                        </div>
+
+                                                        {/* Sale Price */}
+                                                        <div className="sm:col-span-2 min-w-0">
+                                                            <div className="relative">
+                                                                <span className={cn(
+                                                                    "absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold pointer-events-none",
+                                                                    isOutOfStock ? "text-slate-300 dark:text-slate-600" : "text-slate-400"
+                                                                )}>₹</span>
+                                                                <Input
+                                                                    type="number"
+                                                                    step="0.01"
+                                                                    min="0"
+                                                                    disabled={isOutOfStock}
+                                                                    className={cn(
+                                                                        "h-10 pl-7 pr-14 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-colors",
+                                                                        isOutOfStock && "bg-slate-100/80 dark:bg-slate-800/60 cursor-not-allowed opacity-60 text-slate-400 border-slate-200/60 dark:border-slate-800/60"
+                                                                    )}
+                                                                    value={isOutOfStock ? '' : item.salePrice}
+                                                                    placeholder="0.00"
+                                                                    onChange={(e) => updateItem(index, 'salePrice', e.target.value)}
+                                                                    required={!isOutOfStock}
+                                                                />
+                                                                <span className={cn(
+                                                                    "absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold pointer-events-none uppercase",
+                                                                    isOutOfStock ? "text-slate-300 dark:text-slate-600" : "text-slate-400"
+                                                                )}>
+                                                                    /{product?.unit || 'KG'}
                                                                 </span>
                                                             </div>
-                                                        )}
+                                                            {selectedUnit !== product?.unit && itemPrice > 0 ? (
+                                                                <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-1 pl-1 truncate h-4">
+                                                                    = ₹{(itemPrice * factor).toLocaleString('en-IN', { maximumFractionDigits: 2 })}/{selectedUnit}
+                                                                    {itemCost > 0 && !isOutOfStock ? ` • Cost: ₹${itemCost}/${product?.unit || 'KG'}` : ''}
+                                                                </p>
+                                                            ) : itemCost > 0 && !isOutOfStock ? (
+                                                                <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 mt-1 pl-1 truncate h-4">
+                                                                    Cost: ₹{itemCost}/{product?.unit || 'KG'}
+                                                                </p>
+                                                            ) : (
+                                                                <div className="h-4 mt-1" />
+                                                            )}
+                                                        </div>
+
+                                                        {/* Line Total */}
+                                                        <div className="sm:col-span-2 min-w-0 text-right pr-2">
+                                                            <div className="h-10 flex flex-col justify-center">
+                                                                <div className="font-bold text-slate-900 dark:text-slate-100 text-sm leading-tight">
+                                                                    ₹{lineTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                                </div>
+                                                                {itemQty > 0 && itemPrice > 0 && (
+                                                                    <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium leading-none mt-0.5">
+                                                                        {baseQty.toLocaleString()} {product?.unit || 'KG'} × ₹{itemPrice}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-[10px] mt-1 pr-0.5 truncate h-4 text-right">
+                                                                {itemQty > 0 && itemPrice > 0 && itemCost > 0 ? (
+                                                                    <span className={cn(
+                                                                        "font-bold",
+                                                                        hasProfit ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                                                                    )}>
+                                                                        {hasProfit ? '+' : '-'}₹{Math.abs(lineProfit).toLocaleString('en-IN')}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-slate-400 dark:text-slate-500 font-medium">Subtotal</span>
+                                                                )}
+                                                            </p>
+                                                        </div>
+
+                                                        {/* Action */}
+                                                        <div className="sm:col-span-1 min-w-0 flex flex-col items-center">
+                                                            <div className="h-10 flex items-center justify-center">
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    disabled={formData.items.length <= 1}
+                                                                    className="h-8 w-8 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors shrink-0 disabled:opacity-20 cursor-pointer"
+                                                                    onClick={() => removeItem(index)}
+                                                                    title="Remove item"
+                                                                >
+                                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                                </Button>
+                                                            </div>
+                                                            <div className="h-4 mt-1" />
+                                                        </div>
                                                     </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
+
+                                                    {/* Mobile Card View (sm:hidden) */}
+                                                    <div className="sm:hidden space-y-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 p-3.5">
+                                                        <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-slate-800">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="h-5 w-5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold flex items-center justify-center border border-emerald-200/60 dark:border-emerald-800/60">
+                                                                    #{index + 1}
+                                                                </span>
+                                                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                                                                    {product ? product.name : 'New Sale Item'}
+                                                                </span>
+                                                            </div>
+                                                            {formData.items.length > 1 && (
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="h-7 px-2 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg text-xs font-semibold cursor-pointer"
+                                                                    onClick={() => removeItem(index)}
+                                                                >
+                                                                    <Trash2 className="h-3.5 w-3.5 mr-1" />
+                                                                    Remove
+                                                                </Button>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="space-y-1.5">
+                                                            <Label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                                                                Product / Commodity <span className="text-rose-500">*</span>
+                                                            </Label>
+                                                            <CustomSelect
+                                                                value={item.productId}
+                                                                onChange={(e) => updateItem(index, 'productId', e.target.value)}
+                                                                placeholder="Select Item"
+                                                                className="h-10 text-xs sm:text-sm rounded-xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                                                                options={productOptions}
+                                                            />
+                                                            {product && (
+                                                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium pl-0.5">
+                                                                    Base: {product.unit} {availableStock > 0 ? `• Available: ${availableStock} ${product.unit}` : '• Out of Stock'}
+                                                                </p>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="space-y-1.5">
+                                                            <Label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                                                                Batch
+                                                            </Label>
+                                                            <CustomSelect
+                                                                value={item.batchId || (availableBatches.length > 0 ? 'FIFO' : '')}
+                                                                onChange={(e) => updateItem(index, 'batchId', e.target.value)}
+                                                                placeholder={availableBatches.length > 0 ? '⚡ Auto FIFO (Oldest Batch)' : 'Select Batch'}
+                                                                placeholderClassName={availableBatches.length > 0 ? 'text-slate-900 dark:text-slate-100 font-semibold' : undefined}
+                                                                className="h-10 text-xs sm:text-sm rounded-xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 font-semibold text-slate-900 dark:text-slate-100"
+                                                                allowClear={false}
+                                                                options={[
+                                                                    ...(availableBatches.length > 0 ? [{
+                                                                        value: 'FIFO',
+                                                                        label: '⚡ Auto FIFO (Oldest Batch)',
+                                                                        sublabel: 'Auto Allocation',
+                                                                        sublabelClass: 'text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200/80 dark:border-emerald-900/60 px-1.5 py-0.5 rounded text-[10px]'
+                                                                    }] : []),
+                                                                    ...availableBatches.map((b, idx) => ({
+                                                                        value: String(b.id || b._id),
+                                                                        label: `${b.batchNumber || `BCH-${1000 + (idx + 1)}`} (₹${b.purchasePrice})`,
+                                                                        sublabelClass: 'text-slate-600 dark:text-slate-400 font-semibold bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 px-1.5 py-0.5 rounded text-[10px]'
+                                                                    }))
+                                                                ]}
+                                                                disabled={!item.productId || availableBatches.length === 0}
+                                                            />
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 gap-2.5">
+                                                            <div className="space-y-1.5">
+                                                                <Label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                                                                    Quantity <span className="text-rose-500">*</span>
+                                                                </Label>
+                                                                <Input
+                                                                    type="number"
+                                                                    step="0.01"
+                                                                    min="0"
+                                                                    disabled={isOutOfStock}
+                                                                    className={cn(
+                                                                        "h-10 rounded-xl text-xs sm:text-sm font-semibold border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors",
+                                                                        stockError && "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20 bg-rose-50/20",
+                                                                        isOutOfStock && "bg-slate-100/80 dark:bg-slate-800/60 cursor-not-allowed opacity-60 text-slate-400 border-slate-200/60 dark:border-slate-800/60"
+                                                                    )}
+                                                                    value={isOutOfStock ? '' : item.quantity}
+                                                                    placeholder={isOutOfStock ? "0 (Out)" : "0.00"}
+                                                                    onChange={(e) => updateItem(index, 'quantity', e.target.value)}
+                                                                    required={!isOutOfStock}
+                                                                />
+                                                            </div>
+                                                            <div className="space-y-1.5">
+                                                                <Label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                                                                    Unit
+                                                                </Label>
+                                                                <CustomSelect
+                                                                    value={selectedUnit}
+                                                                    onChange={(e) => updateItem(index, 'unit', e.target.value)}
+                                                                    options={unitOptions}
+                                                                    disabled={isOutOfStock || !product}
+                                                                    allowClear={false}
+                                                                    placeholder="Unit"
+                                                                    className="h-10 text-xs font-semibold rounded-xl"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        {selectedUnit !== product?.unit && item.quantity && (
+                                                            <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 pl-0.5">
+                                                                = {baseQty.toLocaleString()} {product?.unit} from stock
+                                                            </p>
+                                                        )}
+                                                        {stockError ? (
+                                                            <p className="text-[10px] font-semibold text-rose-500 leading-tight">
+                                                                {stockError}
+                                                            </p>
+                                                        ) : product ? (
+                                                            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium pl-0.5">
+                                                                Available in stock: {availableStock} {product.unit}
+                                                            </p>
+                                                        ) : null}
+
+                                                        <div className="space-y-1.5">
+                                                            <Label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                                                                Rate (₹ / {product?.unit || 'KG'}) <span className="text-rose-500">*</span>
+                                                            </Label>
+                                                            <div className="relative">
+                                                                <span className={cn(
+                                                                    "absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold pointer-events-none",
+                                                                    isOutOfStock ? "text-slate-300 dark:text-slate-600" : "text-slate-400"
+                                                                )}>₹</span>
+                                                                <Input
+                                                                    type="number"
+                                                                    step="0.01"
+                                                                    min="0"
+                                                                    disabled={isOutOfStock}
+                                                                    className={cn(
+                                                                        "h-10 pl-7 pr-14 rounded-xl text-xs sm:text-sm font-semibold border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors",
+                                                                        isOutOfStock && "bg-slate-100/80 dark:bg-slate-800/60 cursor-not-allowed opacity-60 text-slate-400 border-slate-200/60 dark:border-slate-800/60"
+                                                                    )}
+                                                                    value={isOutOfStock ? '' : item.salePrice}
+                                                                    placeholder="0.00"
+                                                                    onChange={(e) => updateItem(index, 'salePrice', e.target.value)}
+                                                                    required={!isOutOfStock}
+                                                                />
+                                                                <span className={cn(
+                                                                    "absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold pointer-events-none uppercase",
+                                                                    isOutOfStock ? "text-slate-300 dark:text-slate-600" : "text-slate-400"
+                                                                )}>
+                                                                    /{product?.unit || 'KG'}
+                                                                </span>
+                                                            </div>
+                                                            {selectedUnit !== product?.unit && itemPrice > 0 && (
+                                                                <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-1 pl-0.5">
+                                                                    = ₹{(itemPrice * factor).toLocaleString('en-IN', { maximumFractionDigits: 2 })} / {selectedUnit}
+                                                                </p>
+                                                            )}
+                                                            {itemCost > 0 && !isOutOfStock && (
+                                                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium pl-0.5">
+                                                                    Cost: ₹{itemCost} / {product?.unit || 'KG'}
+                                                                </p>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="flex items-center justify-between pt-2 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
+                                                            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                                                {itemQty > 0 && itemPrice > 0
+                                                                    ? `Line Total (${baseQty.toLocaleString()} ${product?.unit || 'KG'} × ₹${itemPrice}):`
+                                                                    : 'Line Total:'}
+                                                            </span>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-sm font-black text-slate-900 dark:text-slate-100">
+                                                                    ₹{lineTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                                </span>
+                                                                {itemCost > 0 && itemQty > 0 && (
+                                                                    <span className={cn(
+                                                                        "text-[10px] font-bold px-1.5 py-0.5 rounded-md",
+                                                                        hasProfit ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400" : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400"
+                                                                    )}>
+                                                                        {hasProfit ? '+' : '-'}₹{Math.abs(lineProfit).toLocaleString('en-IN')}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Instant Stock Alert Banner */}
+                                                    {stockError && (
+                                                        <div className="mt-3 flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-semibold animate-in fade-in slide-in-from-top-1">
+                                                            <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
+                                                            <span className="flex-1">
+                                                                <strong>Stock Alert:</strong> {stockError}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Table Bottom Action Bar */}
+                                    <div className="bg-slate-50/70 dark:bg-slate-900/60 px-4 py-2.5 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={addItem}
+                                            className="h-8 px-2.5 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                                        >
+                                            <Plus className="h-3.5 w-3.5" />
+                                            Add Another Line
+                                        </Button>
+                                        <div className="text-right">
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-2">Items Subtotal:</span>
+                                            <span className="text-sm font-black text-slate-900 dark:text-slate-100">
+                                                ₹{subtotalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -1099,117 +1477,112 @@ export default function SalesPage() {
                                 </div>
                             </div>
 
-                            {/* Payment & Summary Breakdown */}
-                            <div className="grid gap-4 sm:grid-cols-12 sm:items-stretch">
-                                {/* Initial Payment Input */}
-                                <div className="sm:col-span-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/40 p-4 sm:p-5 flex flex-col justify-between space-y-3">
-                                    <div>
-                                        <Label htmlFor="paidAmount" className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-1">
-                                            Initial Payment Received (₹) <span className="text-rose-500">*</span>
-                                        </Label>
-                                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                                            Amount collected immediately from customer
-                                        </p>
-                                    </div>
-                                    <div className="relative">
-                                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">₹</span>
-                                        <Input
-                                            id="paidAmount"
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
-                                            className="h-11 sm:h-12 pl-8 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-base font-bold text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-xs transition-all"
-                                            placeholder="0.00"
-                                            value={formData.paidAmount}
-                                            onChange={(e) => setFormData({ ...formData, paidAmount: e.target.value })}
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Summary Card */}
-                                <div className="sm:col-span-7 rounded-2xl bg-slate-900 dark:bg-slate-950 p-5 text-white space-y-3 border border-slate-800 shadow-xl flex flex-col justify-between">
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between items-center text-slate-400 text-xs font-medium">
-                                            <span className="uppercase tracking-wider text-[10px] font-bold">Items Subtotal</span>
-                                            <span className="text-sm font-bold text-white">₹{subtotalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            {/* Payment & Sale Summary */}
+                            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 p-4 sm:p-5">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 items-center">
+                                    {/* Total Sale */}
+                                    <div className="space-y-1">
+                                        <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                                            Total Sale
+                                        </span>
+                                        <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100">
+                                            ₹{totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                         </div>
-                                        {(parseFloat(formData.laborCharge) > 0 || parseFloat(formData.vehicleRent) > 0 || parseFloat(formData.otherCharges) > 0) && (
-                                            <div className="space-y-1 py-1.5 border-t border-slate-800 text-[11px] text-slate-400">
-                                                {parseFloat(formData.laborCharge) > 0 && (
-                                                    <div className="flex justify-between">
-                                                        <span>+ Labour Charge</span>
-                                                        <span className="text-slate-300">₹{parseFloat(formData.laborCharge).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                                                    </div>
-                                                )}
-                                                {parseFloat(formData.vehicleRent) > 0 && (
-                                                    <div className="flex justify-between">
-                                                        <span>+ Vehicle Rent</span>
-                                                        <span className="text-slate-300">₹{parseFloat(formData.vehicleRent).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                                                    </div>
-                                                )}
-                                                {parseFloat(formData.otherCharges) > 0 && (
-                                                    <div className="flex justify-between">
-                                                        <span>+ Other Charges</span>
-                                                        <span className="text-slate-300">₹{parseFloat(formData.otherCharges).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                                                    </div>
-                                                )}
-                                            </div>
+                                        {(parseFloat(formData.laborCharge) > 0 || parseFloat(formData.vehicleRent) > 0 || parseFloat(formData.otherCharges) > 0) ? (
+                                            <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                                                Incl. ₹{((parseFloat(formData.laborCharge) || 0) + (parseFloat(formData.vehicleRent) || 0) + (parseFloat(formData.otherCharges) || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })} extra charges
+                                            </p>
+                                        ) : (
+                                            <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                                                Subtotal of {formData.items.length} {formData.items.length === 1 ? 'item' : 'items'}
+                                            </p>
                                         )}
-                                        <div className="flex justify-between items-center text-slate-400 text-xs font-medium pt-1 border-t border-slate-800">
-                                            <span className="uppercase tracking-wider text-[10px] font-bold">Gross Sale</span>
-                                            <span className="text-sm font-bold text-white">₹{totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                    </div>
+
+                                    {/* Payment Received Input */}
+                                    <div className="space-y-1.5">
+                                        <div className="flex items-center justify-between">
+                                            <Label htmlFor="paidAmount" className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                                                Payment Received (₹) <span className="text-rose-500">*</span>
+                                            </Label>
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, paidAmount: String(totalAmount) })}
+                                                className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:underline cursor-pointer"
+                                            >
+                                                Paid in Full
+                                            </button>
                                         </div>
-                                        <div className="flex justify-between items-center text-slate-400 text-xs font-medium pb-2 border-b border-slate-800">
-                                            <span className="uppercase tracking-wider text-[10px] font-bold">Collected</span>
-                                            <span className="text-sm font-bold text-emerald-400">₹{paidAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">₹</span>
+                                            <Input
+                                                id="paidAmount"
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                className="h-10 pl-7 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-bold text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                                                placeholder="0.00"
+                                                value={formData.paidAmount}
+                                                onChange={(e) => setFormData({ ...formData, paidAmount: e.target.value })}
+                                                required
+                                            />
                                         </div>
                                     </div>
-                                    <div className="space-y-2 pt-1">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-xs font-bold uppercase tracking-wider text-slate-300">Balance Due</span>
+
+                                    {/* Balance Due */}
+                                    <div className="space-y-1 sm:text-right">
+                                        <div className="flex items-center sm:justify-end gap-2">
+                                            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                                Balance Due
+                                            </span>
                                             <span className={cn(
-                                                "text-xl sm:text-2xl font-black",
-                                                dueAmount > 0 ? 'text-amber-400' : 'text-emerald-400'
+                                                "text-[10px] font-bold px-2 py-0.5 rounded-full border",
+                                                dueAmount <= 0
+                                                    ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-800/60"
+                                                    : paidAmount > 0
+                                                        ? "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200/60 dark:border-amber-800/60"
+                                                        : "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border-rose-200/60 dark:border-rose-800/60"
                                             )}>
-                                                ₹{dueAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                {dueAmount <= 0 ? "Paid in Full" : paidAmount > 0 ? "Partial" : "Unpaid"}
                                             </span>
                                         </div>
-                                        <div className="flex justify-between items-center pt-2 border-t border-slate-800/80">
-                                            <span className={cn(
-                                                "text-[11px] font-bold uppercase tracking-wider",
-                                                estimatedProfit >= 0 ? "text-slate-400" : "text-rose-400"
-                                            )}>
-                                                {estimatedProfit >= 0 ? "Est. Net Profit" : "Est. Net Loss"}
-                                            </span>
-                                            <span className={cn(
-                                                "text-sm font-bold",
-                                                estimatedProfit >= 0 ? "text-emerald-400" : "text-rose-400"
-                                            )}>
-                                                {estimatedProfit >= 0 ? "+" : "-"}₹{Math.abs(estimatedProfit).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                                            </span>
+                                        <div className={cn(
+                                            "text-xl sm:text-2xl font-black",
+                                            dueAmount > 0 ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"
+                                        )}>
+                                            ₹{Math.max(0, dueAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Modal Actions */}
-                            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="w-full sm:w-auto rounded-xl h-11 px-5 sm:px-6 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 font-semibold text-xs sm:text-sm transition-all cursor-pointer"
-                                    onClick={() => setShowCreateModal(false)}
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    disabled={submitting}
-                                    className="w-full sm:w-auto rounded-xl h-11 px-6 sm:px-7 font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-md shadow-emerald-500/20 text-xs sm:text-sm transition-all disabled:opacity-50 cursor-pointer"
-                                >
-                                    {submitting ? 'Recording Transaction...' : 'Confirm & Log Sale'}
-                                </Button>
+                            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                {hasStockErrors ? (
+                                    <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-900/60 text-rose-700 dark:text-rose-400 text-xs font-semibold">
+                                        <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
+                                        <span>Cannot submit: One or more items have stock errors</span>
+                                    </div>
+                                ) : (
+                                    <div />
+                                )}
+                                <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="w-full sm:w-auto rounded-xl h-11 px-5 sm:px-6 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 font-semibold text-xs sm:text-sm transition-all cursor-pointer"
+                                        onClick={() => setShowCreateModal(false)}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        disabled={submitting || hasStockErrors}
+                                        className="w-full sm:w-auto rounded-xl h-11 px-6 sm:px-7 font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-md shadow-emerald-500/20 text-xs sm:text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                                    >
+                                        {submitting ? 'Recording Transaction...' : hasStockErrors ? 'Blocked by Stock Error' : 'Confirm & Log Sale'}
+                                    </Button>
+                                </div>
                             </div>
                         </form>
                     </Dialog.Content>

@@ -44,6 +44,7 @@ export const providerUpdateSchema = providerSchema
 const purchaseItemSchema = z.object({
   productId: objectIdSchema,
   quantity: positiveNumber,
+  unit: z.string().trim().max(30).optional(),
   unitPrice: nonNegativeNumber,
 });
 
@@ -58,8 +59,9 @@ export const purchaseSchema = z.object({
 
 const saleItemSchema = z.object({
   productId: objectIdSchema,
-  batchId: objectIdSchema.optional(),
+  batchId: objectIdSchema.or(z.literal('FIFO')).optional().nullable(),
   quantity: positiveNumber,
+  unit: z.string().trim().max(30).optional(),
   costPrice: nonNegativeNumber.optional(),
   salePrice: nonNegativeNumber,
 });

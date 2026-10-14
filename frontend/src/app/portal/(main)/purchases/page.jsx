@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +31,7 @@ import { toast } from 'react-hot-toast';
 import { ConfirmModal } from '@/components/portal/ConfirmModal';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { CustomSelect } from '@/components/ui/custom-select';
+import { getCompatibleUnits, getConversionFactor } from '@/lib/units';
 
 export default function PurchasesPage() {
   const [purchases, setPurchases] = useState([]);
@@ -341,10 +342,10 @@ export default function PurchasesPage() {
               <tr>
                 <td>
                   <div class="font-bold text-slate-900">${item.product?.name || 'Unknown Item'}</div>
-                  <div style="font-size: 10px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">Unit: ${item.product?.unit || 'N/A'}</div>
+                  <div style="font-size: 10px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">Unit: ${item.unit || item.product?.unit || 'N/A'}${item.baseQuantity && item.unit && item.unit !== item.product?.unit ? ` • (${item.baseQuantity} ${item.product?.unit} base)` : ''}</div>
                 </td>
-                <td class="text-right font-bold">${item.quantity}</td>
-                <td class="text-right text-slate-500">₹${item.unitPrice.toLocaleString('en-IN')}</td>
+                <td class="text-right font-bold">${item.quantity} ${item.unit || item.product?.unit || ''}</td>
+                <td class="text-right text-slate-500">₹${item.unitPrice.toLocaleString('en-IN')}/${item.unit || item.product?.unit || ''}</td>
                 <td class="text-right font-bold text-slate-900">₹${item.totalPrice.toLocaleString('en-IN')}</td>
               </tr>
             `).join('')}
@@ -412,7 +413,7 @@ export default function PurchasesPage() {
   const addItem = () => {
     setFormData({
       ...formData,
-      items: [...formData.items, { productId: '', quantity: '', unitPrice: '' }],
+      items: [...formData.items, { productId: '', quantity: '', unit: '', unitPrice: '' }],
     });
   };
 
@@ -424,6 +425,14 @@ export default function PurchasesPage() {
   const updateItem = (index, field, value) => {
     const newItems = [...formData.items];
     newItems[index][field] = value;
+
+    if (field === 'productId') {
+      const product = products.find((p) => String(p.id || p._id) === String(value));
+      if (product) {
+        newItems[index].unit = product.unit || 'KG';
+      }
+    }
+
     setFormData({ ...formData, items: newItems });
   };
 
@@ -431,7 +440,11 @@ export default function PurchasesPage() {
     return formData.items.reduce((sum, item) => {
       const qty = parseFloat(item.quantity) || 0;
       const price = parseFloat(item.unitPrice) || 0;
-      return sum + qty * price;
+      const product = products.find((p) => String(p.id || p._id) === String(item.productId));
+      const selectedUnit = item.unit || product?.unit || 'KG';
+      const factor = getConversionFactor(selectedUnit, product?.unit);
+      const baseQty = qty * factor;
+      return sum + baseQty * price;
     }, 0);
   };
 
@@ -451,12 +464,25 @@ export default function PurchasesPage() {
       return;
     }
 
-    const validItems = formData.items.filter(
-      (item) => item.productId && item.quantity && item.unitPrice
-    );
+    const validItems = formData.items
+      .filter((item) => item.productId && item.quantity && item.unitPrice)
+      .map((item) => {
+        const prod = products.find((p) => String(p.id || p._id) === String(item.productId));
+        return {
+          productId: item.productId,
+          quantity: parseFloat(item.quantity) || 0,
+          unit: item.unit || prod?.unit || 'KG',
+          unitPrice: parseFloat(item.unitPrice) || 0,
+        };
+      });
 
     if (validItems.length === 0) {
       toast.error('Please add at least one item');
+      return;
+    }
+
+    if (parseFloat(formData.paidAmount) > totalAmount) {
+      toast.error('Advance paid cannot exceed total purchase outlay');
       return;
     }
 
@@ -508,6 +534,21 @@ export default function PurchasesPage() {
   const totalPurchasesToday = purchases
     .filter(p => new Date(p.createdAt).toDateString() === new Date().toDateString())
     .length;
+
+  const productOptions = useMemo(() => {
+    return products.map((p) => {
+      const stock = Number(p.currentStock || 0);
+      return {
+        value: String(p.id || p._id),
+        label: `${p.name} (${p.unit})`,
+        sublabel: `Stock: ${stock} ${p.unit}`,
+        sublabelClass: stock > 0
+          ? 'text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200/80 dark:border-emerald-900/60 px-2 py-0.5 rounded-md text-[10px]'
+          : 'text-slate-500 font-medium bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md text-[10px]',
+        disabled: false,
+      };
+    });
+  }, [products]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
@@ -781,115 +822,297 @@ export default function PurchasesPage() {
                   value={formData.providerId}
                   onChange={(e) => setFormData({ ...formData, providerId: e.target.value })}
                   placeholder="Choose Provider"
-                  options={providers.map((p) => ({ value: p.id, label: p.name }))}
+                  options={providers.map((p) => ({ value: String(p.id || p._id), label: p.name }))}
                 />
               </div>
 
               {/* Items Section */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between pb-1">
                   <div className="flex items-center gap-2">
                     <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Purchase Items <span className="text-rose-500">*</span>
                     </Label>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold">
-                      {formData.items.length}
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-200/60 dark:border-emerald-800/60">
+                      {formData.items.length} {formData.items.length === 1 ? 'item' : 'items'}
                     </span>
                   </div>
                   <Button
                     type="button"
                     size="sm"
                     onClick={addItem}
-                    className="h-8 sm:h-9 px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-xs shadow-sm shadow-emerald-500/10 transition-all cursor-pointer"
+                    className="h-8 sm:h-8.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-xs shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
                   >
-                    <Plus className="mr-1.5 h-3.5 w-3.5" />
+                    <Plus className="h-3.5 w-3.5" />
                     Add Item
                   </Button>
                 </div>
 
-                <div className="space-y-3">
-                  {formData.items.map((item, index) => (
-                    <div
-                      key={index}
-                      className="rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/60 dark:bg-slate-900/40 p-3.5 sm:p-4 space-y-3 transition-colors hover:border-slate-300 dark:hover:border-slate-700"
+                {/* Items Sheet / Table */}
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 shadow-xs overflow-hidden">
+                  {/* Table Header (Desktop) */}
+                  <div className="hidden sm:grid sm:grid-cols-12 gap-2.5 px-4 py-2.5 bg-slate-50 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    <div className="sm:col-span-4">Product / Commodity</div>
+                    <div className="sm:col-span-3">Quantity & Unit</div>
+                    <div className="sm:col-span-2">Rate (₹/Base Unit)</div>
+                    <div className="sm:col-span-2 text-right pr-2">Line Total (Outlay)</div>
+                    <div className="sm:col-span-1 text-center">Action</div>
+                  </div>
+
+                  {/* Rows List */}
+                  <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                    {formData.items.map((item, index) => {
+                      const product = products.find((p) => String(p.id || p._id) === String(item.productId));
+                      const itemQty = parseFloat(item.quantity) || 0;
+                      const itemPrice = parseFloat(item.unitPrice) || 0;
+
+                      const selectedUnit = item.unit || product?.unit || 'KG';
+                      const unitOptions = getCompatibleUnits(product?.unit);
+                      const factor = getConversionFactor(selectedUnit, product?.unit);
+                      const baseQty = itemQty * factor;
+                      const lineTotal = baseQty * itemPrice;
+
+                      return (
+                        <div
+                          key={index}
+                          className="p-3.5 sm:px-4 sm:py-3 transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-900/40"
+                        >
+                          {/* Desktop Row View */}
+                          <div className="hidden sm:grid sm:grid-cols-12 gap-2.5 items-start">
+                            {/* Product */}
+                            <div className="sm:col-span-4 min-w-0">
+                              <CustomSelect
+                                value={item.productId}
+                                onChange={(e) => updateItem(index, 'productId', e.target.value)}
+                                placeholder="Select Product"
+                                className="h-10 text-xs sm:text-sm rounded-xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-2xs"
+                                options={productOptions}
+                              />
+                              <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 mt-1 pl-1 truncate h-4">
+                                {product ? `Base: ${product.unit} • Current: ${product.currentStock || 0} ${product.unit}` : '\u00A0'}
+                              </p>
+                            </div>
+
+                            {/* Quantity & Unit */}
+                            <div className="sm:col-span-3 min-w-0">
+                              <div className="flex gap-1.5 items-center">
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  className="h-10 flex-1 min-w-0 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs"
+                                  value={item.quantity}
+                                  placeholder="0.00"
+                                  onChange={(e) => updateItem(index, 'quantity', e.target.value)}
+                                  required
+                                />
+                                <div className="w-28 shrink-0">
+                                  <CustomSelect
+                                    value={selectedUnit}
+                                    onChange={(e) => updateItem(index, 'unit', e.target.value)}
+                                    options={unitOptions}
+                                    placeholder="Unit"
+                                    allowClear={false}
+                                    className="h-10 text-xs font-bold rounded-xl bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700"
+                                  />
+                                </div>
+                              </div>
+                              {product && item.quantity ? (
+                                selectedUnit !== product.unit ? (
+                                  <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1 pl-1 truncate h-4">
+                                    = {baseQty.toLocaleString()} {product.unit}
+                                  </p>
+                                ) : (
+                                  <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 mt-1 pl-1 truncate h-4">
+                                    {'\u00A0'}
+                                  </p>
+                                )
+                              ) : (
+                                <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 mt-1 pl-1 truncate h-4">
+                                  {'\u00A0'}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Unit Price */}
+                            <div className="sm:col-span-2 min-w-0">
+                              <div className="relative">
+                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 pointer-events-none">₹</span>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  className="h-10 pl-7 pr-14 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs"
+                                  value={item.unitPrice}
+                                  placeholder="0.00"
+                                  onChange={(e) => updateItem(index, 'unitPrice', e.target.value)}
+                                  required
+                                />
+                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 pointer-events-none uppercase">
+                                  /{product?.unit || 'KG'}
+                                </span>
+                              </div>
+                              {selectedUnit !== product?.unit && itemPrice > 0 ? (
+                                <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-1 pl-1 truncate h-4">
+                                  = ₹{(itemPrice * factor).toLocaleString('en-IN', { maximumFractionDigits: 2 })}/{selectedUnit}
+                                </p>
+                              ) : (
+                                <div className="h-4 mt-1" />
+                              )}
+                            </div>
+
+                            {/* Line Total */}
+                            <div className="sm:col-span-2 text-right pr-2 pt-2.5">
+                              <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                                ₹{lineTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                              </span>
+                              <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 mt-1 h-4">
+                                {itemQty > 0 && itemPrice > 0
+                                  ? `${baseQty.toLocaleString()} ${product?.unit || 'KG'} × ₹${itemPrice}`
+                                  : 'Outlay'}
+                              </p>
+                            </div>
+
+                            {/* Action */}
+                            <div className="sm:col-span-1 flex flex-col items-center pt-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                disabled={formData.items.length <= 1}
+                                className="h-8 w-8 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors shrink-0 disabled:opacity-20 cursor-pointer"
+                                onClick={() => removeItem(index)}
+                                title="Remove item"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                              <div className="h-4 mt-1" />
+                            </div>
+                          </div>
+
+                          {/* Mobile Card View (sm:hidden) */}
+                          <div className="sm:hidden space-y-3">
+                            <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-slate-800">
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                Item #{index + 1}
+                              </span>
+                              {formData.items.length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 px-2 text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg text-xs"
+                                  onClick={() => removeItem(index)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 mr-1" />
+                                  Remove
+                                </Button>
+                              )}
+                            </div>
+                            <div className="space-y-2">
+                              <div>
+                                <Label className="text-[10px] font-medium text-slate-500 uppercase">Product</Label>
+                                <CustomSelect
+                                  value={item.productId}
+                                  onChange={(e) => updateItem(index, 'productId', e.target.value)}
+                                  placeholder="Select Product"
+                                  className="h-10 text-xs rounded-xl"
+                                  options={productOptions}
+                                />
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <Label className="text-[10px] font-medium text-slate-500 uppercase">Quantity</Label>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    className="h-10 rounded-xl text-xs font-semibold"
+                                    value={item.quantity}
+                                    placeholder="0.00"
+                                    onChange={(e) => updateItem(index, 'quantity', e.target.value)}
+                                    required
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-[10px] font-medium text-slate-500 uppercase">Unit</Label>
+                                  <CustomSelect
+                                    value={selectedUnit}
+                                    onChange={(e) => updateItem(index, 'unit', e.target.value)}
+                                    options={unitOptions}
+                                    allowClear={false}
+                                    placeholder="Unit"
+                                    className="h-10 text-xs font-semibold rounded-xl"
+                                  />
+                                </div>
+                              </div>
+                              {product && item.quantity && selectedUnit !== product.unit && (
+                                <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 pl-0.5">
+                                  = {baseQty.toLocaleString()} {product.unit}
+                                </p>
+                              )}
+                              <div>
+                                <Label className="text-[10px] font-medium text-slate-500 uppercase">
+                                  Rate (₹ / {product?.unit || 'KG'})
+                                </Label>
+                                <div className="relative">
+                                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 pointer-events-none">₹</span>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    className="h-10 pl-7 pr-14 rounded-xl text-xs font-semibold"
+                                    value={item.unitPrice}
+                                    placeholder="0.00"
+                                    onChange={(e) => updateItem(index, 'unitPrice', e.target.value)}
+                                    required
+                                  />
+                                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 pointer-events-none uppercase">
+                                    /{product?.unit || 'KG'}
+                                  </span>
+                                </div>
+                                {selectedUnit !== product?.unit && itemPrice > 0 && (
+                                  <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-1 pl-0.5">
+                                    = ₹{(itemPrice * factor).toLocaleString('en-IN', { maximumFractionDigits: 2 })} / {selectedUnit}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex items-center justify-between pt-1">
+                                <span className="text-[11px] font-bold text-slate-500 uppercase">
+                                  {itemQty > 0 && itemPrice > 0
+                                    ? `Outlay (${baseQty.toLocaleString()} ${product?.unit || 'KG'} × ₹${itemPrice}):`
+                                    : 'Subtotal:'}
+                                </span>
+                                <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                                  ₹{lineTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Table Bottom Action Bar */}
+                  <div className="bg-slate-50/70 dark:bg-slate-900/60 px-4 py-2.5 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={addItem}
+                      className="h-8 px-2.5 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                          Item #{index + 1}
-                        </span>
-                        {formData.items.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 px-2.5 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg text-xs font-medium transition-colors cursor-pointer"
-                            onClick={() => removeItem(index)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5 mr-1" />
-                            Remove
-                          </Button>
-                        )}
-                      </div>
-
-                      <div className="grid gap-3 sm:grid-cols-12">
-                        {/* Product */}
-                        <div className="sm:col-span-6 space-y-1">
-                          <Label className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Product</Label>
-                          <CustomSelect
-                            value={item.productId}
-                            onChange={(e) => updateItem(index, 'productId', e.target.value)}
-                            placeholder="Select Product"
-                            options={products.map((p) => ({ value: p.id, label: `${p.name} (${p.unit})` }))}
-                          />
-                        </div>
-
-                        {/* Quantity */}
-                        <div className="sm:col-span-3 space-y-1">
-                          <Label className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Quantity</Label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            className="h-11 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-medium text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                            value={item.quantity}
-                            placeholder="0.00"
-                            onChange={(e) => updateItem(index, 'quantity', e.target.value)}
-                            required
-                          />
-                        </div>
-
-                        {/* Unit Price */}
-                        <div className="sm:col-span-3 space-y-1">
-                          <Label className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Unit Cost (₹)</Label>
-                          <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">₹</span>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              className="h-11 pl-7 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-medium text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                              value={item.unitPrice}
-                              placeholder="0.00"
-                              onChange={(e) => updateItem(index, 'unitPrice', e.target.value)}
-                              required
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Subtotal row */}
-                      {item.quantity && item.unitPrice && (
-                        <div className="flex justify-end pt-1">
-                          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Item Subtotal:</span>
-                            <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                              ₹{(parseFloat(item.quantity || 0) * parseFloat(item.unitPrice || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                            </span>
-                          </div>
-                        </div>
-                      )}
+                      <Plus className="h-3.5 w-3.5" />
+                      Add Another Line
+                    </Button>
+                    <div className="text-right">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-2">Items Subtotal:</span>
+                      <span className="text-sm font-black text-slate-900 dark:text-slate-100">
+                        ₹{subtotalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </span>
                     </div>
-                  ))}
+                  </div>
                 </div>
               </div>
 
@@ -969,79 +1192,80 @@ export default function PurchasesPage() {
               </div>
 
               {/* Payment & Bill Summary */}
-              <div className="grid gap-4 sm:grid-cols-12 sm:items-stretch">
-                {/* Initial Payment Input */}
-                <div className="sm:col-span-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/40 p-4 sm:p-5 flex flex-col justify-between space-y-3">
-                  <div>
-                    <Label htmlFor="paidAmount" className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-1">
-                      Initial Advance Paid (₹) <span className="text-rose-500">*</span>
-                    </Label>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                      Amount paid upfront to provider at purchase
-                    </p>
-                  </div>
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">₹</span>
-                    <Input
-                      id="paidAmount"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      className="h-11 sm:h-12 pl-8 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-base font-bold text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-xs transition-all"
-                      placeholder="0.00"
-                      value={formData.paidAmount}
-                      onChange={(e) => setFormData({ ...formData, paidAmount: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Summary Card */}
-                <div className="sm:col-span-7 rounded-2xl bg-slate-900 dark:bg-slate-950 p-5 text-white space-y-3 border border-slate-800 shadow-xl flex flex-col justify-between">
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center text-slate-400 text-xs font-medium">
-                      <span className="uppercase tracking-wider text-[10px] font-bold">Items Subtotal</span>
-                      <span className="text-sm font-bold text-white">₹{subtotalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                    </div>
-                    {(parseFloat(formData.laborCharge) > 0 || parseFloat(formData.vehicleRent) > 0 || parseFloat(formData.otherCharges) > 0) && (
-                      <div className="space-y-1 py-1.5 border-t border-slate-800 text-[11px] text-slate-400">
-                        {parseFloat(formData.laborCharge) > 0 && (
-                          <div className="flex justify-between">
-                            <span>+ Labour Charge</span>
-                            <span className="text-slate-300">₹{parseFloat(formData.laborCharge).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                          </div>
-                        )}
-                        {parseFloat(formData.vehicleRent) > 0 && (
-                          <div className="flex justify-between">
-                            <span>+ Vehicle Rent</span>
-                            <span className="text-slate-300">₹{parseFloat(formData.vehicleRent).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                          </div>
-                        )}
-                        {parseFloat(formData.otherCharges) > 0 && (
-                          <div className="flex justify-between">
-                            <span>+ Other Charges</span>
-                            <span className="text-slate-300">₹{parseFloat(formData.otherCharges).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <div className="flex justify-between items-center text-slate-400 text-xs font-medium pt-1 border-t border-slate-800">
-                      <span className="uppercase tracking-wider text-[10px] font-bold">Gross Bill</span>
-                      <span className="text-sm font-bold text-white">₹{totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-slate-400 text-xs font-medium pb-2.5 border-b border-slate-800">
-                      <span className="uppercase tracking-wider text-[10px] font-bold">Advance Paid</span>
-                      <span className="text-sm font-bold text-emerald-400">₹{paidAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center pt-1">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-300">Balance Payable</span>
-                    <span className={cn(
-                      "text-xl sm:text-2xl font-black",
-                      dueAmount > 0 ? 'text-amber-400' : 'text-emerald-400'
-                    )}>
-                      ₹{dueAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 p-4 sm:p-5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 items-center">
+                  {/* Total Bill */}
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                      Total Bill
                     </span>
+                    <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100">
+                      ₹{totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </div>
+                    {(parseFloat(formData.laborCharge) > 0 || parseFloat(formData.vehicleRent) > 0 || parseFloat(formData.otherCharges) > 0) ? (
+                      <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                        Incl. ₹{((parseFloat(formData.laborCharge) || 0) + (parseFloat(formData.vehicleRent) || 0) + (parseFloat(formData.otherCharges) || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })} extra charges
+                      </p>
+                    ) : (
+                      <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                        Subtotal of {formData.items.length} {formData.items.length === 1 ? 'item' : 'items'}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Advance Paid Input */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="paidAmount" className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                        Advance Paid (₹) <span className="text-rose-500">*</span>
+                      </Label>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, paidAmount: String(totalAmount) })}
+                        className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:underline cursor-pointer"
+                      >
+                        Paid in Full
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">₹</span>
+                      <Input
+                        id="paidAmount"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="h-10 pl-7 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-bold text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                        placeholder="0.00"
+                        value={formData.paidAmount}
+                        onChange={(e) => setFormData({ ...formData, paidAmount: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Balance Payable */}
+                  <div className="space-y-1 sm:text-right">
+                    <div className="flex items-center sm:justify-end gap-2">
+                      <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        Balance Payable
+                      </span>
+                      <span className={cn(
+                        "text-[10px] font-bold px-2 py-0.5 rounded-full border",
+                        dueAmount <= 0
+                          ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-800/60"
+                          : paidAmount > 0
+                            ? "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200/60 dark:border-amber-800/60"
+                            : "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border-rose-200/60 dark:border-rose-800/60"
+                      )}>
+                        {dueAmount <= 0 ? "Paid in Full" : paidAmount > 0 ? "Partial" : "Unpaid"}
+                      </span>
+                    </div>
+                    <div className={cn(
+                      "text-xl sm:text-2xl font-black",
+                      dueAmount > 0 ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"
+                    )}>
+                      ₹{Math.max(0, dueAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1331,12 +1555,17 @@ export default function PurchasesPage() {
                               </p>
                             </td>
 
-                            <td className="p-3 text-right text-slate-600 dark:text-slate-400">
-                              {item.quantity}
+                            <td className="p-3 text-right font-semibold text-slate-700 dark:text-slate-300">
+                              {item.quantity} {item.unit || item.product?.unit || ''}
+                              {item.baseQuantity && item.unit && item.unit !== item.product?.unit && (
+                                <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-normal">
+                                  ({item.baseQuantity} {item.product?.unit})
+                                </div>
+                              )}
                             </td>
 
                             <td className="p-3 text-right text-slate-600 dark:text-slate-400">
-                              ₹{item.unitPrice.toLocaleString()}
+                              ₹{item.unitPrice.toLocaleString()}/{item.unit || item.product?.unit || ''}
                             </td>
 
                             <td className="p-3 text-right font-semibold text-slate-900 dark:text-slate-100">

@@ -79,21 +79,23 @@ export const saleDal = {
       );
       await SaleItem.create(
         lineItems.map((item) => ({ ...item, saleId: sale._id, userId })),
-        { session },
+        { session, ordered: true },
       );
 
       for (const item of lineItems) {
+        const deductQty = item.baseQuantity !== undefined ? item.baseQuantity : item.quantity;
+
         if (item.batchId) {
           const batchUpdate = await StockBatch.updateOne(
-            { _id: item.batchId, userId, quantity: { $gte: item.quantity } },
-            { $inc: { quantity: -item.quantity } },
+            { _id: item.batchId, userId, quantity: { $gte: deductQty } },
+            { $inc: { quantity: -deductQty } },
             { session },
           );
           if (!batchUpdate.matchedCount) {
             throw new Error('Insufficient stock in selected batch');
           }
         } else {
-          let remainingToDeduct = item.quantity;
+          let remainingToDeduct = deductQty;
           const batches = await StockBatch.find({
             productId: item.productId,
             userId,
@@ -115,14 +117,9 @@ export const saleDal = {
           if (remainingToDeduct > 0) throw new Error('Insufficient stock in available batches');
         }
 
-        await StockBatch.deleteMany(
-          { productId: item.productId, userId, quantity: { $lte: 0 } },
-          { session },
-        );
-
         const productUpdate = await Product.updateOne(
-          { _id: item.productId, userId, currentStock: { $gte: item.quantity } },
-          { $inc: { currentStock: -item.quantity } },
+          { _id: item.productId, userId, currentStock: { $gte: deductQty } },
+          { $inc: { currentStock: -deductQty } },
           { session },
         );
         if (!productUpdate.matchedCount) throw new Error('Insufficient stock');
@@ -151,18 +148,60 @@ export const saleDal = {
       if (!sale) throw new Error('Sale not found');
 
       for (const item of sale.items) {
+        const restoreQty = item.baseQuantity !== undefined ? item.baseQuantity : item.quantity;
+
         await Product.updateOne(
           { _id: item.productId, userId },
-          { $inc: { currentStock: item.quantity } },
+          { $inc: { currentStock: restoreQty } },
           { session },
         );
 
         if (item.batchId) {
-          await StockBatch.updateOne(
+          const batchUpdate = await StockBatch.updateOne(
             { _id: item.batchId, userId },
-            { $inc: { quantity: item.quantity } },
+            { $inc: { quantity: restoreQty } },
             { session },
           );
+          if (!batchUpdate.matchedCount) {
+            await StockBatch.create(
+              [
+                {
+                  _id: item.batchId,
+                  productId: item.productId,
+                  userId,
+                  purchasePrice: item.costPrice,
+                  quantity: restoreQty,
+                },
+              ],
+              { session },
+            );
+          }
+        } else {
+          const existingBatch = await StockBatch.findOne({
+            productId: item.productId,
+            userId,
+            purchasePrice: item.costPrice,
+          }).session(session);
+
+          if (existingBatch) {
+            await StockBatch.updateOne(
+              { _id: existingBatch._id },
+              { $inc: { quantity: restoreQty } },
+              { session },
+            );
+          } else {
+            await StockBatch.create(
+              [
+                {
+                  productId: item.productId,
+                  userId,
+                  purchasePrice: item.costPrice,
+                  quantity: restoreQty,
+                },
+              ],
+              { session },
+            );
+          }
         }
       }
 

@@ -1,5 +1,6 @@
 import { connectDB } from '../../config/db.js';
-import { Product } from '../../models/index.js';
+import { Product, StockBatch } from '../../models/index.js';
+import { withTransaction } from '../transaction.js';
 
 export const productDal = {
   async findMany(where, skip, take) {
@@ -35,6 +36,32 @@ export const productDal = {
   async create(data) {
     await connectDB();
     return Product.create(data);
+  },
+
+  async createWithStock(productData, openingStock = 0, costPrice = 0) {
+    await connectDB();
+    const qty = parseFloat(openingStock) || 0;
+    if (qty <= 0) {
+      return Product.create(productData);
+    }
+    return withTransaction(async (session) => {
+      const [product] = await Product.create([{ ...productData, currentStock: qty }], { session });
+      const totalBatches = await StockBatch.countDocuments({ userId: productData.userId }).session(session);
+      const batchNumber = `BCH-${1001 + totalBatches}`;
+      await StockBatch.create(
+        [
+          {
+            productId: product._id,
+            userId: productData.userId,
+            batchNumber,
+            purchasePrice: costPrice,
+            quantity: qty,
+          },
+        ],
+        { session },
+      );
+      return product;
+    });
   },
 
   async update(id, userId, data) {

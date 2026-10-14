@@ -26,7 +26,7 @@ export const purchaseDal = {
 
   async findProductsForUser(productIds, userId) {
     await connectDB();
-    return Product.find({ _id: { $in: productIds }, userId }).select('_id');
+    return Product.find({ _id: { $in: productIds }, userId });
   },
 
   async findById(id, userId) {
@@ -72,15 +72,18 @@ export const purchaseDal = {
       );
       await PurchaseItem.create(
         lineItems.map((item) => ({ ...item, purchaseId: purchase._id })),
-        { session },
+        { session, ordered: true },
       );
 
       for (const item of lineItems) {
+        const baseQty = item.baseQuantity !== undefined ? item.baseQuantity : item.quantity;
+        const baseCost = item.costPerBaseUnit !== undefined ? item.costPerBaseUnit : item.unitPrice;
+
         const productUpdate = await Product.updateOne(
           { _id: item.productId, userId },
           {
-            $inc: { currentStock: item.quantity },
-            $set: { baseCostPrice: item.unitPrice },
+            $inc: { currentStock: baseQty },
+            $set: { baseCostPrice: baseCost },
           },
           { session },
         );
@@ -89,23 +92,31 @@ export const purchaseDal = {
         const existingBatch = await StockBatch.findOne({
           productId: item.productId,
           userId,
-          purchasePrice: item.unitPrice,
+          purchasePrice: baseCost,
         }).session(session);
 
         if (existingBatch) {
+          const updateFields = { $inc: { quantity: baseQty } };
+          if (!existingBatch.batchNumber) {
+            const count = await StockBatch.countDocuments({ userId }).session(session);
+            updateFields.$set = { batchNumber: `BCH-${1000 + count}` };
+          }
           await StockBatch.updateOne(
             { _id: existingBatch._id },
-            { $inc: { quantity: item.quantity } },
+            updateFields,
             { session },
           );
         } else {
+          const totalBatches = await StockBatch.countDocuments({ userId }).session(session);
+          const nextBatchNumber = `BCH-${1001 + totalBatches}`;
           await StockBatch.create(
             [
               {
                 productId: item.productId,
                 userId,
-                purchasePrice: item.unitPrice,
-                quantity: item.quantity,
+                batchNumber: item.batchNumber || nextBatchNumber,
+                purchasePrice: baseCost,
+                quantity: baseQty,
               },
             ],
             { session },
@@ -138,35 +149,30 @@ export const purchaseDal = {
       if (!purchase) throw new Error('Purchase not found');
 
       for (const item of purchase.items) {
+        const revertQty = item.baseQuantity !== undefined ? item.baseQuantity : item.quantity;
+        const revertCost = item.costPerBaseUnit !== undefined ? item.costPerBaseUnit : item.unitPrice;
+
         await Product.updateOne(
           { _id: item.productId, userId },
-          { $inc: { currentStock: -item.quantity } },
+          { $inc: { currentStock: -revertQty } },
           { session },
         );
 
         const batch = await StockBatch.findOne({
           productId: item.productId,
           userId,
-          purchasePrice: item.unitPrice,
+          purchasePrice: revertCost,
         }).session(session);
 
         if (batch) {
           await StockBatch.updateOne(
             { _id: batch._id },
-            { $inc: { quantity: -item.quantity } },
+            { $inc: { quantity: -revertQty } },
             { session },
           );
         }
       }
 
-      await StockBatch.deleteMany(
-        {
-          userId,
-          productId: { $in: purchase.items.map((item) => item.productId) },
-          quantity: { $lte: 0 },
-        },
-        { session },
-      );
       await PurchaseItem.deleteMany({ purchaseId: purchase._id, userId }, { session });
       await Purchase.deleteOne({ _id: purchase._id, userId }, { session });
     });

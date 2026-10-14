@@ -12,6 +12,7 @@ function transformDocument(_document, result) {
 function createSchema(definition) {
   return new mongoose.Schema(definition, {
     timestamps: true,
+    strictPopulate: false,
     toJSON: { virtuals: true, transform: transformDocument },
     toObject: { virtuals: true, transform: transformDocument },
   });
@@ -61,6 +62,7 @@ const ProductSchema = createSchema({
 const StockBatchSchema = createSchema({
   productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  batchNumber: { type: String, trim: true },
   purchasePrice: { type: Number, required: true },
   quantity: { type: Number, required: true },
 });
@@ -96,6 +98,8 @@ const PurchaseItemSchema = createSchema({
   productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   quantity: { type: Number, required: true },
+  unit: { type: String, trim: true },
+  baseQuantity: { type: Number },
   unitPrice: { type: Number, required: true },
   totalPrice: { type: Number, required: true },
 });
@@ -119,6 +123,8 @@ const SaleItemSchema = createSchema({
   batchId: { type: mongoose.Schema.Types.ObjectId, ref: 'StockBatch' },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   quantity: { type: Number, required: true },
+  unit: { type: String, trim: true },
+  baseQuantity: { type: Number },
   costPrice: { type: Number, required: true },
   salePrice: { type: Number, required: true },
   profit: { type: Number, required: true },
@@ -166,15 +172,63 @@ CustomerSchema.virtual('sales', {
   localField: '_id',
   foreignField: 'customerId',
 });
+PurchaseSchema.virtual('provider', {
+  ref: 'Provider',
+  localField: 'providerId',
+  foreignField: '_id',
+  justOne: true,
+});
 PurchaseSchema.virtual('items', {
   ref: 'PurchaseItem',
   localField: '_id',
   foreignField: 'purchaseId',
 });
+PurchaseItemSchema.virtual('product', {
+  ref: 'Product',
+  localField: 'productId',
+  foreignField: '_id',
+  justOne: true,
+});
+PurchaseItemSchema.virtual('purchase', {
+  ref: 'Purchase',
+  localField: 'purchaseId',
+  foreignField: '_id',
+  justOne: true,
+});
+SaleSchema.virtual('customer', {
+  ref: 'Customer',
+  localField: 'customerId',
+  foreignField: '_id',
+  justOne: true,
+});
 SaleSchema.virtual('items', {
   ref: 'SaleItem',
   localField: '_id',
   foreignField: 'saleId',
+});
+SaleItemSchema.virtual('product', {
+  ref: 'Product',
+  localField: 'productId',
+  foreignField: '_id',
+  justOne: true,
+});
+SaleItemSchema.virtual('batch', {
+  ref: 'StockBatch',
+  localField: 'batchId',
+  foreignField: '_id',
+  justOne: true,
+});
+SaleItemSchema.virtual('sale', {
+  ref: 'Sale',
+  localField: 'saleId',
+  foreignField: '_id',
+  justOne: true,
+});
+StockBatchSchema.virtual('product', {
+  ref: 'Product',
+  localField: 'productId',
+  foreignField: '_id',
+  justOne: true,
 });
 
 export const Admin = mongoose.models.Admin || mongoose.model('Admin', AdminSchema);

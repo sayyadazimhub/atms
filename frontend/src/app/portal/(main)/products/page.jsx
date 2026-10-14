@@ -14,7 +14,17 @@ import { ConfirmModal } from '@/components/portal/ConfirmModal';
 import { PageHeader } from '@/components/portal/PageHeader';
 import { CustomSelect } from '@/components/ui/custom-select';
 
-const UNITS = ['KG', 'Quintal', 'Ton'];
+const UNITS = [
+  { value: 'KG', label: 'KG (Kilogram)', sublabel: 'Standard Weight' },
+  { value: 'Quintal', label: 'Quintal (100 KG)', sublabel: 'Bulk Grain / Produce' },
+  { value: 'Ton', label: 'Ton (1,000 KG)', sublabel: 'Freight / Bulk Lot' },
+  { value: 'Bag', label: 'Bag / Bori (Bori)', sublabel: 'Standard Package' },
+  { value: 'Crate', label: 'Crate / Box', sublabel: 'Produce / Fruits' },
+  { value: 'Box', label: 'Box / Carton', sublabel: 'Packaged Goods' },
+  { value: 'Litre', label: 'Litre (Ltr)', sublabel: 'Liquid / Oils' },
+  { value: 'Piece', label: 'Piece (Nos / Kattas)', sublabel: 'Count Item' },
+  { value: 'Gram', label: 'Gram (gm)', sublabel: 'Fine Weight / Spices' },
+];
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
@@ -23,7 +33,7 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: '', unit: 'KG', baseCostPrice: 0, baseSalePrice: 0 });
+  const [form, setForm] = useState({ name: '', unit: 'KG', baseCostPrice: 0, baseSalePrice: 0, openingStock: 0 });
   const [submitting, setSubmitting] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
 
@@ -49,8 +59,9 @@ export default function ProductsPage() {
       name: product.name,
       unit: product.unit,
       baseCostPrice: product.baseCostPrice || 0,
-      baseSalePrice: product.baseSalePrice || 0
-    } : { name: '', unit: 'KG', baseCostPrice: 0, baseSalePrice: 0 });
+      baseSalePrice: product.baseSalePrice || 0,
+      openingStock: 0
+    } : { name: '', unit: 'KG', baseCostPrice: 0, baseSalePrice: 0, openingStock: 0 });
     setOpen(true);
   };
 
@@ -195,6 +206,8 @@ export default function ProductsPage() {
                   <tr className="border-b dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/50">
                     <th className="p-4 text-left font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-[10px]">Product Information</th>
                     <th className="p-4 text-left font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-[10px]">Measurement Unit</th>
+                    <th className="p-4 text-right font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-[10px]">Base Cost (₹/Unit)</th>
+                    <th className="p-4 text-right font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-[10px]">Base Sale (₹/Unit)</th>
                     <th className="p-4 text-right font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-[10px]">Current Inventory</th>
                     <th className="p-4 text-right font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-[10px] w-32">Actions</th>
                   </tr>
@@ -214,6 +227,22 @@ export default function ProductsPage() {
                         <span className="inline-flex items-center rounded-lg bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-bold text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 uppercase">
                           {p.unit}
                         </span>
+                      </td>
+                      <td className="p-4 text-right">
+                        <div className="flex flex-col items-end">
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">
+                            ₹{Number(p.baseCostPrice || 0).toLocaleString('en-IN')}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">/ {p.unit}</span>
+                        </div>
+                      </td>
+                      <td className="p-4 text-right">
+                        <div className="flex flex-col items-end">
+                          <span className="font-semibold text-slate-900 dark:text-slate-100">
+                            ₹{Number(p.baseSalePrice || 0).toLocaleString('en-IN')}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">/ {p.unit}</span>
+                        </div>
                       </td>
                       <td className="p-4 text-right">
                         <div className="flex flex-col items-end">
@@ -351,7 +380,7 @@ export default function ProductsPage() {
                   value={form.unit}
                   onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
                   placeholder="Select Unit"
-                  options={UNITS.map((u) => ({ value: u, label: u }))}
+                  options={UNITS}
                 />
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium">
                   Standardized unit for all inventory batches, purchase orders, and sales vouchers.
@@ -373,9 +402,12 @@ export default function ProductsPage() {
                       value={form.baseCostPrice}
                       onChange={(e) => setForm((f) => ({ ...f, baseCostPrice: e.target.value }))}
                       required
-                      className="rounded-xl h-11 sm:h-12 pl-8 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 focus:bg-white dark:focus:bg-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:text-slate-100 font-semibold text-sm transition-all"
+                      className="rounded-xl h-11 sm:h-12 pl-8 pr-16 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 focus:bg-white dark:focus:bg-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:text-slate-100 font-semibold text-sm transition-all"
                       placeholder="0.00"
                     />
+                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 uppercase pointer-events-none">
+                      / {form.unit}
+                    </span>
                   </div>
                 </div>
 
@@ -391,12 +423,41 @@ export default function ProductsPage() {
                       min="0"
                       value={form.baseSalePrice}
                       onChange={(e) => setForm((f) => ({ ...f, baseSalePrice: e.target.value }))}
-                      className="rounded-xl h-11 sm:h-12 pl-8 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 focus:bg-white dark:focus:bg-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:text-slate-100 font-semibold text-sm transition-all"
+                      className="rounded-xl h-11 sm:h-12 pl-8 pr-16 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 focus:bg-white dark:focus:bg-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:text-slate-100 font-semibold text-sm transition-all"
                       placeholder="0.00"
                     />
+                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 uppercase pointer-events-none">
+                      / {form.unit}
+                    </span>
                   </div>
                 </div>
               </div>
+
+              {/* Opening Stock (Only when creating a new product) */}
+              {!editing && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                      Opening Stock ({form.unit || 'unit'})
+                    </Label>
+                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-800/60">
+                      Auto-generates Batch (BCH-XXXX)
+                    </span>
+                  </div>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={form.openingStock}
+                    onChange={(e) => setForm((f) => ({ ...f, openingStock: e.target.value }))}
+                    className="rounded-xl h-11 sm:h-12 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 focus:bg-white dark:focus:bg-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:text-slate-100 font-semibold text-sm transition-all"
+                    placeholder="0.00"
+                  />
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                    Optional opening inventory. Will automatically register as your first batch lot.
+                  </p>
+                </div>
+              )}
 
               {/* Profit Margin Preview Helper */}
               {Number(form.baseCostPrice) > 0 && Number(form.baseSalePrice) > 0 && (

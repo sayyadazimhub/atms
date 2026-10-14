@@ -16,14 +16,14 @@ const SelectTrigger = React.forwardRef(({ className, children, ...props }, ref) 
     <SelectPrimitive.Trigger
         ref={ref}
         className={cn(
-            'flex h-11 sm:h-12 w-full items-center justify-between rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 focus:bg-white dark:focus:bg-slate-900 px-3.5 py-2 text-sm font-medium outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 transition-all cursor-pointer',
+            'flex h-10 w-full min-w-0 items-center justify-between rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 focus:bg-white dark:focus:bg-slate-900 px-3 py-2 text-xs sm:text-sm font-medium outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 text-slate-900 dark:text-slate-100 data-[placeholder]:text-slate-400 dark:data-[placeholder]:text-slate-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all cursor-pointer [&>span]:truncate [&>span]:text-left [&>span]:flex-1',
             className
         )}
         {...props}
     >
         {children}
         <SelectPrimitive.Icon asChild>
-            <ChevronDown className="h-4 w-4 text-slate-400 shrink-0 transition-transform" />
+            <ChevronDown className="h-4 w-4 text-slate-400 shrink-0 ml-1.5 transition-transform" />
         </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
 ));
@@ -36,7 +36,7 @@ const SelectContent = React.forwardRef(({ className, children, position = 'poppe
             className={cn(
                 'relative z-[70] overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 shadow-md p-1 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
                 position === 'popper' &&
-                'data-[side=bottom]:translate-y-1.5 data-[side=left]:-translate-x-1.5 data-[side=right]:translate-x-1.5 data-[side=top]:-translate-y-1.5 w-[var(--radix-select-trigger-width)] min-w-[var(--radix-select-trigger-width)] max-w-[var(--radix-select-trigger-width)]',
+                'data-[side=bottom]:translate-y-1.5 data-[side=left]:-translate-x-1.5 data-[side=right]:translate-x-1.5 data-[side=top]:-translate-y-1.5 min-w-[var(--radix-select-trigger-width)] max-w-[min(480px,95vw)]',
                 className
             )}
             position={position}

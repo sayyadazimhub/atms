@@ -1,4 +1,5 @@
 import { purchaseDal } from '../../dal/userDal/purchaseDal.js';
+import { getConversionFactor } from '../../utils/unitConverter.js';
 
 export const purchaseService = {
   async getPurchases(userId, page = 1, limit = 20) {
@@ -46,22 +47,31 @@ export const purchaseService = {
       ),
     ]);
     if (!provider) throw new Error('Provider not found');
-    const foundProductIds = new Set(products.map((product) => product.id));
-    if (items.some((item) => !foundProductIds.has(item.productId))) {
+    const productMap = new Map(products.map((product) => [String(product.id || product._id), product]));
+    if (items.some((item) => !productMap.has(String(item.productId)))) {
       throw new Error('One or more products were not found');
     }
 
     let subtotal = 0;
     const lineItems = items.map((it) => {
+      const product = productMap.get(String(it.productId));
       const qty = parseFloat(it.quantity) || 0;
       const price = parseFloat(it.unitPrice) || 0;
-      const total = qty * price;
+
+      const itemUnit = it.unit || product?.unit || 'KG';
+      const factor = getConversionFactor(itemUnit, product?.unit);
+      const baseQuantity = qty * factor;
+      const total = baseQuantity * price;
       subtotal += total;
+
       return {
         productId: it.productId,
         quantity: qty,
+        unit: itemUnit,
+        baseQuantity: baseQuantity,
         unitPrice: price,
         totalPrice: total,
+        costPerBaseUnit: price,
         userId: userId,
       };
     });
