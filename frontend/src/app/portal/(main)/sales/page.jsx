@@ -510,17 +510,17 @@ function SalesPageContent() {
             ${(Number(selectedSale.laborCharge) > 0) ? `
             <div class="total-item">
               <span>Labour Charge</span>
-              <span style="color: white">+ ₹${Number(selectedSale.laborCharge).toLocaleString('en-IN')}</span>
+              <span style="color: white">- ₹${Number(selectedSale.laborCharge).toLocaleString('en-IN')}</span>
             </div>` : ''}
             ${(Number(selectedSale.vehicleRent) > 0) ? `
             <div class="total-item">
               <span>Vehicle Rent</span>
-              <span style="color: white">+ ₹${Number(selectedSale.vehicleRent).toLocaleString('en-IN')}</span>
+              <span style="color: white">- ₹${Number(selectedSale.vehicleRent).toLocaleString('en-IN')}</span>
             </div>` : ''}
             ${(Number(selectedSale.otherCharges) > 0) ? `
             <div class="total-item">
               <span>Other Charges</span>
-              <span style="color: white">+ ₹${Number(selectedSale.otherCharges).toLocaleString('en-IN')}</span>
+              <span style="color: white">- ₹${Number(selectedSale.otherCharges).toLocaleString('en-IN')}</span>
             </div>` : ''}
             <div class="total-item" style="border-top: 1px dashed #334155; padding-top: 6px; margin-top: 6px;">
               <span style="color: #cbd5e1">Gross Total</span>
@@ -593,15 +593,8 @@ function SalesPageContent() {
                 } else {
                     const availableBatches = product.batches?.filter(b => Number(b.quantity || 0) > 0) || [];
                     newItems[index].salePrice = product.baseSalePrice || '';
-                    const firstBatch = availableBatches[0];
-                    if (firstBatch) {
-                        // Default to the oldest batch (FIFO)
-                        newItems[index].batchId = String(firstBatch.id || firstBatch._id);
-                        newItems[index].costPrice = Number(firstBatch.purchasePrice ?? product.baseCostPrice ?? 0);
-                    } else {
-                        newItems[index].batchId = '';
-                        newItems[index].costPrice = Number(product.baseCostPrice || 0);
-                    }
+                    newItems[index].batchId = '';
+                    newItems[index].costPrice = '';
                     delete newItems[index].batchAllocations;
                     delete newItems[index].combinedDescription;
                 }
@@ -625,8 +618,8 @@ function SalesPageContent() {
             const batch = product?.batches?.find(b => String(b.id || b._id) === String(value));
             if (batch) {
                 newItems[index].costPrice = Number(batch.purchasePrice ?? product?.baseCostPrice ?? 0);
-            } else if (product) {
-                newItems[index].costPrice = Number(product.baseCostPrice || 0);
+            } else {
+                newItems[index].costPrice = '';
             }
         }
 
@@ -731,7 +724,7 @@ function SalesPageContent() {
         const labor = parseFloat(formData.laborCharge) || 0;
         const rent = parseFloat(formData.vehicleRent) || 0;
         const other = parseFloat(formData.otherCharges) || 0;
-        return subtotal + labor + rent + other;
+        return Math.max(0, subtotal - (labor + rent + other));
     };
 
     const calculateProfit = () => {
@@ -787,6 +780,12 @@ function SalesPageContent() {
 
             if (!it.productId) {
                 toast.error(`Item #${rowNum}: Please select a product/commodity`);
+                return;
+            }
+
+            const isRowCombined = it.batchId === 'COMBINED' && it.batchAllocations?.length > 0;
+            if (!it.batchId && !isRowCombined) {
+                toast.error(`Item #${rowNum} (${prodName}): Please select a batch or combine batches`);
                 return;
             }
 
@@ -1187,7 +1186,7 @@ function SalesPageContent() {
             }}>
                 <Dialog.Portal>
                     <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-                    <Dialog.Content translate="no" className="notranslate fixed left-1/2 top-1/2 z-50 w-[95vw] sm:w-full max-w-4xl lg:max-w-5xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white dark:bg-slate-950 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
+                    <Dialog.Content translate="no" className="notranslate fixed left-1/2 top-1/2 z-50 w-[98vw] sm:w-full max-w-5xl lg:max-w-6xl xl:max-w-7xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white dark:bg-slate-950 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
 
                         {/* Header */}
                         <div className="sticky top-0 z-20 shrink-0 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-5 sm:p-6 flex justify-between items-center rounded-t-2xl shadow-xs relative">
@@ -1268,14 +1267,14 @@ function SalesPageContent() {
                                 </div>
 
                                 {/* Items Sheet / Table */}
-                                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 shadow-xs overflow-hidden">
+                                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 shadow-xs overflow-x-auto">
                                     {/* Table Header (Desktop) */}
-                                    <div className="hidden sm:grid sm:grid-cols-12 gap-2.5 px-4 py-2.5 bg-slate-50 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                    <div className="hidden sm:grid sm:grid-cols-12 gap-2.5 px-4 py-2.5 bg-slate-50 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider sm:min-w-[820px]">
                                         <div className="sm:col-span-3">Product / Commodity</div>
                                         <div className="sm:col-span-2">Batch</div>
-                                        <div className="sm:col-span-2">Quantity</div>
+                                        <div className="sm:col-span-3">Quantity & Unit</div>
                                         <div className="sm:col-span-2">Rate (₹/Base Unit)</div>
-                                        <div className="sm:col-span-2 text-right pr-2">Line Total</div>
+                                        <div className="sm:col-span-1 text-right pr-1">Line Total</div>
                                         <div className="sm:col-span-1 text-center">Action</div>
                                     </div>
 
@@ -1295,18 +1294,19 @@ function SalesPageContent() {
 
                                             const isCombined = item.batchId === 'COMBINED' && item.batchAllocations?.length > 0;
                                             const selectedBatch = isCombined ? null : availableBatches.find(b => String(b.id || b._id) === String(item.batchId));
+                                            const hasBatch = Boolean(selectedBatch || isCombined);
                                             const itemCost = isCombined
                                                 ? (parseFloat(item.costPrice) || 0)
-                                                : (selectedBatch?.purchasePrice ?? (Number(product?.baseCostPrice) || 0));
+                                                : (selectedBatch ? Number(selectedBatch.purchasePrice ?? (product?.baseCostPrice || 0)) : 0);
 
                                             const lineTotal = baseQty * itemPrice;
-                                            const lineProfit = baseQty * (itemPrice - itemCost);
+                                            const lineProfit = hasBatch ? baseQty * (itemPrice - itemCost) : 0;
                                             const hasProfit = lineProfit >= 0;
 
                                             const availableStock = isCombined
                                                 ? item.batchAllocations.reduce((s, a) => s + (parseFloat(a.quantity) || 0), 0)
-                                                : (selectedBatch ? Number(selectedBatch.quantity || 0) : Number(product?.currentStock || 0));
-                                            const isOutOfStock = Boolean(product && availableStock <= 0);
+                                                : (selectedBatch ? Number(selectedBatch.quantity || 0) : 0);
+                                            const isOutOfStock = Boolean(product && hasBatch && availableStock <= 0);
 
                                             const batchOptions = availableBatches.map((b, idx) => {
                                                 const bQty = Number(b.quantity || 0);
@@ -1331,7 +1331,7 @@ function SalesPageContent() {
                                                     className="p-3.5 sm:px-4 sm:py-3.5 transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-900/40"
                                                 >
                                                     {/* Desktop Row View */}
-                                                    <div className="hidden sm:grid sm:grid-cols-12 gap-2.5 items-start">
+                                                    <div className="hidden sm:grid sm:grid-cols-12 gap-2.5 items-start sm:min-w-[820px]">
                                                         {/* Product */}
                                                         <div className="sm:col-span-3 min-w-0">
                                                             <CustomSelect
@@ -1395,7 +1395,6 @@ function SalesPageContent() {
                                                                         onChange={(e) => updateItem(index, 'batchId', e.target.value)}
                                                                         placeholder={availableBatches.length > 0 ? 'Select Batch' : 'No Batches'}
                                                                         className="h-10 text-xs sm:text-sm rounded-xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-2xs font-semibold text-slate-900 dark:text-slate-100"
-                                                                        allowClear={false}
                                                                         options={batchOptions}
                                                                         disabled={!item.productId || availableBatches.length === 0}
                                                                     />
@@ -1417,29 +1416,30 @@ function SalesPageContent() {
                                                         </div>
 
                                                         {/* Quantity & Unit */}
-                                                        <div className="sm:col-span-2 min-w-0">
+                                                        <div className="sm:col-span-3 min-w-0">
                                                             <div className="flex gap-1.5 items-center">
                                                                 <Input
                                                                     type="number"
                                                                     step="0.01"
                                                                     min="0"
-                                                                    disabled={isOutOfStock}
+                                                                    disabled={isOutOfStock || !hasBatch}
                                                                     className={cn(
-                                                                        "h-10 flex-1 min-w-0 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-colors",
+                                                                        "h-10 flex-1 min-w-0 px-2.5 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-colors",
                                                                         stockError && "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20 bg-rose-50/20",
-                                                                        isOutOfStock && "bg-slate-100/80 dark:bg-slate-800/60 cursor-not-allowed opacity-60 text-slate-400 border-slate-200/60 dark:border-slate-800/60"
+                                                                        (isOutOfStock || !hasBatch) && "bg-slate-100/80 dark:bg-slate-800/60 cursor-not-allowed opacity-60 text-slate-400 border-slate-200/60 dark:border-slate-800/60"
                                                                     )}
-                                                                    value={isOutOfStock ? '' : item.quantity}
-                                                                    placeholder='0.00'
+                                                                    value={(isOutOfStock || !hasBatch) ? '' : item.quantity}
+                                                                    placeholder="0.00"
+                                                                    title={!hasBatch ? 'Please select a batch first' : 'Enter quantity'}
                                                                     onChange={(e) => updateItem(index, 'quantity', e.target.value)}
-                                                                    required={!isOutOfStock}
+                                                                    required={!isOutOfStock && hasBatch}
                                                                 />
-                                                                <div className="w-24 shrink-0">
+                                                                <div className="w-20 shrink-0">
                                                                     <CustomSelect
                                                                         value={selectedUnit}
                                                                         onChange={(e) => updateItem(index, 'unit', e.target.value)}
                                                                         options={unitOptions}
-                                                                        disabled={isOutOfStock || !product}
+                                                                        disabled={isOutOfStock || !hasBatch}
                                                                         allowClear={false}
                                                                         placeholder="Unit"
                                                                         className="h-10 text-xs font-bold rounded-xl bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700"
@@ -1448,9 +1448,9 @@ function SalesPageContent() {
                                                             </div>
                                                             <p className={cn(
                                                                 "text-[10px] mt-1 pl-1 truncate h-4 font-medium",
-                                                                stockError || isOutOfStock ? "text-rose-500 font-semibold" : "text-slate-400 dark:text-slate-500"
+                                                                stockError || isOutOfStock ? "text-rose-500 font-semibold" : !hasBatch ? "text-amber-500 dark:text-amber-400" : "text-slate-400 dark:text-slate-500"
                                                             )}>
-                                                                {stockError || (product ? (isOutOfStock ? `Out of Stock (0 ${product.unit})` : `Avail: ${availableStock} ${product.unit}${selectedUnit !== product.unit && item.quantity ? ` (= ${baseQty} ${product.unit})` : ''}`) : '\u00A0')}
+                                                                {stockError || (!hasBatch ? (product ? 'Select batch first' : '\u00A0') : (isOutOfStock ? `Out of Stock (0 ${product.unit})` : `Avail: ${availableStock} ${product.unit}${selectedUnit !== product.unit && item.quantity ? ` (= ${baseQty} ${product.unit})` : ''}`))}
                                                             </p>
                                                         </div>
 
@@ -1459,25 +1459,25 @@ function SalesPageContent() {
                                                             <div className="relative">
                                                                 <span className={cn(
                                                                     "absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold pointer-events-none",
-                                                                    isOutOfStock ? "text-slate-300 dark:text-slate-600" : "text-slate-400"
+                                                                    (isOutOfStock || !hasBatch) ? "text-slate-300 dark:text-slate-600" : "text-slate-400"
                                                                 )}>₹</span>
                                                                 <Input
                                                                     type="number"
                                                                     step="0.01"
                                                                     min="0"
-                                                                    disabled={isOutOfStock}
+                                                                    disabled={isOutOfStock || !hasBatch}
                                                                     className={cn(
-                                                                        "h-10 pl-7 pr-14 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-colors",
-                                                                        isOutOfStock && "bg-slate-100/80 dark:bg-slate-800/60 cursor-not-allowed opacity-60 text-slate-400 border-slate-200/60 dark:border-slate-800/60"
+                                                                        "h-10 pl-6 pr-10 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-colors",
+                                                                        (isOutOfStock || !hasBatch) && "bg-slate-100/80 dark:bg-slate-800/60 cursor-not-allowed opacity-60 text-slate-400 border-slate-200/60 dark:border-slate-800/60"
                                                                     )}
-                                                                    value={isOutOfStock ? '' : item.salePrice}
+                                                                    value={(isOutOfStock || !hasBatch) ? '' : item.salePrice}
                                                                     placeholder="0.00"
                                                                     onChange={(e) => updateItem(index, 'salePrice', e.target.value)}
-                                                                    required={!isOutOfStock}
+                                                                    required={!isOutOfStock && hasBatch}
                                                                 />
                                                                 <span className={cn(
                                                                     "absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold pointer-events-none uppercase",
-                                                                    isOutOfStock ? "text-slate-300 dark:text-slate-600" : "text-slate-400"
+                                                                    (isOutOfStock || !hasBatch) ? "text-slate-300 dark:text-slate-600" : "text-slate-400"
                                                                 )}>
                                                                     /{product?.unit || 'KG'}
                                                                 </span>
@@ -1485,13 +1485,13 @@ function SalesPageContent() {
                                                             {selectedUnit !== product?.unit && itemPrice > 0 ? (
                                                                 <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-1 pl-1 truncate h-4">
                                                                     = ₹{(itemPrice * factor).toLocaleString('en-IN', { maximumFractionDigits: 2 })}/{selectedUnit}
-                                                                    {itemCost > 0 && !isOutOfStock ? (
+                                                                    {hasBatch && itemCost > 0 && !isOutOfStock ? (
                                                                         ` • Cost: ₹${itemCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/${product?.unit || 'KG'}${isCombined ? ` (Avg of ${item.batchAllocations.length} lots)` : ''}`
                                                                     ) : ''}
                                                                 </p>
-                                                            ) : itemCost > 0 && !isOutOfStock ? (
+                                                            ) : hasBatch && itemCost > 0 && !isOutOfStock ? (
                                                                 <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 mt-1 pl-1 truncate h-4">
-                                                                    Cost: ₹{itemCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/${product?.unit || 'KG'}
+                                                                    Cost: ₹{itemCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/{product?.unit || 'KG'}
                                                                     {isCombined && (
                                                                         <span className="text-indigo-600 dark:text-indigo-400 font-bold ml-1">
                                                                             (Weighted avg of {item.batchAllocations.length} lots)
@@ -1504,7 +1504,7 @@ function SalesPageContent() {
                                                         </div>
 
                                                         {/* Line Total */}
-                                                        <div className="sm:col-span-2 min-w-0 text-right pr-2">
+                                                        <div className="sm:col-span-1 min-w-0 text-right pr-1">
                                                             <div className="h-10 flex flex-col justify-center">
                                                                 <div className="font-bold text-slate-900 dark:text-slate-100 text-sm leading-tight">
                                                                     ₹{lineTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
@@ -1659,7 +1659,6 @@ function SalesPageContent() {
                                                                         onChange={(e) => updateItem(index, 'batchId', e.target.value)}
                                                                         placeholder={availableBatches.length > 0 ? 'Select Batch' : 'No Batches'}
                                                                         className="h-10 text-xs sm:text-sm rounded-xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 font-semibold text-slate-900 dark:text-slate-100"
-                                                                        allowClear={false}
                                                                         options={batchOptions}
                                                                         disabled={!item.productId || availableBatches.length === 0}
                                                                     />
@@ -1681,16 +1680,16 @@ function SalesPageContent() {
                                                                     type="number"
                                                                     step="0.01"
                                                                     min="0"
-                                                                    disabled={isOutOfStock}
+                                                                    disabled={isOutOfStock || !hasBatch}
                                                                     className={cn(
                                                                         "h-10 rounded-xl text-xs sm:text-sm font-semibold border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors",
                                                                         stockError && "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20 bg-rose-50/20",
-                                                                        isOutOfStock && "bg-slate-100/80 dark:bg-slate-800/60 cursor-not-allowed opacity-60 text-slate-400 border-slate-200/60 dark:border-slate-800/60"
+                                                                        (isOutOfStock || !hasBatch) && "bg-slate-100/80 dark:bg-slate-800/60 cursor-not-allowed opacity-60 text-slate-400 border-slate-200/60 dark:border-slate-800/60"
                                                                     )}
-                                                                    value={isOutOfStock ? '' : item.quantity}
-                                                                    placeholder={isOutOfStock ? "0 (Out)" : "0.00"}
+                                                                    value={(isOutOfStock || !hasBatch) ? '' : item.quantity}
+                                                                    placeholder={!hasBatch ? "Select batch" : (isOutOfStock ? "0 (Out)" : "0.00")}
                                                                     onChange={(e) => updateItem(index, 'quantity', e.target.value)}
-                                                                    required={!isOutOfStock}
+                                                                    required={!isOutOfStock && hasBatch}
                                                                 />
                                                             </div>
                                                             <div className="space-y-1.5">
@@ -1701,7 +1700,7 @@ function SalesPageContent() {
                                                                     value={selectedUnit}
                                                                     onChange={(e) => updateItem(index, 'unit', e.target.value)}
                                                                     options={unitOptions}
-                                                                    disabled={isOutOfStock || !product}
+                                                                    disabled={isOutOfStock || !hasBatch}
                                                                     allowClear={false}
                                                                     placeholder="Unit"
                                                                     className="h-10 text-xs font-semibold rounded-xl"
@@ -1717,9 +1716,13 @@ function SalesPageContent() {
                                                             <p className="text-[10px] font-semibold text-rose-500 leading-tight">
                                                                 {stockError}
                                                             </p>
+                                                        ) : !hasBatch ? (
+                                                            <p className="text-[10px] text-amber-500 dark:text-amber-400 font-medium pl-0.5">
+                                                                Please select a batch above
+                                                            </p>
                                                         ) : product ? (
                                                             <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium pl-0.5">
-                                                                Available in stock: {availableStock} {product.unit}
+                                                                Available in batch: {availableStock} {product.unit}
                                                             </p>
                                                         ) : null}
 
@@ -1730,25 +1733,25 @@ function SalesPageContent() {
                                                             <div className="relative">
                                                                 <span className={cn(
                                                                     "absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold pointer-events-none",
-                                                                    isOutOfStock ? "text-slate-300 dark:text-slate-600" : "text-slate-400"
+                                                                    (isOutOfStock || !hasBatch) ? "text-slate-300 dark:text-slate-600" : "text-slate-400"
                                                                 )}>₹</span>
                                                                 <Input
                                                                     type="number"
                                                                     step="0.01"
                                                                     min="0"
-                                                                    disabled={isOutOfStock}
+                                                                    disabled={isOutOfStock || !hasBatch}
                                                                     className={cn(
                                                                         "h-10 pl-7 pr-14 rounded-xl text-xs sm:text-sm font-semibold border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors",
-                                                                        isOutOfStock && "bg-slate-100/80 dark:bg-slate-800/60 cursor-not-allowed opacity-60 text-slate-400 border-slate-200/60 dark:border-slate-800/60"
+                                                                        (isOutOfStock || !hasBatch) && "bg-slate-100/80 dark:bg-slate-800/60 cursor-not-allowed opacity-60 text-slate-400 border-slate-200/60 dark:border-slate-800/60"
                                                                     )}
-                                                                    value={isOutOfStock ? '' : item.salePrice}
+                                                                    value={(isOutOfStock || !hasBatch) ? '' : item.salePrice}
                                                                     placeholder="0.00"
                                                                     onChange={(e) => updateItem(index, 'salePrice', e.target.value)}
-                                                                    required={!isOutOfStock}
+                                                                    required={!isOutOfStock && hasBatch}
                                                                 />
                                                                 <span className={cn(
                                                                     "absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold pointer-events-none uppercase",
-                                                                    isOutOfStock ? "text-slate-300 dark:text-slate-600" : "text-slate-400"
+                                                                    (isOutOfStock || !hasBatch) ? "text-slate-300 dark:text-slate-600" : "text-slate-400"
                                                                 )}>
                                                                     /{product?.unit || 'KG'}
                                                                 </span>
@@ -1758,7 +1761,7 @@ function SalesPageContent() {
                                                                     = ₹{(itemPrice * factor).toLocaleString('en-IN', { maximumFractionDigits: 2 })} / {selectedUnit}
                                                                 </p>
                                                             )}
-                                                            {itemCost > 0 && !isOutOfStock && (
+                                                            {hasBatch && itemCost > 0 && !isOutOfStock && (
                                                                 <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium pl-0.5">
                                                                     Cost: ₹{itemCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / {product?.unit || 'KG'}
                                                                     {isCombined && (
@@ -1807,7 +1810,7 @@ function SalesPageContent() {
                                     </div>
 
                                     {/* Table Bottom Action Bar */}
-                                    <div className="bg-slate-50/70 dark:bg-slate-900/60 px-4 py-2.5 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
+                                    <div className="bg-slate-50/70 dark:bg-slate-900/60 px-4 py-2.5 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 sm:min-w-[820px]">
                                         <Button
                                             type="button"
                                             variant="ghost"
@@ -1916,7 +1919,7 @@ function SalesPageContent() {
                                         </div>
                                         {(parseFloat(formData.laborCharge) > 0 || parseFloat(formData.vehicleRent) > 0 || parseFloat(formData.otherCharges) > 0) ? (
                                             <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                                                Incl. ₹{((parseFloat(formData.laborCharge) || 0) + (parseFloat(formData.vehicleRent) || 0) + (parseFloat(formData.otherCharges) || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })} extra charges
+                                                Less ₹{((parseFloat(formData.laborCharge) || 0) + (parseFloat(formData.vehicleRent) || 0) + (parseFloat(formData.otherCharges) || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })} delivery/charges
                                             </p>
                                         ) : (
                                             <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
@@ -2249,7 +2252,7 @@ function SalesPageContent() {
                                             <div className="flex justify-end gap-6 text-slate-600 dark:text-slate-400">
                                                 <span>Labour Charge</span>
                                                 <span className="font-semibold w-28 text-right dark:text-slate-100 italic">
-                                                    + ₹{Number(selectedSale.laborCharge).toLocaleString()}
+                                                    - ₹{Number(selectedSale.laborCharge).toLocaleString()}
                                                 </span>
                                             </div>
                                         )}
@@ -2258,7 +2261,7 @@ function SalesPageContent() {
                                             <div className="flex justify-end gap-6 text-slate-600 dark:text-slate-400">
                                                 <span>Vehicle Rent</span>
                                                 <span className="font-semibold w-28 text-right dark:text-slate-100 italic">
-                                                    + ₹{Number(selectedSale.vehicleRent).toLocaleString()}
+                                                    - ₹{Number(selectedSale.vehicleRent).toLocaleString()}
                                                 </span>
                                             </div>
                                         )}
@@ -2267,7 +2270,7 @@ function SalesPageContent() {
                                             <div className="flex justify-end gap-6 text-slate-600 dark:text-slate-400">
                                                 <span>Other Charges</span>
                                                 <span className="font-semibold w-28 text-right dark:text-slate-100 italic">
-                                                    + ₹{Number(selectedSale.otherCharges).toLocaleString()}
+                                                    - ₹{Number(selectedSale.otherCharges).toLocaleString()}
                                                 </span>
                                             </div>
                                         )}

@@ -128,7 +128,7 @@ export const saleService = {
     const parsedLabor = parseFloat(laborCharge) || 0;
     const parsedRent = parseFloat(vehicleRent) || 0;
     const parsedOther = parseFloat(otherCharges) || 0;
-    const totalAmount = subtotal + parsedLabor + parsedRent + parsedOther;
+    const totalAmount = Math.max(0, subtotal - parsedLabor - parsedRent - parsedOther);
 
     const paid = parseFloat(paidAmount) || 0;
     if (paid > totalAmount) throw new Error('Paid amount cannot exceed total amount');
