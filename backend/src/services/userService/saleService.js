@@ -56,6 +56,9 @@ export const saleService = {
 
       let costPrice = parseFloat(it.costPrice) || 0;
 
+      const weightAdj = parseFloat(it.weightAdjustment) || 0;
+      const clearStock = Boolean(it.clearRemainingStock);
+
       if (it.batchAllocations && it.batchAllocations.length > 0) {
         let totalAllocBaseQty = 0;
         let totalAllocCost = 0;
@@ -73,18 +76,22 @@ export const saleService = {
       } else if (it.batchId && it.batchId !== 'FIFO' && it.batchId !== 'COMBINED') {
         const batch = await saleDal.findStockBatchForUser(it.batchId, it.productId, userId);
         if (!batch) throw new Error(`Batch ${it.batchId} not found`);
-        if (batch.quantity < baseQty) {
+        
+        // Physical stock to deduct from batch:
+        const requiredFromBatch = clearStock ? batch.quantity : baseQty;
+        if (batch.quantity < requiredFromBatch) {
           throw new Error(`Insufficient stock in selected batch. Available: ${batch.quantity} ${product.unit}`);
         }
         costPrice = batch.purchasePrice;
       } else {
-        if (product.currentStock < baseQty) {
+        const requiredFromStock = baseQty;
+        if (product.currentStock < requiredFromStock) {
           throw new Error(
             `Insufficient stock for ${product.name}. Available: ${product.currentStock} ${product.unit}`,
           );
         }
         const activeBatches = await saleDal.findActiveBatchesForProduct(it.productId, userId);
-        let remaining = baseQty;
+        let remaining = requiredFromStock;
         let totalCost = 0;
         let consumed = 0;
 
@@ -105,8 +112,21 @@ export const saleService = {
       }
 
       const salePrice = parseFloat(it.salePrice) || 0;
-      const lineRevenue = baseQty * salePrice;
-      const lineCost = costPrice * baseQty;
+      const billedQty = Math.max(0, baseQty + weightAdj);
+      const lineRevenue = billedQty * salePrice;
+      
+      // Stock quantity deducted from physical inventory:
+      // If batch is cleared, full batch quantity is costed (including shrinkage loss).
+      // Otherwise baseQty is consumed from batch stock.
+      let stockQtyDeducted = baseQty;
+      if (it.batchId && it.batchId !== 'FIFO' && it.batchId !== 'COMBINED') {
+        const batch = await saleDal.findStockBatchForUser(it.batchId, it.productId, userId);
+        if (clearStock && batch) {
+          stockQtyDeducted = batch.quantity;
+        }
+      }
+
+      const lineCost = costPrice * stockQtyDeducted;
       const profit = lineRevenue - lineCost;
 
       subtotal += lineRevenue;
@@ -119,6 +139,10 @@ export const saleService = {
         quantity: qty,
         unit: itemUnit,
         baseQuantity: baseQty,
+        billedQuantity: billedQty,
+        stockDeductQuantity: stockQtyDeducted,
+        weightAdjustment: weightAdj,
+        wasBatchCleared: clearStock,
         costPrice,
         salePrice,
         profit,

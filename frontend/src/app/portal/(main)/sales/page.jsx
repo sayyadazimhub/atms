@@ -31,7 +31,8 @@ import {
     Layers,
     Check,
     Table,
-    Boxes
+    Boxes,
+    Scale
 } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { cn } from '@/lib/utils';
@@ -487,17 +488,27 @@ function SalesPageContent() {
             </tr>
           </thead>
           <tbody>
-            ${selectedSale.items?.map(item => `
+            ${selectedSale.items?.map(item => {
+              const billedQty = item.billedQuantity !== undefined ? item.billedQuantity : Math.max(0, (Number(item.quantity) || 0) + (Number(item.weightAdjustment) || 0));
+              const itemTotal = billedQty * (Number(item.salePrice) || 0);
+              return `
               <tr>
                 <td>
                   <div class="font-bold text-slate-900">${item.product?.name || 'Unknown Item'}</div>
-                  <div style="font-size: 10px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">Unit: ${item.product?.unit || 'N/A'}</div>
+                  <div style="font-size: 10px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">
+                    Unit: ${item.unit || item.product?.unit || 'N/A'}
+                    ${item.weightAdjustment ? ` • Weight Var: ${Number(item.weightAdjustment) > 0 ? `+${item.weightAdjustment}` : item.weightAdjustment} ${item.unit || item.product?.unit || ''}` : ''}
+                  </div>
                 </td>
-                <td class="text-right font-bold">${item.quantity}</td>
-                <td class="text-right text-slate-500">₹${item.salePrice.toLocaleString('en-IN')}</td>
-                <td class="text-right font-bold text-slate-900">₹${(item.salePrice * item.quantity).toLocaleString('en-IN')}</td>
+                <td class="text-right font-bold">
+                  ${billedQty} ${item.unit || ''}
+                  ${item.weightAdjustment ? `<div style="font-size: 10px; color: #94a3b8; font-weight: normal;">(Base: ${item.quantity})</div>` : ''}
+                </td>
+                <td class="text-right text-slate-500">₹${Number(item.salePrice).toLocaleString('en-IN')}</td>
+                <td class="text-right font-bold text-slate-900">₹${itemTotal.toLocaleString('en-IN')}</td>
               </tr>
-            `).join('')}
+            `;
+            }).join('')}
           </tbody>
         </table>
 
@@ -645,6 +656,8 @@ function SalesPageContent() {
         const selectedUnit = item.unit || product.unit || 'KG';
         const factor = getConversionFactor(selectedUnit, product.unit);
         const baseQty = qty * factor;
+        const weightAdj = parseFloat(item.weightAdjustment) || 0;
+        const clearStock = Boolean(item.clearRemainingStock);
 
         // Combined batch check
         if (item.batchId === 'COMBINED' && item.batchAllocations?.length > 0) {
@@ -659,16 +672,20 @@ function SalesPageContent() {
             const batch = product.batches?.find(b => String(b.id || b._id) === String(item.batchId));
             const batchStock = Number(batch?.quantity || 0);
 
+            // If clearRemainingStock is checked, we deduct the entire remaining batch. Otherwise baseQty from batch.
+            const requiredFromThisBatch = clearStock ? batchStock : baseQty;
+
             let totalBatchDemand = 0;
             formData.items.forEach((it) => {
                 if (String(it.productId) === String(item.productId) && String(it.batchId) === String(item.batchId)) {
                     const itFactor = getConversionFactor(it.unit || product.unit, product.unit);
-                    totalBatchDemand += (parseFloat(it.quantity) || 0) * itFactor;
+                    const itBase = (parseFloat(it.quantity) || 0) * itFactor;
+                    totalBatchDemand += it.clearRemainingStock ? batchStock : itBase;
                 }
             });
 
-            if (baseQty > batchStock) {
-                return `Exceeds Lot ${batch?.batchNumber || ''} stock! (Need: ${baseQty} ${product.unit}, Available: ${batchStock} ${product.unit})`;
+            if (requiredFromThisBatch > batchStock) {
+                return `Exceeds Lot ${batch?.batchNumber || ''} stock! (Need: ${requiredFromThisBatch} ${product.unit}, Available: ${batchStock} ${product.unit})`;
             }
             if (totalBatchDemand > batchStock) {
                 return `Combined rows exceed Lot ${batch?.batchNumber || ''} stock! (Total Need: ${totalBatchDemand} ${product.unit}, Available: ${batchStock} ${product.unit})`;
@@ -680,7 +697,8 @@ function SalesPageContent() {
         formData.items.forEach((it) => {
             if (String(it.productId) === String(item.productId)) {
                 const itFactor = getConversionFactor(it.unit || product.unit, product.unit);
-                totalProductDemand += (parseFloat(it.quantity) || 0) * itFactor;
+                const itBase = (parseFloat(it.quantity) || 0) * itFactor;
+                totalProductDemand += itBase;
             }
         });
 
@@ -714,8 +732,10 @@ function SalesPageContent() {
             const qty = parseFloat(item.quantity) || 0;
             const factor = getConversionFactor(item.unit || product?.unit, product?.unit);
             const baseQty = qty * factor;
+            const weightAdj = parseFloat(item.weightAdjustment) || 0;
+            const billedQty = Math.max(0, baseQty + weightAdj);
             const price = parseFloat(item.salePrice) || 0;
-            return sum + baseQty * price;
+            return sum + billedQty * price;
         }, 0);
     };
 
@@ -734,18 +754,27 @@ function SalesPageContent() {
             const factor = getConversionFactor(item.unit || product?.unit, product?.unit);
             const baseQty = qty * factor;
             const salePrice = parseFloat(item.salePrice) || 0;
+            const weightAdj = parseFloat(item.weightAdjustment) || 0;
+            const billedQty = Math.max(0, baseQty + weightAdj);
+            const clearStock = Boolean(item.clearRemainingStock);
 
             let costPrice = 0;
+            let stockDeducted = baseQty;
             if (item.batchId === 'COMBINED' && item.costPrice) {
                 costPrice = parseFloat(item.costPrice);
             } else if (item.batchId) {
                 const b = product?.batches?.find(batch => String(batch.id || batch._id) === String(item.batchId));
                 costPrice = Number(b?.purchasePrice ?? product?.baseCostPrice ?? 0);
+                if (clearStock && b) {
+                    stockDeducted = Number(b.quantity || 0);
+                }
             } else {
                 costPrice = Number(product?.baseCostPrice || 0);
             }
 
-            return sum + baseQty * (salePrice - costPrice);
+            const revenue = billedQty * salePrice;
+            const cost = costPrice * stockDeducted;
+            return sum + (revenue - cost);
         }, 0);
     };
 
@@ -858,6 +887,8 @@ function SalesPageContent() {
                             })) : undefined,
                             quantity: parseFloat(it.quantity) || 0,
                             unit: it.unit || prod?.unit || 'KG',
+                            weightAdjustment: parseFloat(it.weightAdjustment) || 0,
+                            clearRemainingStock: Boolean(it.clearRemainingStock),
                             salePrice: parseFloat(it.salePrice) || 0,
                             costPrice: effectiveCost,
                         };
@@ -1291,6 +1322,8 @@ function SalesPageContent() {
                                             const unitOptions = getCompatibleUnits(product?.unit);
                                             const factor = getConversionFactor(selectedUnit, product?.unit);
                                             const baseQty = itemQty * factor;
+                                            const weightAdj = parseFloat(item.weightAdjustment) || 0;
+                                            const billedQty = Math.max(0, baseQty + weightAdj);
 
                                             const isCombined = item.batchId === 'COMBINED' && item.batchAllocations?.length > 0;
                                             const selectedBatch = isCombined ? null : availableBatches.find(b => String(b.id || b._id) === String(item.batchId));
@@ -1299,8 +1332,13 @@ function SalesPageContent() {
                                                 ? (parseFloat(item.costPrice) || 0)
                                                 : (selectedBatch ? Number(selectedBatch.purchasePrice ?? (product?.baseCostPrice || 0)) : 0);
 
-                                            const lineTotal = baseQty * itemPrice;
-                                            const lineProfit = hasBatch ? baseQty * (itemPrice - itemCost) : 0;
+                                            const clearStock = Boolean(item.clearRemainingStock);
+                                            const stockDeducted = (clearStock && selectedBatch)
+                                                ? Number(selectedBatch.quantity || 0)
+                                                : baseQty;
+
+                                            const lineTotal = billedQty * itemPrice;
+                                            const lineProfit = hasBatch ? (lineTotal - (itemCost * stockDeducted)) : 0;
                                             const hasProfit = lineProfit >= 0;
 
                                             const availableStock = isCombined
@@ -1418,22 +1456,39 @@ function SalesPageContent() {
                                                         {/* Quantity & Unit */}
                                                         <div className="sm:col-span-3 min-w-0">
                                                             <div className="flex gap-1.5 items-center">
-                                                                <Input
-                                                                    type="number"
-                                                                    step="0.01"
-                                                                    min="0"
-                                                                    disabled={isOutOfStock || !hasBatch}
-                                                                    className={cn(
-                                                                        "h-10 flex-1 min-w-0 px-2.5 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-colors",
-                                                                        stockError && "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20 bg-rose-50/20",
-                                                                        (isOutOfStock || !hasBatch) && "bg-slate-100/80 dark:bg-slate-800/60 cursor-not-allowed opacity-60 text-slate-400 border-slate-200/60 dark:border-slate-800/60"
+                                                                <div className="relative flex-1 min-w-0">
+                                                                    <Input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        min="0"
+                                                                        disabled={isOutOfStock || !hasBatch}
+                                                                        className={cn(
+                                                                            "h-10 w-full pl-2.5 rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs transition-colors",
+                                                                            hasBatch && availableStock > 0 ? "pr-14" : "pr-2.5",
+                                                                            stockError && "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20 bg-rose-50/20",
+                                                                            (isOutOfStock || !hasBatch) && "bg-slate-100/80 dark:bg-slate-800/60 cursor-not-allowed opacity-60 text-slate-400 border-slate-200/60 dark:border-slate-800/60"
+                                                                        )}
+                                                                        value={(isOutOfStock || !hasBatch) ? '' : item.quantity}
+                                                                        placeholder="0.00"
+                                                                        title={!hasBatch ? 'Please select a batch first' : 'Enter quantity'}
+                                                                        onChange={(e) => updateItem(index, 'quantity', e.target.value)}
+                                                                        required={!isOutOfStock && hasBatch}
+                                                                    />
+                                                                    {hasBatch && availableStock > 0 && (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                const fullQty = factor > 0 ? (availableStock / factor) : availableStock;
+                                                                                const formatted = Number.isInteger(fullQty) ? String(fullQty) : String(Number(fullQty.toFixed(4)));
+                                                                                updateItem(index, 'quantity', formatted);
+                                                                            }}
+                                                                            className="absolute right-1.5 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 transition-colors cursor-pointer"
+                                                                            title="Fill full available batch stock"
+                                                                        >
+                                                                            Full Qty
+                                                                        </button>
                                                                     )}
-                                                                    value={(isOutOfStock || !hasBatch) ? '' : item.quantity}
-                                                                    placeholder="0.00"
-                                                                    title={!hasBatch ? 'Please select a batch first' : 'Enter quantity'}
-                                                                    onChange={(e) => updateItem(index, 'quantity', e.target.value)}
-                                                                    required={!isOutOfStock && hasBatch}
-                                                                />
+                                                                </div>
                                                                 <div className="w-20 shrink-0">
                                                                     <CustomSelect
                                                                         value={selectedUnit}
@@ -1446,6 +1501,65 @@ function SalesPageContent() {
                                                                     />
                                                                 </div>
                                                             </div>
+                                                            
+                                                            {/* Weight Variance & Adjustment Controls */}
+                                                            {hasBatch && (
+                                                                <div className="mt-1.5 pt-1.5 border-t border-slate-100 dark:border-slate-800/80">
+                                                                    <div className="flex items-center justify-between gap-1 mb-1">
+                                                                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1 cursor-pointer">
+                                                                            <Scale className="h-3 w-3 text-indigo-500" />
+                                                                            <span>Weight Variance (+/-)</span>
+                                                                        </label>
+                                                                        {item.weightAdjustment ? (
+                                                                            <span className={cn(
+                                                                                "text-[10px] font-bold px-1.5 py-0.2 rounded font-mono",
+                                                                                Number(item.weightAdjustment) > 0
+                                                                                    ? "text-emerald-700 bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-400"
+                                                                                    : "text-amber-700 bg-amber-50 dark:bg-amber-950/60 dark:text-amber-400"
+                                                                            )}>
+                                                                                {Number(item.weightAdjustment) > 0 ? `+${item.weightAdjustment}` : item.weightAdjustment} {product?.unit}
+                                                                            </span>
+                                                                        ) : null}
+                                                                    </div>
+                                                                    <div className="flex gap-1.5 items-center">
+                                                                        <div className="relative flex-1">
+                                                                            <Input
+                                                                                type="number"
+                                                                                step="0.01"
+                                                                                className="h-7 text-xs font-mono font-bold pl-2 pr-6 rounded-lg border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60"
+                                                                                value={item.weightAdjustment ?? ''}
+                                                                                placeholder="0 (e.g. +25 or -60)"
+                                                                                onChange={(e) => updateItem(index, 'weightAdjustment', e.target.value)}
+                                                                            />
+                                                                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-slate-400 uppercase">
+                                                                                {product?.unit || 'KG'}
+                                                                            </span>
+                                                                        </div>
+                                                                        {item.weightAdjustment ? (
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => updateItem(index, 'weightAdjustment', '')}
+                                                                                className="px-2 py-1 text-[10px] font-bold rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-500 transition-colors"
+                                                                                title="Reset variance"
+                                                                            >
+                                                                                ✕
+                                                                            </button>
+                                                                        ) : null}
+                                                                    </div>
+                                                                    {Number(item.weightAdjustment) < 0 && (
+                                                                        <label className="flex items-center gap-1.5 mt-1 cursor-pointer text-[10px] text-slate-500 dark:text-slate-400 select-none">
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={Boolean(item.clearRemainingStock)}
+                                                                                onChange={(e) => updateItem(index, 'clearRemainingStock', e.target.checked)}
+                                                                                className="h-3 w-3 rounded accent-emerald-600 text-emerald-600 cursor-pointer"
+                                                                            />
+                                                                            <span>Clear full batch stock (Record shrinkage/loss)</span>
+                                                                        </label>
+                                                                    )}
+                                                                </div>
+                                                            )}
+
                                                             <p className={cn(
                                                                 "text-[10px] mt-1 pl-1 truncate h-4 font-medium",
                                                                 stockError || isOutOfStock ? "text-rose-500 font-semibold" : !hasBatch ? "text-amber-500 dark:text-amber-400" : "text-slate-400 dark:text-slate-500"
@@ -1511,22 +1625,10 @@ function SalesPageContent() {
                                                                 </div>
                                                                 {itemQty > 0 && itemPrice > 0 && (
                                                                     <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium leading-none mt-0.5">
-                                                                        {baseQty.toLocaleString()} {product?.unit || 'KG'} × ₹{itemPrice}
+                                                                        {billedQty.toLocaleString()} {product?.unit || 'KG'} × ₹{itemPrice}
                                                                     </div>
                                                                 )}
                                                             </div>
-                                                            <p className="text-[10px] mt-1 pr-0.5 truncate h-4 text-right">
-                                                                {itemQty > 0 && itemPrice > 0 && itemCost > 0 ? (
-                                                                    <span className={cn(
-                                                                        "font-bold",
-                                                                        hasProfit ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
-                                                                    )}>
-                                                                        {hasProfit ? '+' : '-'}₹{Math.abs(lineProfit).toLocaleString('en-IN')}
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="text-slate-400 dark:text-slate-500 font-medium">Subtotal</span>
-                                                                )}
-                                                            </p>
                                                         </div>
 
                                                         {/* Action */}
@@ -1673,9 +1775,24 @@ function SalesPageContent() {
 
                                                         <div className="grid grid-cols-2 gap-2.5">
                                                             <div className="space-y-1.5">
-                                                                <Label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                                                                    Quantity <span className="text-rose-500">*</span>
-                                                                </Label>
+                                                                <div className="flex items-center justify-between">
+                                                                    <Label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                                                                        Quantity <span className="text-rose-500">*</span>
+                                                                    </Label>
+                                                                    {hasBatch && availableStock > 0 && (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                const fullQty = factor > 0 ? (availableStock / factor) : availableStock;
+                                                                                const formatted = Number.isInteger(fullQty) ? String(fullQty) : String(Number(fullQty.toFixed(4)));
+                                                                                updateItem(index, 'quantity', formatted);
+                                                                            }}
+                                                                            className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:underline cursor-pointer"
+                                                                        >
+                                                                            Full Qty
+                                                                        </button>
+                                                                    )}
+                                                                </div>
                                                                 <Input
                                                                     type="number"
                                                                     step="0.01"
@@ -1712,6 +1829,65 @@ function SalesPageContent() {
                                                                 = {baseQty.toLocaleString()} {product?.unit} from stock
                                                             </p>
                                                         )}
+
+                                                        {/* Mobile Weight Variance Control */}
+                                                        {hasBatch && (
+                                                            <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-2">
+                                                                <div className="flex items-center justify-between">
+                                                                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                                                        <Scale className="h-3.5 w-3.5 text-indigo-500" />
+                                                                        <span>Weight Variance (+/-)</span>
+                                                                    </label>
+                                                                    {item.weightAdjustment ? (
+                                                                        <span className={cn(
+                                                                            "text-[10px] font-bold px-1.5 py-0.5 rounded font-mono",
+                                                                            Number(item.weightAdjustment) > 0
+                                                                                ? "text-emerald-700 bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-400"
+                                                                                : "text-amber-700 bg-amber-50 dark:bg-amber-950/60 dark:text-amber-400"
+                                                                        )}>
+                                                                            {Number(item.weightAdjustment) > 0 ? `+${item.weightAdjustment}` : item.weightAdjustment} {product?.unit}
+                                                                        </span>
+                                                                    ) : null}
+                                                                </div>
+                                                                <div className="flex gap-2 items-center">
+                                                                    <div className="relative flex-1">
+                                                                        <Input
+                                                                            type="number"
+                                                                            step="0.01"
+                                                                            className="h-8 text-xs font-mono font-bold pl-2.5 pr-8 rounded-lg"
+                                                                            value={item.weightAdjustment ?? ''}
+                                                                            placeholder="0 (e.g. +25 or -60)"
+                                                                            onChange={(e) => updateItem(index, 'weightAdjustment', e.target.value)}
+                                                                        />
+                                                                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 uppercase">
+                                                                            {product?.unit || 'KG'}
+                                                                        </span>
+                                                                    </div>
+                                                                    {item.weightAdjustment ? (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => updateItem(index, 'weightAdjustment', '')}
+                                                                            className="px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-500"
+                                                                            title="Reset variance"
+                                                                        >
+                                                                            ✕
+                                                                        </button>
+                                                                    ) : null}
+                                                                </div>
+                                                                {Number(item.weightAdjustment) < 0 && (
+                                                                    <label className="flex items-center gap-2 pt-1 cursor-pointer text-[11px] text-slate-600 dark:text-slate-400">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={Boolean(item.clearRemainingStock)}
+                                                                            onChange={(e) => updateItem(index, 'clearRemainingStock', e.target.checked)}
+                                                                            className="h-3.5 w-3.5 rounded accent-emerald-600 text-emerald-600 cursor-pointer"
+                                                                        />
+                                                                        <span>Clear full batch stock (shrinkage/loss)</span>
+                                                                    </label>
+                                                                )}
+                                                            </div>
+                                                        )}
+
                                                         {stockError ? (
                                                             <p className="text-[10px] font-semibold text-rose-500 leading-tight">
                                                                 {stockError}
@@ -1776,22 +1952,12 @@ function SalesPageContent() {
                                                         <div className="flex items-center justify-between pt-2 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
                                                             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                                                                 {itemQty > 0 && itemPrice > 0
-                                                                    ? `Line Total (${baseQty.toLocaleString()} ${product?.unit || 'KG'} × ₹${itemPrice}):`
+                                                                    ? `Line Total (${billedQty.toLocaleString()} ${product?.unit || 'KG'} × ₹${itemPrice}):`
                                                                     : 'Line Total:'}
                                                             </span>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-sm font-black text-slate-900 dark:text-slate-100">
-                                                                    ₹{lineTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                                                                </span>
-                                                                {itemCost > 0 && itemQty > 0 && (
-                                                                    <span className={cn(
-                                                                        "text-[10px] font-bold px-1.5 py-0.5 rounded-md",
-                                                                        hasProfit ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400" : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400"
-                                                                    )}>
-                                                                        {hasProfit ? '+' : '-'}₹{Math.abs(lineProfit).toLocaleString('en-IN')}
-                                                                    </span>
-                                                                )}
-                                                            </div>
+                                                            <span className="text-sm font-black text-slate-900 dark:text-slate-100">
+                                                                ₹{lineTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                            </span>
                                                         </div>
                                                     </div>
 
@@ -2218,23 +2384,42 @@ function SalesPageContent() {
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y dark:divide-slate-800">
-                                                {selectedSale.items?.map((item) => (
+                                                {selectedSale.items?.map((item) => {
+                                                    const billedQty = item.billedQuantity !== undefined ? item.billedQuantity : Math.max(0, (Number(item.quantity) || 0) + (Number(item.weightAdjustment) || 0));
+                                                    const itemTotal = billedQty * (Number(item.salePrice) || 0);
+                                                    return (
                                                     <tr key={item.id}>
                                                         <td className="p-3">
                                                             <p className="font-medium text-slate-900 dark:text-slate-100">{item.product?.name}</p>
-                                                            <p className="text-xs text-slate-500 dark:text-slate-400">{item.product?.unit}</p>
+                                                            <div className="flex items-center gap-1.5 mt-0.5">
+                                                                <span className="text-xs text-slate-500 dark:text-slate-400">{item.unit || item.product?.unit}</span>
+                                                                {item.weightAdjustment ? (
+                                                                    <span className={cn(
+                                                                        "text-[10px] font-bold px-1.5 py-0.2 rounded font-mono",
+                                                                        Number(item.weightAdjustment) > 0
+                                                                            ? "text-emerald-700 bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-400"
+                                                                            : "text-amber-700 bg-amber-50 dark:bg-amber-950/60 dark:text-amber-400"
+                                                                    )}>
+                                                                        {Number(item.weightAdjustment) > 0 ? `+${item.weightAdjustment}` : item.weightAdjustment} {item.unit || item.product?.unit} var
+                                                                    </span>
+                                                                ) : null}
+                                                            </div>
                                                         </td>
                                                         <td className="p-3 text-right text-slate-600 dark:text-slate-400">
-                                                            {item.quantity}
+                                                            <span className="font-semibold text-slate-900 dark:text-slate-100">{billedQty}</span> {item.unit || ''}
+                                                            {item.weightAdjustment ? (
+                                                                <p className="text-[10px] text-slate-400">Base: {item.quantity}</p>
+                                                            ) : null}
                                                         </td>
                                                         <td className="p-3 text-right text-slate-600 dark:text-slate-400">
-                                                            ₹{item.salePrice.toLocaleString()}
+                                                            ₹{Number(item.salePrice).toLocaleString()}
                                                         </td>
                                                         <td className="p-3 text-right font-semibold text-slate-900 dark:text-slate-100">
-                                                            ₹{(item.salePrice * item.quantity).toLocaleString()}
+                                                            ₹{itemTotal.toLocaleString()}
                                                         </td>
                                                     </tr>
-                                                ))}
+                                                    );
+                                                })}
                                             </tbody>
                                         </table>
                                     </div>

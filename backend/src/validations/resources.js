@@ -68,6 +68,8 @@ const saleItemSchema = z.object({
   batchAllocations: z.array(batchAllocationSchema).optional().nullable(),
   quantity: positiveNumber,
   unit: z.string().trim().max(30).optional(),
+  weightAdjustment: z.number().optional().default(0),
+  clearRemainingStock: z.boolean().optional().default(false),
   costPrice: nonNegativeNumber.optional(),
   salePrice: nonNegativeNumber,
 });

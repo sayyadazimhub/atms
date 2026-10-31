@@ -88,7 +88,9 @@ export const saleDal = {
       );
 
       for (const item of lineItems) {
-        const deductQty = item.baseQuantity !== undefined ? item.baseQuantity : item.quantity;
+        const deductQty = item.stockDeductQuantity !== undefined
+          ? item.stockDeductQuantity
+          : (item.baseQuantity !== undefined ? item.baseQuantity : item.quantity);
 
         if (item.batchAllocations && item.batchAllocations.length > 0) {
           for (const alloc of item.batchAllocations) {
@@ -139,7 +141,7 @@ export const saleDal = {
           { $inc: { currentStock: -deductQty } },
           { session },
         );
-        if (!productUpdate.matchedCount) throw new Error('Insufficient stock');
+        if (!productUpdate.matchedCount) throw new Error('Insufficient stock in inventory');
       }
 
       return Sale.findById(sale._id)
@@ -165,7 +167,10 @@ export const saleDal = {
       if (!sale) throw new Error('Sale not found');
 
       for (const item of sale.items) {
-        const restoreQty = item.baseQuantity !== undefined ? item.baseQuantity : item.quantity;
+        // Restore the exact physical stock that was deducted when the sale was created
+        const restoreQty = item.stockDeductQuantity !== undefined
+          ? item.stockDeductQuantity
+          : (item.baseQuantity !== undefined ? item.baseQuantity : item.quantity);
 
         await Product.updateOne(
           { _id: item.productId, userId },
@@ -173,7 +178,32 @@ export const saleDal = {
           { session },
         );
 
-        if (item.batchId) {
+        if (item.batchAllocations && item.batchAllocations.length > 0) {
+          for (const alloc of item.batchAllocations) {
+            const allocQty = parseFloat(alloc.quantity) || 0;
+            if (allocQty > 0) {
+              const batchUpdate = await StockBatch.updateOne(
+                { _id: alloc.batchId, userId },
+                { $inc: { quantity: allocQty } },
+                { session },
+              );
+              if (!batchUpdate.matchedCount) {
+                await StockBatch.create(
+                  [
+                    {
+                      _id: alloc.batchId,
+                      productId: item.productId,
+                      userId,
+                      purchasePrice: item.costPrice,
+                      quantity: allocQty,
+                    },
+                  ],
+                  { session },
+                );
+              }
+            }
+          }
+        } else if (item.batchId) {
           const batchUpdate = await StockBatch.updateOne(
             { _id: item.batchId, userId },
             { $inc: { quantity: restoreQty } },
