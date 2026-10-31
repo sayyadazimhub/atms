@@ -85,6 +85,7 @@ export const productDal = {
 
       let totalMergedQty = 0;
       let totalMergedCost = 0;
+      const combinedSources = [];
 
       for (const alloc of batchAllocations) {
         const allocQty = parseFloat(alloc.quantity) || 0;
@@ -105,6 +106,13 @@ export const productDal = {
 
         totalMergedQty += allocQty;
         totalMergedCost += allocQty * (batch.purchasePrice || 0);
+
+        combinedSources.push({
+          batchId: batch._id,
+          batchNumber: batch.batchNumber,
+          quantity: allocQty,
+          purchasePrice: batch.purchasePrice,
+        });
       }
 
       if (totalMergedQty <= 0) {
@@ -120,7 +128,7 @@ export const productDal = {
         batchNumber = `BCH-${1001 + totalBatches}-COMBINED`;
       }
 
-      // Create new combined batch
+      // Create new combined batch with lineage
       const [newBatch] = await StockBatch.create(
         [
           {
@@ -129,6 +137,8 @@ export const productDal = {
             batchNumber,
             purchasePrice: parseFloat(weightedAvgPrice.toFixed(2)),
             quantity: parseFloat(totalMergedQty.toFixed(2)),
+            isCombined: true,
+            combinedSources,
           },
         ],
         { session }
@@ -156,6 +166,82 @@ export const productDal = {
         mergedBatch: newBatch,
         weightedAvgPrice: parseFloat(weightedAvgPrice.toFixed(2)),
         totalMergedQty: parseFloat(totalMergedQty.toFixed(2)),
+      };
+    });
+  },
+
+  async uncombineBatch(productId, userId, batchId) {
+    await connectDB();
+    return withTransaction(async (session) => {
+      const product = await Product.findOne({ _id: productId, userId }).session(session);
+      if (!product) throw new Error('Product not found');
+
+      const batch = await StockBatch.findOne({ _id: batchId, productId, userId }).session(session);
+      if (!batch) throw new Error('Batch not found');
+
+      if (!batch.isCombined || !batch.combinedSources || batch.combinedSources.length === 0) {
+        throw new Error('This batch was not created from combined lots or has no merge history');
+      }
+
+      const totalSourceQty = batch.combinedSources.reduce((sum, s) => sum + s.quantity, 0);
+
+      // Check if any quantity of this combined batch has already been consumed/sold
+      if (batch.quantity < totalSourceQty) {
+        const consumed = totalSourceQty - batch.quantity;
+        throw new Error(
+          `Cannot rollback combined batch: ${consumed} ${product.unit} of this combined lot has already been sold or allocated.`
+        );
+      }
+
+      // Restore each source batch
+      for (const src of batch.combinedSources) {
+        let existingSource = await StockBatch.findOne({ _id: src.batchId, productId, userId }).session(session);
+        if (existingSource) {
+          await StockBatch.updateOne(
+            { _id: existingSource._id },
+            { $inc: { quantity: src.quantity } },
+            { session }
+          );
+        } else {
+          // If source batch was deleted, recreate it
+          await StockBatch.create(
+            [
+              {
+                _id: src.batchId,
+                productId,
+                userId,
+                batchNumber: src.batchNumber || `BCH-RESTORED`,
+                purchasePrice: src.purchasePrice,
+                quantity: src.quantity,
+              },
+            ],
+            { session }
+          );
+        }
+      }
+
+      // Delete the combined batch
+      await StockBatch.deleteOne({ _id: batch._id, userId }, { session });
+
+      // Re-calculate weighted average cost for product across all active batches
+      const allActiveBatches = await StockBatch.find({ productId, userId, quantity: { $gt: 0 } }).session(session);
+      let overallQty = 0;
+      let overallCost = 0;
+      for (const b of allActiveBatches) {
+        overallQty += b.quantity;
+        overallCost += b.quantity * b.purchasePrice;
+      }
+      if (overallQty > 0) {
+        const newProductBaseCost = overallCost / overallQty;
+        await Product.updateOne(
+          { _id: productId, userId },
+          { baseCostPrice: parseFloat(newProductBaseCost.toFixed(2)) },
+          { session }
+        );
+      }
+
+      return {
+        message: `Combined batch ${batch.batchNumber || batch._id} was successfully rolled back and restored into ${batch.combinedSources.length} original batches.`,
       };
     });
   },

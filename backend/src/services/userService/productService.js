@@ -82,4 +82,11 @@ export const productService = {
     }
     return await productDal.combineBatches(productId, userId, batchAllocations, mergedBatchNumber);
   },
+
+  async uncombineBatch(productId, userId, batchId) {
+    if (!batchId) {
+      throw new Error('batchId is required');
+    }
+    return await productDal.uncombineBatch(productId, userId, batchId);
+  },
 };

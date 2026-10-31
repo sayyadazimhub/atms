@@ -80,6 +80,10 @@ export const combineBatchesSchema = z.object({
   mergedBatchNumber: z.string().trim().max(50).optional(),
 });
 
+export const uncombineBatchSchema = z.object({
+  batchId: objectIdSchema,
+});
+
 export const saleSchema = z.object({
   customerId: objectIdSchema,
   items: z.array(saleItemSchema).min(1).max(100),

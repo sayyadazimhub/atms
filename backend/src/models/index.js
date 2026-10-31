@@ -65,6 +65,15 @@ const StockBatchSchema = createSchema({
   batchNumber: { type: String, trim: true },
   purchasePrice: { type: Number, required: true },
   quantity: { type: Number, required: true },
+  isCombined: { type: Boolean, default: false },
+  combinedSources: [
+    {
+      batchId: { type: mongoose.Schema.Types.ObjectId, ref: 'StockBatch' },
+      batchNumber: { type: String },
+      quantity: { type: Number, required: true },
+      purchasePrice: { type: Number, required: true },
+    },
+  ],
 });
 
 const ProviderSchema = createSchema({
@@ -96,11 +105,13 @@ const PurchaseSchema = createSchema({
 const PurchaseItemSchema = createSchema({
   purchaseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Purchase', required: true },
   productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+  batchId: { type: mongoose.Schema.Types.ObjectId, ref: 'StockBatch' },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   quantity: { type: Number, required: true },
   unit: { type: String, trim: true },
   baseQuantity: { type: Number },
   unitPrice: { type: Number, required: true },
+  costPerBaseUnit: { type: Number },
   totalPrice: { type: Number, required: true },
 });
 

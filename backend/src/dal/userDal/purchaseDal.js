@@ -70,11 +70,6 @@ export const purchaseDal = {
         ],
         { session },
       );
-      await PurchaseItem.create(
-        lineItems.map((item) => ({ ...item, purchaseId: purchase._id })),
-        { session, ordered: true },
-      );
-
       for (const item of lineItems) {
         const baseQty = item.baseQuantity !== undefined ? item.baseQuantity : item.quantity;
         const baseCost = item.costPerBaseUnit !== undefined ? item.costPerBaseUnit : item.unitPrice;
@@ -95,7 +90,9 @@ export const purchaseDal = {
           purchasePrice: baseCost,
         }).session(session);
 
+        let linkedBatchId;
         if (existingBatch) {
+          linkedBatchId = existingBatch._id;
           const updateFields = { $inc: { quantity: baseQty } };
           if (!existingBatch.batchNumber) {
             const count = await StockBatch.countDocuments({ userId }).session(session);
@@ -109,7 +106,7 @@ export const purchaseDal = {
         } else {
           const totalBatches = await StockBatch.countDocuments({ userId }).session(session);
           const nextBatchNumber = `BCH-${1001 + totalBatches}`;
-          await StockBatch.create(
+          const [newBatch] = await StockBatch.create(
             [
               {
                 productId: item.productId,
@@ -121,8 +118,16 @@ export const purchaseDal = {
             ],
             { session },
           );
+          linkedBatchId = newBatch._id;
         }
+
+        item.batchId = linkedBatchId;
       }
+
+      await PurchaseItem.create(
+        lineItems.map((item) => ({ ...item, purchaseId: purchase._id })),
+        { session, ordered: true },
+      );
 
       return Purchase.findById(purchase._id)
         .session(session)
@@ -145,9 +150,46 @@ export const purchaseDal = {
     return withTransaction(async (session) => {
       const purchase = await Purchase.findOne({ _id: id, userId })
         .session(session)
-        .populate('items');
+        .populate({ path: 'items', populate: { path: 'product' } });
       if (!purchase) throw new Error('Purchase not found');
 
+      // Validation pass: Ensure all batches still have sufficient stock and were not combined or consumed
+      for (const item of purchase.items) {
+        const revertQty = item.baseQuantity !== undefined ? item.baseQuantity : item.quantity;
+        const revertCost = item.costPerBaseUnit !== undefined ? item.costPerBaseUnit : item.unitPrice;
+        const productName = item.product?.name || 'Product';
+
+        // Check overall product stock first
+        const product = await Product.findOne({ _id: item.productId, userId }).session(session);
+        if (!product || product.currentStock < revertQty) {
+          throw new Error(
+            `Cannot delete purchase: ${productName} stock has already been sold or consumed. Current stock (${product?.currentStock || 0}) is less than purchase quantity (${revertQty}).`
+          );
+        }
+
+        // Check specific batch
+        let batch = null;
+        if (item.batchId) {
+          batch = await StockBatch.findOne({ _id: item.batchId, userId }).session(session);
+        }
+        if (!batch) {
+          batch = await StockBatch.findOne({
+            productId: item.productId,
+            userId,
+            purchasePrice: revertCost,
+          }).session(session);
+        }
+
+        if (!batch || batch.quantity < revertQty) {
+          const availableInBatch = batch ? batch.quantity : 0;
+          const batchTag = batch?.batchNumber ? `batch ${batch.batchNumber}` : 'its stock batch';
+          throw new Error(
+            `Cannot delete purchase: ${productName} in ${batchTag} has already been combined or sold. Available in batch: ${availableInBatch}, required to rollback: ${revertQty}.`
+          );
+        }
+      }
+
+      // Execution pass: Revert stock and batches cleanly
       for (const item of purchase.items) {
         const revertQty = item.baseQuantity !== undefined ? item.baseQuantity : item.quantity;
         const revertCost = item.costPerBaseUnit !== undefined ? item.costPerBaseUnit : item.unitPrice;
@@ -158,11 +200,17 @@ export const purchaseDal = {
           { session },
         );
 
-        const batch = await StockBatch.findOne({
-          productId: item.productId,
-          userId,
-          purchasePrice: revertCost,
-        }).session(session);
+        let batch = null;
+        if (item.batchId) {
+          batch = await StockBatch.findOne({ _id: item.batchId, userId }).session(session);
+        }
+        if (!batch) {
+          batch = await StockBatch.findOne({
+            productId: item.productId,
+            userId,
+            purchasePrice: revertCost,
+          }).session(session);
+        }
 
         if (batch) {
           await StockBatch.updateOne(

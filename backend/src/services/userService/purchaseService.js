@@ -53,7 +53,7 @@ export const purchaseService = {
     }
 
     let subtotal = 0;
-    const lineItems = items.map((it) => {
+    const rawLineItems = items.map((it) => {
       const product = productMap.get(String(it.productId));
       const qty = parseFloat(it.quantity) || 0;
       const price = parseFloat(it.unitPrice) || 0;
@@ -71,7 +71,6 @@ export const purchaseService = {
         baseQuantity: baseQuantity,
         unitPrice: price,
         totalPrice: total,
-        costPerBaseUnit: price,
         userId: userId,
       };
     });
@@ -79,7 +78,28 @@ export const purchaseService = {
     const parsedLabor = parseFloat(laborCharge) || 0;
     const parsedRent = parseFloat(vehicleRent) || 0;
     const parsedOther = parseFloat(otherCharges) || 0;
-    const totalAmount = subtotal + parsedLabor + parsedRent + parsedOther;
+    const additionalCharges = parsedLabor + parsedRent + parsedOther;
+    const totalAmount = subtotal + additionalCharges;
+
+    // Distribute additional charges to get true landed cost per base unit
+    const lineItems = rawLineItems.map((item) => {
+      let allocatedCharges = 0;
+      if (subtotal > 0 && additionalCharges > 0) {
+        allocatedCharges = (item.totalPrice / subtotal) * additionalCharges;
+      } else if (rawLineItems.length > 0 && additionalCharges > 0) {
+        allocatedCharges = additionalCharges / rawLineItems.length;
+      }
+
+      const totalItemCost = item.totalPrice + allocatedCharges;
+      const landedCostPerBaseUnit = item.baseQuantity > 0 
+        ? Math.round((totalItemCost / item.baseQuantity) * 100) / 100
+        : item.unitPrice;
+
+      return {
+        ...item,
+        costPerBaseUnit: landedCostPerBaseUnit,
+      };
+    });
 
     const paid = parseFloat(paidAmount) || 0;
     if (paid > totalAmount) throw new Error('Paid amount cannot exceed total amount');

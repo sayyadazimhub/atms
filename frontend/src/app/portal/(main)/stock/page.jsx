@@ -27,11 +27,13 @@ import {
   X,
   Check,
   Calculator,
-  Info
+  Info,
+  Undo2
 } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/portal/PageHeader';
+import { ConfirmModal } from '@/components/portal/ConfirmModal';
 import { formatStockSecondaryUnits } from '@/lib/units';
 import Link from 'next/link';
 
@@ -48,6 +50,30 @@ export default function StockMonitorPage() {
   const [combineBatchQtys, setCombineBatchQtys] = useState({});
   const [customMergedBatchNumber, setCustomMergedBatchNumber] = useState('');
   const [isSubmittingCombine, setIsSubmittingCombine] = useState(false);
+
+  // Uncombine / Rollback State
+  const [uncombineTarget, setUncombineTarget] = useState(null); // { product, batch }
+  const [isUncombining, setIsUncombining] = useState(false);
+
+  const handleUncombineBatch = async () => {
+    if (!uncombineTarget) return;
+    const { product, batch } = uncombineTarget;
+    try {
+      setIsUncombining(true);
+      const res = await api.post(`/api/user/products/${product.id || product._id}/uncombine-batch`, {
+        batchId: batch.id || batch._id,
+      });
+      toast.success(res.data?.message || 'Combined lot successfully rolled back!');
+      setUncombineTarget(null);
+      fetchProducts();
+    } catch (err) {
+      console.error('Failed to uncombine batch:', err);
+      const msg = err.response?.data?.error || err.response?.data?.message || 'Failed to rollback combined batch';
+      toast.error(msg);
+    } finally {
+      setIsUncombining(false);
+    }
+  };
 
   const openCombineModal = (product) => {
     setCombineModalProduct(product);
@@ -383,6 +409,16 @@ export default function StockMonitorPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto pb-10">
+      <ConfirmModal
+        isOpen={!!uncombineTarget}
+        onClose={() => setUncombineTarget(null)}
+        onConfirm={handleUncombineBatch}
+        title="Rollback Combined Lot?"
+        description={`Are you sure you want to rollback and split ${uncombineTarget?.batch?.batchNumber || 'this lot'} back into its original separate batches? Original purchase rates and quantities will be restored.`}
+        confirmText="Rollback Lot"
+        variant="default"
+        isLoading={isUncombining}
+      />
       {/* Header Section */}
       <PageHeader 
         title="Stock & Inventory Monitor"
@@ -839,7 +875,11 @@ export default function StockMonitorPage() {
                                                 <span className="font-mono font-black text-xs text-slate-900 dark:text-slate-100">
                                                   {batch.batchNumber || `BCH-${1000 + (idx + 1)}`}
                                                 </span>
-                                                {isOldest && (
+                                                {batch.isCombined ? (
+                                                  <span className="bg-purple-100 dark:bg-purple-900/70 text-purple-800 dark:text-purple-300 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                                    Combined Lot
+                                                  </span>
+                                                ) : isOldest && (
                                                   <span className="bg-emerald-100 dark:bg-emerald-900/70 text-emerald-800 dark:text-emerald-300 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider">
                                                     FIFO (Oldest)
                                                   </span>
@@ -869,13 +909,25 @@ export default function StockMonitorPage() {
                                                 ₹{bPrice}/{p.unit}
                                               </span>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                              <div className="text-right">
+                                            <div className="flex items-center gap-1.5">
+                                              <div className="text-right mr-1">
                                                 <span className="text-[10px] text-slate-400 uppercase font-bold">Value: </span>
                                                 <span className="font-bold text-emerald-700 dark:text-emerald-400 font-mono">
                                                   ₹{bVal.toLocaleString('en-IN')}
                                                 </span>
                                               </div>
+                                              {batch.isCombined && (
+                                                <Button
+                                                  size="sm"
+                                                  variant="outline"
+                                                  onClick={() => setUncombineTarget({ product: p, batch })}
+                                                  title={"Rollback merged batch " + batch.batchNumber + " into original lots"}
+                                                  className="h-6 px-2 text-[10px] font-extrabold text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/70 hover:bg-amber-100 rounded-md flex items-center gap-0.5 cursor-pointer shadow-2xs"
+                                                >
+                                                  <Undo2 className="h-2.5 w-2.5" />
+                                                  Rollback
+                                                </Button>
+                                              )}
                                               {bQty > 0 && (
                                                 <Link
                                                   href={`/portal/sales?product=${productId}&batch=${batch.id || batch._id}&create=true`}

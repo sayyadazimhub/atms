@@ -1565,7 +1565,12 @@ export default function PurchasesPage() {
                             </td>
 
                             <td className="p-3 text-right text-slate-600 dark:text-slate-400">
-                              ₹{item.unitPrice.toLocaleString()}/{item.unit || item.product?.unit || ''}
+                              <div>₹{item.unitPrice.toLocaleString()}/{item.unit || item.product?.unit || ''}</div>
+                              {item.costPerBaseUnit && item.costPerBaseUnit !== item.unitPrice && (
+                                <div className="text-[10px] text-amber-600 dark:text-amber-400 font-medium" title="Landed cost per unit including logistics and additional charges">
+                                  Landed: ₹{item.costPerBaseUnit.toLocaleString()}/{item.product?.unit || item.unit || ''}
+                                </div>
+                              )}
                             </td>
 
                             <td className="p-3 text-right font-semibold text-slate-900 dark:text-slate-100">

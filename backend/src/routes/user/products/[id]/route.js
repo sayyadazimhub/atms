@@ -4,7 +4,7 @@ import { productService } from '../../../../services/userService/productService.
 import { requireUserSession } from '../../../../middleware/requireUserSession.js';
 import { validateRequest } from '../../../../middleware/validateRequest.js';
 import { idParamsSchema } from '../../../../validations/common.js';
-import { productUpdateSchema, combineBatchesSchema } from '../../../../validations/resources.js';
+import { productUpdateSchema, combineBatchesSchema, uncombineBatchSchema } from '../../../../validations/resources.js';
 
 const router = Router({ mergeParams: true });
 router.use(requireUserSession, validateRequest(idParamsSchema, 'params'));
@@ -58,9 +58,22 @@ async function handleCombineBatches(req, res) {
   }
 }
 
+async function handleUncombineBatch(req, res) {
+  try {
+    const { id } = req.params;
+    const { batchId } = req.body;
+    const result = await productService.uncombineBatch(id, req.auth.id, batchId);
+    return res.status(200).json(result);
+  } catch (err) {
+    console.error('Uncombine batch error:', err);
+    return res.status(400).json({ error: err.message || 'Failed to rollback combined batch' });
+  }
+}
+
 router.get('/', handleGet);
 router.put('/', validateRequest(productUpdateSchema), handlePut);
 router.delete('/', handleDelete);
 router.post('/combine-batches', validateRequest(combineBatchesSchema), handleCombineBatches);
+router.post('/uncombine-batch', validateRequest(uncombineBatchSchema), handleUncombineBatch);
 
 export default router;
