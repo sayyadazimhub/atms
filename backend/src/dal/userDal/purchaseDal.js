@@ -153,13 +153,13 @@ export const purchaseDal = {
         .populate({ path: 'items', populate: { path: 'product' } });
       if (!purchase) throw new Error('Purchase not found');
 
-      // Validation pass: Ensure all batches still have sufficient stock and were not combined or consumed
+      // Pass 1: Auto-uncombine any combined batch that absorbed our purchase items
       for (const item of purchase.items) {
         const revertQty = item.baseQuantity !== undefined ? item.baseQuantity : item.quantity;
         const revertCost = item.costPerBaseUnit !== undefined ? item.costPerBaseUnit : item.unitPrice;
         const productName = item.product?.name || 'Product';
 
-        // Check overall product stock first
+        // Check overall product stock
         const product = await Product.findOne({ _id: item.productId, userId }).session(session);
         if (!product || product.currentStock < revertQty) {
           throw new Error(
@@ -167,7 +167,76 @@ export const purchaseDal = {
           );
         }
 
-        // Check specific batch
+        // Find current batch
+        let batch = null;
+        if (item.batchId) {
+          batch = await StockBatch.findOne({ _id: item.batchId, userId }).session(session);
+        }
+        if (!batch) {
+          batch = await StockBatch.findOne({
+            productId: item.productId,
+            userId,
+            purchasePrice: revertCost,
+          }).session(session);
+        }
+
+        // If batch has insufficient quantity, check if it was absorbed by a combined batch
+        if (!batch || batch.quantity < revertQty) {
+          const targetBatchId = batch?._id || item.batchId;
+          const combinedBatch = await StockBatch.findOne({
+            productId: item.productId,
+            userId,
+            isCombined: true,
+            'combinedSources.batchId': targetBatchId,
+          }).session(session);
+
+          if (combinedBatch) {
+            // Uncombine the merged batch back to its component source batches
+            const totalSourceQty = combinedBatch.combinedSources.reduce((s, src) => s + src.quantity, 0);
+            if (combinedBatch.quantity < totalSourceQty) {
+              throw new Error(
+                `Cannot delete purchase: Part of ${productName} in combined lot ${combinedBatch.batchNumber} has already been sold to customers.`
+              );
+            }
+
+            // Restore all sources of this combined batch
+            for (const src of combinedBatch.combinedSources) {
+              let existingSource = await StockBatch.findOne({ _id: src.batchId, userId }).session(session);
+              if (existingSource) {
+                await StockBatch.updateOne(
+                  { _id: existingSource._id },
+                  { $inc: { quantity: src.quantity } },
+                  { session }
+                );
+              } else {
+                await StockBatch.create(
+                  [
+                    {
+                      _id: src.batchId,
+                      productId: item.productId,
+                      userId,
+                      batchNumber: src.batchNumber || `BCH-RESTORED`,
+                      purchasePrice: src.purchasePrice,
+                      quantity: src.quantity,
+                    },
+                  ],
+                  { session }
+                );
+              }
+            }
+
+            // Delete the combined batch
+            await StockBatch.deleteOne({ _id: combinedBatch._id }, { session });
+          }
+        }
+      }
+
+      // Pass 2: Verify all items now have sufficient batch stock
+      for (const item of purchase.items) {
+        const revertQty = item.baseQuantity !== undefined ? item.baseQuantity : item.quantity;
+        const revertCost = item.costPerBaseUnit !== undefined ? item.costPerBaseUnit : item.unitPrice;
+        const productName = item.product?.name || 'Product';
+
         let batch = null;
         if (item.batchId) {
           batch = await StockBatch.findOne({ _id: item.batchId, userId }).session(session);
@@ -184,12 +253,12 @@ export const purchaseDal = {
           const availableInBatch = batch ? batch.quantity : 0;
           const batchTag = batch?.batchNumber ? `batch ${batch.batchNumber}` : 'its stock batch';
           throw new Error(
-            `Cannot delete purchase: ${productName} in ${batchTag} has already been combined or sold. Available in batch: ${availableInBatch}, required to rollback: ${revertQty}.`
+            `Cannot delete purchase: ${productName} in ${batchTag} has already been sold. Available in batch: ${availableInBatch}, required to rollback: ${revertQty}.`
           );
         }
       }
 
-      // Execution pass: Revert stock and batches cleanly
+      // Pass 3: Revert product stock and batches cleanly
       for (const item of purchase.items) {
         const revertQty = item.baseQuantity !== undefined ? item.baseQuantity : item.quantity;
         const revertCost = item.costPerBaseUnit !== undefined ? item.costPerBaseUnit : item.unitPrice;
@@ -219,6 +288,30 @@ export const purchaseDal = {
             { session },
           );
         }
+
+        // Recalculate average cost for the product
+        const remainingBatches = await StockBatch.find({
+          productId: item.productId,
+          userId,
+          quantity: { $gt: 0 },
+        }).session(session);
+
+        let totalQty = 0;
+        let totalVal = 0;
+        for (const b of remainingBatches) {
+          // If this is the current batch being decremented in memory, use updated qty
+          const q = String(b._id) === String(batch?._id) ? b.quantity - revertQty : b.quantity;
+          if (q > 0) {
+            totalQty += q;
+            totalVal += q * b.purchasePrice;
+          }
+        }
+        const newBaseCost = totalQty > 0 ? totalVal / totalQty : 0;
+        await Product.updateOne(
+          { _id: item.productId, userId },
+          { baseCostPrice: parseFloat(newBaseCost.toFixed(2)) },
+          { session }
+        );
       }
 
       await PurchaseItem.deleteMany({ purchaseId: purchase._id, userId }, { session });
